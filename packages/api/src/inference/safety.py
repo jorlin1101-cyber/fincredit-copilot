@@ -85,6 +85,11 @@ class NeMoGuardrailsChecker:
         )
 
 
+# Compatibility name retained for callers created before the NeMo migration.
+# New code should use NeMoGuardrailsChecker.
+SafetyChecker = NeMoGuardrailsChecker
+
+
 _checker_instance: NeMoGuardrailsChecker | None = None
 
 

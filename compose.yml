@@ -61,12 +61,20 @@ services:
       SQLADMIN_USER: "${SQLADMIN_USER:-admin}"
       SQLADMIN_PASSWORD: "${SQLADMIN_PASSWORD:-admin}"
       SQLADMIN_SECRET_KEY: "${SQLADMIN_SECRET_KEY:-change-me-in-production}"
-      LLM_BASE_URL: "${LLM_BASE_URL:-http://host.docker.internal:1234/v1}"
-      LLM_API_KEY: "${LLM_API_KEY:-not-needed}"
-      LLM_MODEL: "${LLM_MODEL:-}"
-      VISION_MODEL: "${VISION_MODEL:-}"
-      VISION_BASE_URL: "${VISION_BASE_URL:-}"
+      DASHSCOPE_API_KEY: "${DASHSCOPE_API_KEY:-}"
+      LLM_BASE_URL: "${LLM_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}"
+      LLM_API_KEY: "${LLM_API_KEY:-}"
+      LLM_MODEL: "${LLM_MODEL:-qwen3.7-plus}"
+      VISION_MODEL: "${VISION_MODEL:-qwen3-vl-flash}"
+      VISION_BASE_URL: "${VISION_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}"
       VISION_API_KEY: "${VISION_API_KEY:-}"
+      EMBEDDING_PROVIDER: "${EMBEDDING_PROVIDER:-openai_compatible}"
+      EMBEDDING_BASE_URL: "${EMBEDDING_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}"
+      EMBEDDING_MODEL: "${EMBEDDING_MODEL:-text-embedding-v4}"
+      EMBEDDING_API_KEY: "${EMBEDDING_API_KEY:-}"
+      EMBEDDING_DIMENSIONS: "${EMBEDDING_DIMENSIONS:-768}"
+      EXTRACTION_CONFIDENCE_THRESHOLD: "${EXTRACTION_CONFIDENCE_THRESHOLD:-0.8}"
+      INCOME_MISMATCH_THRESHOLD: "${INCOME_MISMATCH_THRESHOLD:-0.15}"
       SAFETY_MODEL: "${SAFETY_MODEL:-}"
       SAFETY_ENDPOINT: "${SAFETY_ENDPOINT:-}"
       SAFETY_API_KEY: "${SAFETY_API_KEY:-}"
@@ -77,11 +85,11 @@ services:
       S3_REGION: us-east-1
       UPLOAD_MAX_SIZE_MB: "${UPLOAD_MAX_SIZE_MB:-50}"
       MLFLOW_TRACKING_URI: "${MLFLOW_TRACKING_URI:-http://mlflow:5000}"
-      MLFLOW_EXPERIMENT_NAME: "${MLFLOW_EXPERIMENT_NAME:-mortgage-ai}"
+      MLFLOW_EXPERIMENT_NAME: "${MLFLOW_EXPERIMENT_NAME:-fincredit-copilot}"
       MCP_RISK_SERVER_URL: http://mcp-risk-server:8081/mcp
       PREDICTIVE_MODEL_MCP_URL: "${PREDICTIVE_MODEL_MCP_URL:-}"
-      COMPANY_NAME: "${COMPANY_NAME:-Acme FinTech Company}"
-      AGENT_NAME: "${AGENT_NAME:-}"
+      COMPANY_NAME: "${COMPANY_NAME:-融安住房金融（虚构演示机构）}"
+      AGENT_NAME: "${AGENT_NAME:-FinCredit Copilot}"
     volumes:
       - ./config:/app/config:ro
     healthcheck:
@@ -104,8 +112,8 @@ services:
       KEYCLOAK_EXTERNAL: ${KEYCLOAK_EXTERNAL:-}
       KEYCLOAK_REALM: mortgage-ai
       KEYCLOAK_CLIENT_ID: mortgage-ai-ui
-      COMPANY_NAME: "${COMPANY_NAME:-Acme FinTech Company}"
-      AGENT_NAME: "${AGENT_NAME:-}"
+      COMPANY_NAME: "${COMPANY_NAME:-融安住房金融（虚构演示机构）}"
+      AGENT_NAME: "${AGENT_NAME:-FinCredit Copilot}"
     depends_on:
       mortgage-ai-api:
         condition: service_healthy

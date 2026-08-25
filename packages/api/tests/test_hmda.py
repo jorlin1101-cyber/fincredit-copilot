@@ -2,6 +2,7 @@
 """Tests for HMDA demographic data collection, loan data snapshot, and isolation lint."""
 
 import subprocess
+import sys
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
@@ -997,7 +998,7 @@ async def test_snapshot_loan_data_no_financials():
 def test_lint_hmda_isolation():
     """The HMDA isolation lint script passes on a clean codebase."""
     result = subprocess.run(
-        ["bash", "scripts/lint-hmda-isolation.sh"],
+        [sys.executable, "scripts/lint_hmda_isolation.py"],
         capture_output=True,
         text=True,
         cwd=str(Path(__file__).resolve().parents[3]),

@@ -61,6 +61,7 @@ venv.bak/
 .pytest_cache/
 .vitest/
 storybook-static/
+tmp/
 
 # Playwright
 .auth/

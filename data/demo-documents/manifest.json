@@ -1,0 +1,307 @@
+{
+  "generated_on": "2026-08-25",
+  "institution": "融安住房金融（虚构演示机构）",
+  "notice": "全部内容均为合成数据，仅供功能与面试演示。",
+  "documents": [
+    {
+      "file": "id-cards/01_正常一致.pdf",
+      "document_type": "身份证",
+      "case_id": "CASE-01",
+      "scenario": "正常一致",
+      "quality": "清晰",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "id-cards/02_正常一致-多页.pdf",
+      "document_type": "身份证",
+      "case_id": "CASE-02",
+      "scenario": "正常一致-多页",
+      "quality": "多页",
+      "expected_pages": 2,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "id-cards/03_低清晰度.pdf",
+      "document_type": "身份证",
+      "case_id": "CASE-03",
+      "scenario": "低清晰度",
+      "quality": "模糊",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "id-cards/04_关键字段缺失.pdf",
+      "document_type": "身份证",
+      "case_id": "CASE-04",
+      "scenario": "关键字段缺失",
+      "quality": "字段缺失",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "id-cards/05_姓名不一致.pdf",
+      "document_type": "身份证",
+      "case_id": "CASE-05",
+      "scenario": "姓名不一致",
+      "quality": "清晰",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "id-cards/06_收入不一致.pdf",
+      "document_type": "身份证",
+      "case_id": "CASE-06",
+      "scenario": "收入不一致",
+      "quality": "清晰",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "id-cards/07_证件或证明过期.pdf",
+      "document_type": "身份证",
+      "case_id": "CASE-07",
+      "scenario": "证件或证明过期",
+      "quality": "历史日期",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "id-cards/08_部分字段遮罩.pdf",
+      "document_type": "身份证",
+      "case_id": "CASE-08",
+      "scenario": "部分字段遮罩",
+      "quality": "遮罩",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "id-cards/09_低对比度.pdf",
+      "document_type": "身份证",
+      "case_id": "CASE-09",
+      "scenario": "低对比度",
+      "quality": "低对比度",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "id-cards/10_正常一致-边界金额.pdf",
+      "document_type": "身份证",
+      "case_id": "CASE-10",
+      "scenario": "正常一致-边界金额",
+      "quality": "清晰",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "income-certificates/01_正常一致.pdf",
+      "document_type": "收入证明",
+      "case_id": "CASE-01",
+      "scenario": "正常一致",
+      "quality": "清晰",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "income-certificates/02_正常一致-多页.pdf",
+      "document_type": "收入证明",
+      "case_id": "CASE-02",
+      "scenario": "正常一致-多页",
+      "quality": "多页",
+      "expected_pages": 2,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "income-certificates/03_低清晰度.pdf",
+      "document_type": "收入证明",
+      "case_id": "CASE-03",
+      "scenario": "低清晰度",
+      "quality": "模糊",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "income-certificates/04_关键字段缺失.pdf",
+      "document_type": "收入证明",
+      "case_id": "CASE-04",
+      "scenario": "关键字段缺失",
+      "quality": "字段缺失",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "income-certificates/05_姓名不一致.pdf",
+      "document_type": "收入证明",
+      "case_id": "CASE-05",
+      "scenario": "姓名不一致",
+      "quality": "清晰",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "income-certificates/06_收入不一致.pdf",
+      "document_type": "收入证明",
+      "case_id": "CASE-06",
+      "scenario": "收入不一致",
+      "quality": "清晰",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "income-certificates/07_证件或证明过期.pdf",
+      "document_type": "收入证明",
+      "case_id": "CASE-07",
+      "scenario": "证件或证明过期",
+      "quality": "历史日期",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "income-certificates/08_部分字段遮罩.pdf",
+      "document_type": "收入证明",
+      "case_id": "CASE-08",
+      "scenario": "部分字段遮罩",
+      "quality": "遮罩",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "income-certificates/09_低对比度.pdf",
+      "document_type": "收入证明",
+      "case_id": "CASE-09",
+      "scenario": "低对比度",
+      "quality": "低对比度",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "income-certificates/10_正常一致-边界金额.pdf",
+      "document_type": "收入证明",
+      "case_id": "CASE-10",
+      "scenario": "正常一致-边界金额",
+      "quality": "清晰",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "bank-statements/01_正常一致.pdf",
+      "document_type": "银行流水",
+      "case_id": "CASE-01",
+      "scenario": "正常一致",
+      "quality": "清晰",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "bank-statements/02_正常一致-多页.pdf",
+      "document_type": "银行流水",
+      "case_id": "CASE-02",
+      "scenario": "正常一致-多页",
+      "quality": "多页",
+      "expected_pages": 2,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "bank-statements/03_低清晰度.pdf",
+      "document_type": "银行流水",
+      "case_id": "CASE-03",
+      "scenario": "低清晰度",
+      "quality": "模糊",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "bank-statements/04_关键字段缺失.pdf",
+      "document_type": "银行流水",
+      "case_id": "CASE-04",
+      "scenario": "关键字段缺失",
+      "quality": "字段缺失",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "bank-statements/05_姓名不一致.pdf",
+      "document_type": "银行流水",
+      "case_id": "CASE-05",
+      "scenario": "姓名不一致",
+      "quality": "清晰",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "bank-statements/06_收入不一致.pdf",
+      "document_type": "银行流水",
+      "case_id": "CASE-06",
+      "scenario": "收入不一致",
+      "quality": "清晰",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "bank-statements/07_证件或证明过期.pdf",
+      "document_type": "银行流水",
+      "case_id": "CASE-07",
+      "scenario": "证件或证明过期",
+      "quality": "历史日期",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "bank-statements/08_部分字段遮罩.pdf",
+      "document_type": "银行流水",
+      "case_id": "CASE-08",
+      "scenario": "部分字段遮罩",
+      "quality": "遮罩",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "bank-statements/09_低对比度.pdf",
+      "document_type": "银行流水",
+      "case_id": "CASE-09",
+      "scenario": "低对比度",
+      "quality": "低对比度",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    },
+    {
+      "file": "bank-statements/10_正常一致-边界金额.pdf",
+      "document_type": "银行流水",
+      "case_id": "CASE-10",
+      "scenario": "正常一致-边界金额",
+      "quality": "清晰",
+      "expected_pages": 1,
+      "synthetic": true,
+      "watermark": "合成数据｜仅供演示"
+    }
+  ]
+}

@@ -1,6 +1,49 @@
 <!-- This project was developed with assistance from AI tools. -->
 
-# Automate mortgage lending with multi-agent AI
+# FinCredit Copilot
+
+> 基于多角色 Agent 与受控型 Agentic RAG 的住房贷款授信辅助平台
+
+FinCredit Copilot 是面向中文金融科技面试与本地演示的住房贷款授信辅助系统。它以“融安住房金融（虚构演示机构）”为业务背景，把身份证、收入证明、银行流水的页级提取与人工纠错，跨材料一致性核验，全国通用监管政策与成都市地方规则检索，DTI/LTV 确定性计算，Agent 风险建议、人工审批确认以及 trace_id 审计串成一条完整闭环。
+
+所有演示数据均为合成数据。系统不自动批准或拒绝贷款，不构成授信承诺、监管解释或法律意见。
+
+## P0 亮点
+
+- **多角色 Agent**：借款人、客户经理、审批人员和管理驾驶舱按角色隔离工具与数据权限。
+- **受控型 Agentic RAG**：向量 + 关键词混合检索与 RRF 融合；证据不足时最多进行一次受控查询改写，仍不足则转人工。
+- **中国住房贷款材料链路**：身份证、收入证明、银行流水的逐页文本/视觉提取、严格 JSON 校验、证据坐标、置信度和人工修订审计。
+- **全国 + 成都政策库**：政策具有来源、发布主体、版本、生效/失效日期、辖区、内容哈希和可点击官方链接。
+- **确定性风险计算**：DTI 与 LTV 使用固定公式和版本化内部演示阈值；LLM 不参与算术。
+- **人工最终决策**：Agent 先生成带 UUID 的待确认提案，只有有权限人员明确确认后才写入最终决策。
+- **端到端可追溯**：模型调用、检索轮次、引用、确定性计算、人工修订与工作流事件统一关联到 trace_id，并可接入 MLflow。
+
+## 5 分钟本地启动（Docker Desktop）
+
+1. 安装并启动 Docker Desktop。
+2. 复制 `.env.example` 为 `.env`，只填写 `DASHSCOPE_API_KEY`，不要提交 `.env`。
+3. 在项目根目录执行：
+
+```powershell
+docker compose up -d --build
+```
+
+4. 打开 `http://localhost:3000`，点击“进入角色演示”，选择“审批人员”。
+5. API 文档位于 `http://localhost:8000/docs`；MinIO 位于 `http://localhost:9091`。
+
+若需要 Keycloak 和 MLflow：
+
+```powershell
+docker compose --profile auth --profile observability up -d --build
+```
+
+更多内容见 [演示指南](docs/demo-guide.md)、[二次开发架构](docs/fincredit-architecture.md)、[评估说明](docs/evaluation-report.md) 与 [上游归属](UPSTREAM.md)。
+
+---
+
+## Upstream reference application
+
+The sections below are retained from the Apache-2.0 upstream reference project for technical background and attribution.
 
 Red Hat AI reference application demonstrating agentic AI orchestration across the mortgage lending lifecycle, from prospect inquiry to underwriting approval.
 
