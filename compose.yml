@@ -43,6 +43,13 @@ services:
       com.quickstart.package: api
     ports:
       - "8000:8000"
+    command:
+      - sh
+      - -c
+      - >-
+        cd /app/packages/db && alembic upgrade head &&
+        cd /app/packages/api &&
+        exec uvicorn src.main:app --host 0.0.0.0 --port 8000
     depends_on:
       mortgage-ai-db:
         condition: service_healthy
