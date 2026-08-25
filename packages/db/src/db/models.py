@@ -35,7 +35,10 @@ from .enums import (
     DocumentStatus,
     DocumentType,
     EmploymentStatus,
+    ExtractionMethod,
     LoanType,
+    PolicyJurisdiction,
+    PolicySourceType,
 )
 
 
@@ -328,8 +331,20 @@ class DocumentExtraction(Base):
     )
     field_name = Column(String(255), nullable=False)
     field_value = Column(Text, nullable=True)
+    normalized_value = Column(Text, nullable=True)
     confidence = Column(Float, nullable=True)
     source_page = Column(Integer, nullable=True)
+    evidence_text = Column(Text, nullable=True)
+    extraction_method = Column(
+        Enum(
+            ExtractionMethod,
+            name="extraction_method",
+            native_enum=False,
+            length=20,
+            values_callable=lambda enum_type: [item.value for item in enum_type],
+        ),
+        nullable=True,
+    )
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     document = relationship("Document", back_populates="extractions")
@@ -394,7 +409,34 @@ class KBDocument(Base):
     tier = Column(Integer, nullable=False, index=True)  # 1=federal, 2=agency, 3=internal
     source_file = Column(String(500), nullable=False)
     description = Column(Text, nullable=True)
+    issuer = Column(String(500), nullable=True)
+    source_url = Column(String(2000), nullable=True)
+    jurisdiction = Column(
+        Enum(
+            PolicyJurisdiction,
+            name="policy_jurisdiction",
+            native_enum=False,
+            length=20,
+            values_callable=lambda enum_type: [item.value for item in enum_type],
+        ),
+        nullable=False,
+        default=PolicyJurisdiction.NATIONAL,
+    )
+    source_type = Column(
+        Enum(
+            PolicySourceType,
+            name="policy_source_type",
+            native_enum=False,
+            length=20,
+            values_callable=lambda enum_type: [item.value for item in enum_type],
+        ),
+        nullable=False,
+        default=PolicySourceType.OFFICIAL,
+    )
+    version = Column(String(100), nullable=True)
+    published_date = Column(DateTime(timezone=True), nullable=True)
     effective_date = Column(DateTime(timezone=True), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     chunks = relationship("KBChunk", back_populates="document", cascade="all, delete-orphan")

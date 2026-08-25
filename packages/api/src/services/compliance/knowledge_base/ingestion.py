@@ -13,7 +13,7 @@ import re
 from datetime import UTC, datetime
 from pathlib import Path
 
-from db import KBChunk, KBDocument
+from db import KBChunk, KBDocument, PolicyJurisdiction, PolicySourceType
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,6 +33,28 @@ _TIER_DIRS = {
 }
 
 _KB_DATA_ROOT = Path(__file__).resolve().parents[6] / "data" / "compliance-kb"
+
+
+def _parse_optional_date(value: str | None, *, field_name: str, filename: str) -> datetime | None:
+    """Parse an ISO date from policy frontmatter without hiding bad metadata."""
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").replace(tzinfo=UTC)
+    except ValueError:
+        logger.warning("Invalid %s in %s: %s", field_name, filename, value)
+        return None
+
+
+def _metadata_enum(enum_type, value: str | None, default, *, field_name: str, filename: str):
+    """Resolve an enum metadata value, logging and falling back when invalid."""
+    if not value:
+        return default
+    try:
+        return enum_type(value.strip().lower())
+    except ValueError:
+        logger.warning("Invalid %s in %s: %s", field_name, filename, value)
+        return default
 
 
 def _parse_frontmatter(content: str) -> tuple[dict[str, str], str]:
@@ -173,27 +195,59 @@ async def ingest_kb_content(
             continue
 
         for md_file in sorted(tier_path.glob("*.md")):
-            content = md_file.read_text()
+            content = md_file.read_text(encoding="utf-8")
             metadata, body = _parse_frontmatter(content)
 
-            effective_date_str = metadata.get("effective_date")
-            effective_date = None
-            if effective_date_str:
-                try:
-                    effective_date = datetime.strptime(effective_date_str, "%Y-%m-%d").replace(
-                        tzinfo=UTC
-                    )
-                except ValueError:
-                    logger.warning(
-                        "Invalid date format in %s: %s", md_file.name, effective_date_str
-                    )
+            default_jurisdiction = (
+                PolicyJurisdiction.CHENGDU
+                if tier == 2
+                else (
+                    PolicyJurisdiction.INTERNAL_DEMO if tier == 3 else PolicyJurisdiction.NATIONAL
+                )
+            )
+            default_source_type = (
+                PolicySourceType.INTERNAL_DEMO if tier == 3 else PolicySourceType.OFFICIAL
+            )
+            jurisdiction = _metadata_enum(
+                PolicyJurisdiction,
+                metadata.get("jurisdiction"),
+                default_jurisdiction,
+                field_name="jurisdiction",
+                filename=md_file.name,
+            )
+            source_type = _metadata_enum(
+                PolicySourceType,
+                metadata.get("source_type"),
+                default_source_type,
+                field_name="source_type",
+                filename=md_file.name,
+            )
 
             doc = KBDocument(
                 title=metadata.get("title", md_file.stem),
                 tier=tier,
                 source_file=str(md_file.relative_to(root)),
                 description=metadata.get("description"),
-                effective_date=effective_date,
+                issuer=metadata.get("issuer"),
+                source_url=metadata.get("source_url"),
+                jurisdiction=jurisdiction,
+                source_type=source_type,
+                version=metadata.get("version"),
+                published_date=_parse_optional_date(
+                    metadata.get("published_date"),
+                    field_name="published_date",
+                    filename=md_file.name,
+                ),
+                effective_date=_parse_optional_date(
+                    metadata.get("effective_date"),
+                    field_name="effective_date",
+                    filename=md_file.name,
+                ),
+                expires_at=_parse_optional_date(
+                    metadata.get("expires_at"),
+                    field_name="expires_at",
+                    filename=md_file.name,
+                ),
             )
             session.add(doc)
             await session.flush()  # Get doc.id

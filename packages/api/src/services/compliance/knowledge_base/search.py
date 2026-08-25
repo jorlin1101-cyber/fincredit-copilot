@@ -34,6 +34,13 @@ class KBSearchResult:
     similarity: float
     boosted_similarity: float
     effective_date: str | None
+    issuer: str | None = None
+    source_url: str | None = None
+    jurisdiction: str = "national"
+    source_type: str = "official"
+    version: str | None = None
+    published_date: str | None = None
+    expires_at: str | None = None
 
 
 async def search_kb(
@@ -64,7 +71,8 @@ async def search_kb(
 
     sql = text("""
         SELECT c.id, c.chunk_text, c.section_ref, d.title, d.tier,
-               d.effective_date,
+               d.issuer, d.source_url, d.jurisdiction, d.source_type,
+               d.version, d.published_date, d.effective_date, d.expires_at,
                1 - (c.embedding <=> :query_vec) AS similarity
         FROM kb_chunks c
         JOIN kb_documents d ON c.document_id = d.id
@@ -99,7 +107,22 @@ async def search_kb(
                 tier_label=_TIER_LABELS.get(tier, f"Tier {tier}"),
                 similarity=similarity,
                 boosted_similarity=boosted,
+                issuer=row.issuer,
+                source_url=row.source_url,
+                jurisdiction=(
+                    row.jurisdiction.value
+                    if hasattr(row.jurisdiction, "value")
+                    else str(row.jurisdiction)
+                ),
+                source_type=(
+                    row.source_type.value
+                    if hasattr(row.source_type, "value")
+                    else str(row.source_type)
+                ),
+                version=row.version,
+                published_date=str(row.published_date) if row.published_date else None,
                 effective_date=str(row.effective_date) if row.effective_date else None,
+                expires_at=str(row.expires_at) if row.expires_at else None,
             )
         )
 

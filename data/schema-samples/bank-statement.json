@@ -1,0 +1,79 @@
+{
+  "document_type": "bank_statement",
+  "account_holder_name": {
+    "value": "张晨",
+    "normalized_value": "张晨",
+    "confidence": 0.99,
+    "source_page": 1,
+    "evidence_text": "户名：张晨",
+    "extraction_method": "text_layer"
+  },
+  "bank_name": {
+    "value": "融安银行（合成）",
+    "normalized_value": "融安银行（合成）",
+    "confidence": 0.99,
+    "source_page": 1,
+    "evidence_text": "融安银行个人账户交易明细（合成）",
+    "extraction_method": "text_layer"
+  },
+  "account_number_last4": {
+    "value": "尾号6688",
+    "normalized_value": "6688",
+    "confidence": 0.98,
+    "source_page": 1,
+    "evidence_text": "账号：************6688",
+    "extraction_method": "text_layer"
+  },
+  "statement_period_start": {
+    "value": "2026/05/01",
+    "normalized_value": "2026-05-01",
+    "confidence": 0.99,
+    "source_page": 1,
+    "evidence_text": "查询期间：2026/05/01至2026/07/31",
+    "extraction_method": "text_layer"
+  },
+  "statement_period_end": {
+    "value": "2026/07/31",
+    "normalized_value": "2026-07-31",
+    "confidence": 0.99,
+    "source_page": 1,
+    "evidence_text": "查询期间：2026/05/01至2026/07/31",
+    "extraction_method": "text_layer"
+  },
+  "salary_credit_monthly_average": {
+    "value": "19800元",
+    "normalized_value": "19800.00",
+    "confidence": 0.95,
+    "source_page": 2,
+    "evidence_text": "近三个月工资入账均值：19800元",
+    "extraction_method": "text_layer"
+  },
+  "salary_credits": [
+    {
+      "transaction_date": {
+        "value": "2026-05-10",
+        "normalized_value": "2026-05-10",
+        "confidence": 0.99,
+        "source_page": 1,
+        "evidence_text": "2026-05-10 工资 19800.00",
+        "extraction_method": "text_layer"
+      },
+      "summary": {
+        "value": "工资",
+        "normalized_value": "salary",
+        "confidence": 0.97,
+        "source_page": 1,
+        "evidence_text": "2026-05-10 工资 19800.00",
+        "extraction_method": "text_layer"
+      },
+      "amount": {
+        "value": "19800.00",
+        "normalized_value": "19800.00",
+        "confidence": 0.99,
+        "source_page": 1,
+        "evidence_text": "2026-05-10 工资 19800.00",
+        "extraction_method": "text_layer"
+      }
+    }
+  ]
+}

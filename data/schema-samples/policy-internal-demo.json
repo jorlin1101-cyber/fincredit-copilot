@@ -1,0 +1,12 @@
+{
+  "title": "融安住房金融收入核验演示规则",
+  "issuer": "融安住房金融（虚构演示机构）",
+  "source_url": null,
+  "jurisdiction": "internal_demo",
+  "source_type": "internal_demo",
+  "version": "demo-2026-v1",
+  "published_date": "2026-08-01",
+  "effective_date": "2026-08-01",
+  "expires_at": null,
+  "description": "synthetic/internal-demo；不代表任何真实金融机构制度。"
+}

@@ -1,0 +1,35 @@
+{
+  "document_type": "id_card",
+  "full_name": {
+    "value": "张晨",
+    "normalized_value": "张晨",
+    "confidence": 0.99,
+    "source_page": 1,
+    "evidence_text": "姓名 张晨",
+    "extraction_method": "vision"
+  },
+  "id_number": {
+    "value": "510101********1234",
+    "normalized_value": "510101********1234",
+    "confidence": 0.97,
+    "source_page": 1,
+    "evidence_text": "公民身份号码 510101********1234",
+    "extraction_method": "vision"
+  },
+  "date_of_birth": {
+    "value": "1990年1月1日",
+    "normalized_value": "1990-01-01",
+    "confidence": 0.98,
+    "source_page": 1,
+    "evidence_text": "出生 1990年1月1日",
+    "extraction_method": "vision"
+  },
+  "address": {
+    "value": "四川省成都市演示区金融路88号",
+    "normalized_value": "四川省成都市演示区金融路88号",
+    "confidence": 0.94,
+    "source_page": 1,
+    "evidence_text": "住址 四川省成都市演示区金融路88号",
+    "extraction_method": "vision"
+  }
+}

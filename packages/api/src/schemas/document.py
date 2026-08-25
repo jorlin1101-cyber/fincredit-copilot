@@ -3,7 +3,7 @@
 
 from datetime import datetime
 
-from db.enums import DocumentStatus, DocumentType
+from db.enums import DocumentStatus, DocumentType, ExtractionMethod
 from pydantic import BaseModel, ConfigDict
 
 from . import Pagination
@@ -76,8 +76,11 @@ class ExtractionFieldResponse(BaseModel):
     id: int
     field_name: str
     field_value: str | None = None
+    normalized_value: str | None = None
     confidence: float | None = None
     source_page: int | None = None
+    evidence_text: str | None = None
+    extraction_method: ExtractionMethod | None = None
 
 
 class ExtractionListResponse(BaseModel):

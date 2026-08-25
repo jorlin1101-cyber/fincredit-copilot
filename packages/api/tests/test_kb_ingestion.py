@@ -5,7 +5,7 @@ import textwrap
 from unittest.mock import AsyncMock
 
 import pytest
-from db import KBChunk
+from db import KBChunk, KBDocument, PolicyJurisdiction, PolicySourceType
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.services.compliance.knowledge_base.ingestion import (
@@ -128,7 +128,14 @@ class TestIngestKbContent:
             ---
             title: "Test Regulation"
             source_document: "Test Source"
+            issuer: "Test Regulator"
+            source_url: "https://example.gov.cn/test-reg"
+            jurisdiction: "national"
+            source_type: "official"
+            version: "2026-v1"
+            published_date: "2023-12-01"
             effective_date: "2024-01-01"
+            expires_at: "2027-01-01"
             ---
 
             DISCLAIMER: Simulated content.
@@ -162,7 +169,8 @@ class TestIngestKbContent:
     async def test_creates_documents_and_chunks(self, kb_data_dir, monkeypatch):
         """Ingestion creates KBDocument and KBChunk rows with embeddings."""
         mock_session = AsyncMock(spec=AsyncSession)
-        mock_session.add = lambda x: None
+        added_objects = []
+        mock_session.add = lambda x: added_objects.append(x)
         mock_session.flush = AsyncMock()
 
         fake_embeddings = [[0.1] * 768, [0.2] * 768, [0.3] * 768]
@@ -177,6 +185,20 @@ class TestIngestKbContent:
         assert result["documents"] == 2  # test-reg.md + test-policy.md
         assert result["chunks"] >= 3  # at least 3 chunks across both files
         assert mock_embed.call_count >= 1
+
+        documents = [obj for obj in added_objects if isinstance(obj, KBDocument)]
+        official = next(doc for doc in documents if doc.title == "Test Regulation")
+        assert official.issuer == "Test Regulator"
+        assert official.source_url == "https://example.gov.cn/test-reg"
+        assert official.jurisdiction == PolicyJurisdiction.NATIONAL
+        assert official.source_type == PolicySourceType.OFFICIAL
+        assert official.version == "2026-v1"
+        assert official.published_date.isoformat().startswith("2023-12-01")
+        assert official.expires_at.isoformat().startswith("2027-01-01")
+
+        internal = next(doc for doc in documents if doc.title == "Test Policy")
+        assert internal.jurisdiction == PolicyJurisdiction.INTERNAL_DEMO
+        assert internal.source_type == PolicySourceType.INTERNAL_DEMO
 
     @pytest.mark.asyncio
     async def test_handles_embedding_failure(self, kb_data_dir, monkeypatch):

@@ -6,6 +6,26 @@ can be reviewed and iterated on independently.
 """
 
 EXTRACTION_FIELDS: dict[str, list[str]] = {
+    "id_card": [
+        "full_name",
+        "id_number",
+        "date_of_birth",
+        "address",
+        "issuing_authority",
+        "valid_from",
+        "valid_until",
+    ],
+    "income_certificate": [
+        "employee_name",
+        "employer_name",
+        "employer_unified_credit_code",
+        "position",
+        "employment_start_date",
+        "monthly_gross_income",
+        "annual_gross_income",
+        "issue_date",
+        "contact_phone",
+    ],
     "w2": [
         "employer_name",
         "employee_name",
@@ -24,11 +44,14 @@ EXTRACTION_FIELDS: dict[str, list[str]] = {
     ],
     "bank_statement": [
         "bank_name",
+        "account_holder_name",
         "account_number_last4",
         "statement_period_start",
         "statement_period_end",
+        "opening_balance",
         "ending_balance",
-        "average_balance",
+        "salary_credit_total",
+        "salary_credit_monthly_average",
     ],
     "tax_return": [
         "tax_year",
@@ -107,6 +130,8 @@ QUALITY_FLAGS = [
 # Only demographic fields that must be blocked from the lending path.
 # Non-demographic HMDA fields (income, DTI, etc.) flow through normally.
 VALID_DOC_TYPES = [
+    "id_card",
+    "income_certificate",
     "w2",
     "pay_stub",
     "tax_return",

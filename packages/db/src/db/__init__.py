@@ -17,7 +17,10 @@ from .enums import (
     DocumentStatus,
     DocumentType,
     EmploymentStatus,
+    ExtractionMethod,
     LoanType,
+    PolicyJurisdiction,
+    PolicySourceType,
     UserRole,
 )
 from .models import (
@@ -57,7 +60,10 @@ __all__ = [
     "LoanType",
     "DocumentType",
     "DocumentStatus",
+    "ExtractionMethod",
     "EmploymentStatus",
+    "PolicyJurisdiction",
+    "PolicySourceType",
     "ConditionSeverity",
     "ConditionStatus",
     "DecisionType",

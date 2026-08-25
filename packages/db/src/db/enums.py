@@ -68,6 +68,10 @@ class LoanType(str, enum.Enum):
 
 
 class DocumentType(str, enum.Enum):
+    # Chinese P0 document types. Existing US document types remain for
+    # backwards compatibility with the upstream demo and seeded fixtures.
+    ID_CARD = "id_card"
+    INCOME_CERTIFICATE = "income_certificate"
     W2 = "w2"
     PAY_STUB = "pay_stub"
     TAX_RETURN = "tax_return"
@@ -81,6 +85,29 @@ class DocumentType(str, enum.Enum):
     PURCHASE_AGREEMENT = "purchase_agreement"
     GIFT_LETTER = "gift_letter"
     OTHER = "other"
+
+
+class ExtractionMethod(str, enum.Enum):
+    """How a document field was obtained."""
+
+    TEXT_LAYER = "text_layer"
+    VISION = "vision"
+    MANUAL = "manual"
+
+
+class PolicyJurisdiction(str, enum.Enum):
+    """Jurisdiction covered by a policy document."""
+
+    NATIONAL = "national"
+    CHENGDU = "chengdu"
+    INTERNAL_DEMO = "internal_demo"
+
+
+class PolicySourceType(str, enum.Enum):
+    """Provenance category for policy content."""
+
+    OFFICIAL = "official"
+    INTERNAL_DEMO = "internal_demo"
 
 
 class DocumentStatus(str, enum.Enum):

@@ -1,0 +1,43 @@
+{
+  "document_type": "income_certificate",
+  "employee_name": {
+    "value": "张晨",
+    "normalized_value": "张晨",
+    "confidence": 0.99,
+    "source_page": 1,
+    "evidence_text": "兹证明张晨为我司正式员工",
+    "extraction_method": "text_layer"
+  },
+  "employer_name": {
+    "value": "成都安居科技有限公司（合成）",
+    "normalized_value": "成都安居科技有限公司（合成）",
+    "confidence": 0.98,
+    "source_page": 1,
+    "evidence_text": "单位：成都安居科技有限公司（合成）",
+    "extraction_method": "text_layer"
+  },
+  "monthly_gross_income": {
+    "value": "人民币贰万元整",
+    "normalized_value": "20000.00",
+    "confidence": 0.96,
+    "source_page": 1,
+    "evidence_text": "税前月收入为人民币贰万元整",
+    "extraction_method": "text_layer"
+  },
+  "annual_gross_income": {
+    "value": "240000元",
+    "normalized_value": "240000.00",
+    "confidence": 0.96,
+    "source_page": 1,
+    "evidence_text": "税前年收入为240000元",
+    "extraction_method": "text_layer"
+  },
+  "issue_date": {
+    "value": "2026年8月1日",
+    "normalized_value": "2026-08-01",
+    "confidence": 0.99,
+    "source_page": 1,
+    "evidence_text": "开具日期：2026年8月1日",
+    "extraction_method": "text_layer"
+  }
+}
