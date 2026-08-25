@@ -26,6 +26,7 @@ from .routes import (
     borrower_chat,
     ceo_chat,
     chat,
+    consistency,
     decisions,
     documents,
     health,
@@ -194,6 +195,7 @@ app.include_router(underwriter_chat.router, prefix="/api", tags=["chat"])
 app.include_router(ceo_chat.router, prefix="/api", tags=["chat"])
 app.include_router(decisions.router, prefix="/api/applications", tags=["decisions"])
 app.include_router(documents.router, prefix="/api", tags=["documents"])
+app.include_router(consistency.router, prefix="/api/applications", tags=["consistency"])
 app.include_router(hmda.router, prefix="/api/hmda", tags=["hmda"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])

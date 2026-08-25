@@ -150,6 +150,12 @@ class Settings(BaseSettings):
         le=1.0,
         description="Fields below this confidence require human review.",
     )
+    INCOME_MISMATCH_THRESHOLD: float = Field(
+        default=0.15,
+        gt=0.0,
+        lt=1.0,
+        description="Relative difference that triggers an income consistency issue.",
+    )
 
     # -- Storage (S3 / MinIO) --
     S3_ENDPOINT: str = "http://localhost:9090"
