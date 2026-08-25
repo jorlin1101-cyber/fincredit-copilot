@@ -31,6 +31,7 @@ from ..schemas.urgency import UrgencyLevel
 from ..services.application import get_application, get_financials, list_applications
 from ..services.audit import write_audit_event
 from ..services.condition import get_conditions
+from ..services.deterministic_assessment import run_deterministic_assessment
 from ..services.document import list_documents
 from ..services.rate_lock import get_rate_lock_status
 from ..services.risk_assessment import create_risk_assessment, update_recommendation
@@ -55,6 +56,44 @@ _URGENCY_ORDER = {
 
 def _user_context_from_state(state: dict):
     return user_context_from_state(state, default_role="underwriter")
+
+
+@tool
+async def uw_deterministic_assessment(
+    application_id: int,
+    proposed_monthly_payment: float,
+    state: Annotated[dict, InjectedState],
+) -> str:
+    """确定性计算 DTI/LTV，并核验三类材料和跨材料一致性。
+
+    该工具只能输出人工审批辅助建议，不会自动批准或拒绝。
+    """
+    user = _user_context_from_state(state)
+    trace_id = state.get("trace_id") or state.get("session_id") or f"assessment-{application_id}"
+    async with SessionLocal() as session:
+        result = await run_deterministic_assessment(
+            session,
+            user,
+            application_id,
+            proposed_monthly_payment=proposed_monthly_payment,
+            trace_id=trace_id,
+        )
+    if result is None:
+        return f"申请 #{application_id} 不存在或当前用户无权访问。"
+
+    lines = [
+        f"申请 #{application_id} 确定性授信辅助评估",
+        f"trace_id：{result.trace_id}",
+        f"DTI：{result.dti.value if result.dti.value is not None else '无法计算'}%",
+        f"LTV：{result.ltv.value if result.ltv.value is not None else '无法计算'}%",
+        f"材料完整：{'是' if result.documents.is_complete else '否'}",
+        f"一致性状态：{result.consistency_status}",
+        f"辅助建议：{result.suggestion}",
+        "依据：",
+    ]
+    lines.extend(f"- {item}" for item in result.rationale)
+    lines.extend(["", f"人工确认要求：{result.confirmation_instruction}"])
+    return "\n".join(lines)
 
 
 @tool

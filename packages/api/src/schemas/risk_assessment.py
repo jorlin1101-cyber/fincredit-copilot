@@ -28,6 +28,13 @@ class RiskAssessmentResponse(BaseModel):
     recommendation: str | None = None
     recommendation_rationale: list[str] | None = None
     recommendation_conditions: list[str] | None = None
+    rule_version: str | None = None
+    calculation_inputs: dict | None = None
+    rule_results: dict | None = None
+    document_completeness: dict | None = None
+    consistency_result: dict | None = None
+    human_review_required: bool = True
+    trace_id: str | None = None
     predictive_model_result: str | None = None
     predictive_model_available: bool | None = None
     assessed_by: str | None = None

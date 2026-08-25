@@ -28,6 +28,7 @@ from .mcp_integration import get_mcp_tools
 from .tools import affordability_calc, current_date, product_info
 from .underwriter_tools import (
     uw_application_detail,
+    uw_deterministic_assessment,
     uw_predict_loan_approval,
     uw_preliminary_recommendation,
     uw_queue_view,
@@ -43,6 +44,7 @@ def build_graph(config: dict[str, Any], checkpointer=None):
         affordability_calc,
         uw_queue_view,
         uw_application_detail,
+        uw_deterministic_assessment,
         uw_save_risk_assessment,
         uw_predict_loan_approval,
         uw_preliminary_recommendation,
