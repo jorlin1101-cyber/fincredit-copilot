@@ -1,0 +1,227 @@
+# This project was developed with assistance from AI tools.
+#
+# Mortgage AI -- local development stack
+#
+# Profiles:
+#   (none)          postgres + minio + api + ui
+#   auth            + keycloak
+#   ai              + llamastack
+#   observability   + mlflow
+#   full            everything
+#
+# Usage:
+#   podman-compose up -d                          # minimal stack
+#   podman-compose --profile full up -d           # full stack
+#   make run                                      # alias for full
+
+services:
+  # ------------------------------------------------------------------ always --
+  mortgage-ai-db:
+    image: docker.io/pgvector/pgvector:pg16
+    labels:
+      com.quickstart.package: db
+    environment:
+      POSTGRES_DB: mortgage-ai
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    volumes:
+      - mortgage_ai_postgres_data:/var/lib/postgresql/data
+      - ./config/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d mortgage-ai"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mortgage-ai-api:
+    build:
+      context: .
+      dockerfile: packages/api/Containerfile
+    labels:
+      com.quickstart.package: api
+    ports:
+      - "8000:8000"
+    depends_on:
+      mortgage-ai-db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      mcp-risk-server:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://user:password@mortgage-ai-db:5432/mortgage-ai #notsecret
+      COMPLIANCE_DATABASE_URL: postgresql+asyncpg://compliance_app:compliance_pass@mortgage-ai-db:5432/mortgage-ai #notsecret
+      AUTH_DISABLED: "${AUTH_DISABLED:-true}"
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: mortgage-ai
+      KEYCLOAK_CLIENT_ID: mortgage-ai-ui
+      JWKS_CACHE_TTL: "${JWKS_CACHE_TTL:-300}"
+      SQLADMIN_USER: "${SQLADMIN_USER:-admin}"
+      SQLADMIN_PASSWORD: "${SQLADMIN_PASSWORD:-admin}"
+      SQLADMIN_SECRET_KEY: "${SQLADMIN_SECRET_KEY:-change-me-in-production}"
+      LLM_BASE_URL: "${LLM_BASE_URL:-http://host.docker.internal:1234/v1}"
+      LLM_API_KEY: "${LLM_API_KEY:-not-needed}"
+      LLM_MODEL: "${LLM_MODEL:-}"
+      VISION_MODEL: "${VISION_MODEL:-}"
+      VISION_BASE_URL: "${VISION_BASE_URL:-}"
+      VISION_API_KEY: "${VISION_API_KEY:-}"
+      SAFETY_MODEL: "${SAFETY_MODEL:-}"
+      SAFETY_ENDPOINT: "${SAFETY_ENDPOINT:-}"
+      SAFETY_API_KEY: "${SAFETY_API_KEY:-}"
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minio
+      S3_SECRET_KEY: miniosecret
+      S3_BUCKET: documents
+      S3_REGION: us-east-1
+      UPLOAD_MAX_SIZE_MB: "${UPLOAD_MAX_SIZE_MB:-50}"
+      MLFLOW_TRACKING_URI: "${MLFLOW_TRACKING_URI:-http://mlflow:5000}"
+      MLFLOW_EXPERIMENT_NAME: "${MLFLOW_EXPERIMENT_NAME:-mortgage-ai}"
+      MCP_RISK_SERVER_URL: http://mcp-risk-server:8081/mcp
+      PREDICTIVE_MODEL_MCP_URL: "${PREDICTIVE_MODEL_MCP_URL:-}"
+      COMPANY_NAME: "${COMPANY_NAME:-Acme FinTech Company}"
+      AGENT_NAME: "${AGENT_NAME:-}"
+    volumes:
+      - ./config:/app/config:ro
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health/')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  mortgage-ai-ui:
+    build:
+      context: .
+      dockerfile: packages/ui/Containerfile
+    labels:
+      com.quickstart.package: ui
+    ports:
+      - "3000:8080"
+    environment:
+      API_UPSTREAM: mortgage-ai-api:8000
+      KEYCLOAK_EXTERNAL: ${KEYCLOAK_EXTERNAL:-}
+      KEYCLOAK_REALM: mortgage-ai
+      KEYCLOAK_CLIENT_ID: mortgage-ai-ui
+      COMPANY_NAME: "${COMPANY_NAME:-Acme FinTech Company}"
+      AGENT_NAME: "${AGENT_NAME:-}"
+    depends_on:
+      mortgage-ai-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:8080/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  mcp-risk-server:
+    build:
+      context: .
+      dockerfile: packages/api/Containerfile
+    labels:
+      com.quickstart.package: api
+    command: python -m src.mcp_server
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8081/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # -------------------------------------------------------------------- auth --
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    profiles: ["auth", "full"]
+    labels:
+      com.quickstart.package: auth
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config/keycloak/mortgage-ai-realm.json:/opt/keycloak/data/import/mortgage-ai-realm.json:ro
+    healthcheck:
+      test: ["CMD", "bash", "-c", "{ printf 'HEAD /health/ready HTTP/1.0\\r\\n\\r\\n' >&0; grep 'HTTP/1.0 200'; } 0<>/dev/tcp/localhost/9000"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  # ---------------------------------------------------------------------- ai --
+  llamastack:
+    image: docker.io/llamastack/distribution-starter:latest
+    profiles: ["ai", "full"]
+    labels:
+      com.quickstart.package: ai
+    ports:
+      - "8321:8321"
+    volumes:
+      - ./config/llamastack/run.yaml:/app/run.yaml:ro
+    environment:
+      RUN_CONFIG_PATH: /app/run.yaml
+      LLM_BASE_URL: "${LLM_BASE_URL:-http://host.docker.internal:1234/v1}"
+      LLM_API_KEY: "${LLM_API_KEY:-not-needed}"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8321/v1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ----------------------------------------------------------- observability --
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.21.3
+    profiles: ["observability", "full"]
+    labels:
+      com.quickstart.package: observability
+    ports:
+      - "5000:5000"
+    depends_on:
+      mortgage-ai-db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql://user:password@mortgage-ai-db:5432/mlflow #notsecret
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: s3://mlflow
+      AWS_ACCESS_KEY_ID: minio
+      AWS_SECRET_ACCESS_KEY: miniosecret
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri postgresql://user:password@mortgage-ai-db:5432/mlflow --default-artifact-root s3://mlflow
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  minio:
+    image: docker.io/minio/minio:latest
+    labels:
+      com.quickstart.package: storage
+    entrypoint: sh
+    command: -c 'mkdir -p /data/mlflow /data/documents && exec minio server --address ":9000" --console-address ":9001" /data'
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: miniosecret
+    ports:
+      - "9090:9000"
+      - "9091:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/minio/health/live || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  mortgage_ai_postgres_data:
+  minio_data:

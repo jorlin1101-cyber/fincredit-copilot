@@ -1,0 +1,80 @@
+# Dependencies
+node_modules/
+*.pnp
+.pnp.js
+
+# Production builds
+dist/
+build/
+lib/
+!packages/ui/src/lib/
+out/
+
+agent-memory/
+.serena/
+.tests/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Helm local overrides
+values.local.yaml
+
+
+# Logs
+npm-debug.log*
+pnpm-debug.log*
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Turbo
+.turbo/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing
+.coverage
+.pytest_cache/
+.vitest/
+storybook-static/
+
+# Playwright
+.auth/
+playwright-report/
+test-results/
+blob-report/
+.playwright-mcp/
+
+# MkDocs
+site/
+
+# Database
+*.db
+*.sqlite
+
+# Generated KFP pipelines
+#evaluations/pipelines_gen/

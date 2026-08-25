@@ -1,0 +1,80 @@
+# Multi-stage build for FastAPI application
+# Stage 1: Build dependencies
+FROM python:3.11-slim AS builder
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Set working directory
+WORKDIR /app
+
+# Copy API package files (needed for version detection and dependencies)
+COPY packages/api/pyproject.toml ./packages/api/
+COPY packages/api/src/ ./packages/api/src/
+# Copy DB package (API depends on it)
+COPY packages/db/ ./packages/db/
+
+# Change to API directory for installation
+WORKDIR /app/packages/api
+
+# Install dependencies -- use CPU-only PyTorch to avoid shipping ~25GB of
+# unused CUDA libraries.  The embedding model runs on CPU in the container.
+RUN uv pip install --system \
+    --extra-index-url https://download.pytorch.org/whl/cpu \
+    -e .[dev] \
+    || uv pip install --system \
+    --extra-index-url https://download.pytorch.org/whl/cpu \
+    -e .
+
+# Stage 2: Runtime
+FROM python:3.11-slim AS runtime
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy application source
+COPY packages/api/src/ ./packages/api/src/
+COPY packages/api/pyproject.toml ./packages/api/
+
+# Copy DB package source (API depends on it via editable install)
+COPY packages/db/ ./packages/db/
+
+# Copy config files (models.yaml, agent configs, keycloak realm)
+COPY config/ ./config/
+
+# Copy compliance KB data for seeding
+COPY data/ ./data/
+
+# Set working directory to API package
+WORKDIR /app/packages/api
+
+# HuggingFace model cache -- sentence-transformers downloads models here
+ENV HF_HOME=/app/.cache/huggingface
+RUN mkdir -p /app/.cache/huggingface
+
+# Set ownership -- use group 0 (root) with g+w so OpenShift's arbitrary
+# UIDs (restricted SCC) can write to the cache directory.
+RUN chown -R appuser:0 /app && chmod -R g+w /app/.cache
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/')" || exit 1
+
+# Run the application
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

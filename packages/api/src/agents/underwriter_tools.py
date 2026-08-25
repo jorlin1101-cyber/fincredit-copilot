@@ -1,0 +1,657 @@
+# This project was developed with assistance from AI tools.
+"""LangGraph tools for the underwriter assistant agent.
+
+These wrap existing services so the underwriter agent can review the
+underwriting queue, inspect application details, save risk assessments,
+and generate preliminary recommendations.
+
+Risk assessment *computation* is handled by MCP tools (see mcp_server.py).
+The uw_save_risk_assessment tool here handles DB persistence and audit only.
+
+Design note -- session-per-tool-call:
+    Each tool opens its own ``SessionLocal()`` context rather than sharing
+    a single session across the agent turn.  This is intentional: LangGraph
+    tool nodes run as independent async tasks and may execute in any order,
+    so sharing a session would risk interleaved flushes, stale reads, and
+    MissingGreenlet errors.  The per-tool pattern keeps each DB interaction
+    self-contained and avoids cross-tool state leakage.
+"""
+
+import logging
+from typing import Annotated
+
+from db import CreditReport
+from db.database import SessionLocal
+from db.enums import ApplicationStage
+from langchain_core.tools import tool
+from langgraph.prebuilt import InjectedState
+from sqlalchemy import select
+
+from ..schemas.urgency import UrgencyLevel
+from ..services.application import get_application, get_financials, list_applications
+from ..services.audit import write_audit_event
+from ..services.condition import get_conditions
+from ..services.document import list_documents
+from ..services.rate_lock import get_rate_lock_status
+from ..services.risk_assessment import create_risk_assessment, update_recommendation
+from ..services.urgency import compute_urgency
+from .mcp_integration import get_predictive_tool, is_predictive_model_available
+from .risk_tools import (
+    compute_recommendation,
+    compute_risk_factors,
+    extract_borrower_info,
+)
+from .shared import format_enum_label, user_context_from_state
+
+logger = logging.getLogger(__name__)
+
+_URGENCY_ORDER = {
+    UrgencyLevel.CRITICAL: 0,
+    UrgencyLevel.HIGH: 1,
+    UrgencyLevel.MEDIUM: 2,
+    UrgencyLevel.NORMAL: 3,
+}
+
+
+def _user_context_from_state(state: dict):
+    return user_context_from_state(state, default_role="underwriter")
+
+
+@tool
+async def uw_queue_view(
+    state: Annotated[dict, InjectedState],
+) -> str:
+    """View the underwriting queue sorted by urgency.
+
+    Shows all applications currently in the underwriting stage with
+    borrower names, loan amounts, assigned LO, days in queue, rate lock
+    status, and urgency indicators.
+    """
+    user = _user_context_from_state(state)
+    async with SessionLocal() as session:
+        applications, total = await list_applications(
+            session,
+            user,
+            filter_stage=ApplicationStage.UNDERWRITING,
+            limit=50,
+        )
+
+        if total == 0:
+            await write_audit_event(
+                session,
+                event_type="data_access",
+                user_id=user.user_id,
+                user_role=user.role.value,
+                event_data={"action": "underwriter_queue_view", "result_count": 0},
+            )
+            await session.commit()
+            return "No applications in underwriting queue."
+
+        urgency_map = await compute_urgency(session, applications)
+
+        # Sort by urgency level (critical first)
+        def sort_key(a):
+            indicator = urgency_map.get(a.id)
+            return _URGENCY_ORDER.get(indicator.level, 99) if indicator else 99
+
+        applications.sort(key=sort_key)
+
+        lines = [f"Underwriting Queue ({total} application{'s' if total != 1 else ''}):", ""]
+        for app in applications:
+            indicator = urgency_map.get(app.id)
+            urgency_label = indicator.level.name if indicator else "NORMAL"
+            days = indicator.days_in_stage if indicator else 0
+
+            # Borrower name(s)
+            borrower_names = []
+            for ab in app.application_borrowers or []:
+                if ab.borrower:
+                    borrower_names.append(f"{ab.borrower.first_name} {ab.borrower.last_name}")
+            names = ", ".join(borrower_names) if borrower_names else "Unknown"
+
+            loan_amt = f"${app.loan_amount:,.0f}" if app.loan_amount else "N/A"
+            prop = app.property_address or "N/A"
+            lo = app.assigned_to or "Unassigned"
+
+            line = (
+                f"- App #{app.id}: {names} | {loan_amt} | {prop} | "
+                f"LO: {lo} | {days}d in queue | Urgency: {urgency_label}"
+            )
+
+            if indicator and indicator.factors:
+                line += f" ({', '.join(indicator.factors)})"
+
+            lines.append(line)
+
+        await write_audit_event(
+            session,
+            event_type="data_access",
+            user_id=user.user_id,
+            user_role=user.role.value,
+            event_data={
+                "action": "underwriter_queue_view",
+                "result_count": total,
+            },
+        )
+        await session.commit()
+        return "\n".join(lines)
+
+
+def _format_application_detail(
+    application_id: int,
+    app,
+    financials,
+    documents,
+    doc_total: int,
+    conditions,
+    rate_lock,
+) -> str:
+    """Format application detail view into text.
+
+    Pure function -- no DB access.
+    """
+    stage = app.stage.value if app.stage else "inquiry"
+    lines = [
+        f"Application #{application_id} -- Underwriting Detail",
+        f"Stage: {format_enum_label(stage)}",
+        "",
+    ]
+
+    # Borrower Profile
+    lines.append("BORROWER PROFILE:")
+    for ab in app.application_borrowers or []:
+        if ab.borrower:
+            b = ab.borrower
+            role_label = "Primary" if ab.is_primary else "Co-borrower"
+            lines.append(f"  {role_label}: {b.first_name} {b.last_name} ({b.email})")
+            if b.employment_status:
+                emp = (
+                    b.employment_status.value
+                    if hasattr(b.employment_status, "value")
+                    else str(b.employment_status)
+                )
+                lines.append(f"    Employment: {format_enum_label(emp)}")
+
+    # Financial Summary
+    lines.append("")
+    lines.append("FINANCIAL SUMMARY:")
+    if financials:
+        total_income = sum((f.gross_monthly_income or 0) for f in financials)
+        total_debts = sum((f.monthly_debts or 0) for f in financials)
+        total_assets = sum((f.total_assets or 0) for f in financials)
+        credit_scores = [f.credit_score for f in financials if f.credit_score]
+        min_credit = min(credit_scores) if credit_scores else None
+
+        lines.append(f"  Gross monthly income: ${total_income:,.2f}")
+        lines.append(f"  Monthly debts: ${total_debts:,.2f}")
+        if total_income > 0:
+            dti = float(total_debts) / float(total_income) * 100
+            lines.append(f"  DTI ratio: {dti:.1f}%")
+        lines.append(f"  Total assets: ${total_assets:,.2f}")
+        if min_credit is not None:
+            lines.append(f"  Lowest credit score: {min_credit}")
+    else:
+        lines.append("  No financial data on file.")
+
+    # Loan Details
+    lines.append("")
+    lines.append("LOAN DETAILS:")
+    if app.loan_type:
+        lines.append(f"  Loan type: {app.loan_type.value}")
+    if app.loan_amount:
+        lines.append(f"  Loan amount: ${app.loan_amount:,.2f}")
+    if app.property_value:
+        lines.append(f"  Property value: ${app.property_value:,.2f}")
+        if app.loan_amount and app.property_value:
+            ltv = float(app.loan_amount) / float(app.property_value) * 100
+            lines.append(f"  LTV ratio: {ltv:.1f}%")
+    if app.property_address:
+        lines.append(f"  Property: {app.property_address}")
+
+    # Documents
+    lines.append("")
+    if doc_total > 0:
+        lines.append(f"DOCUMENTS ({doc_total}):")
+        for doc in documents:
+            doc_type = doc.doc_type.value if hasattr(doc.doc_type, "value") else str(doc.doc_type)
+            status_val = doc.status.value if hasattr(doc.status, "value") else str(doc.status)
+            line = f"  - [{doc.id}] {doc_type}: {status_val}"
+            if doc.quality_flags:
+                line += f" (issues: {doc.quality_flags})"
+            lines.append(line)
+    else:
+        lines.append("DOCUMENTS: None on file.")
+
+    # Conditions
+    lines.append("")
+    if conditions:
+        lines.append(f"CONDITIONS ({len(conditions)}):")
+        for c in conditions:
+            status_val = c.get("status", "")
+            desc = c.get("description", "")
+            severity = c.get("severity", "")
+            lines.append(f"  - [{status_val}] {desc} ({severity})")
+    elif conditions is not None:
+        lines.append("CONDITIONS: None.")
+    else:
+        lines.append("CONDITIONS: Unable to load.")
+
+    # Rate Lock
+    lines.append("")
+    if rate_lock:
+        rl_status = rate_lock.get("status", "none")
+        if rl_status == "none":
+            lines.append("RATE LOCK: None on file.")
+        else:
+            lines.append("RATE LOCK:")
+            lines.append(f"  Status: {rl_status.title()}")
+            if rate_lock.get("locked_rate") is not None:
+                lines.append(f"  Rate: {rate_lock['locked_rate']:.3f}%")
+            if rate_lock.get("expiration_date"):
+                days = rate_lock.get("days_remaining", 0)
+                lines.append(
+                    f"  Expires: {rate_lock['expiration_date'][:10]} ({days} days remaining)"
+                )
+            if rate_lock.get("is_urgent"):
+                lines.append("  *** URGENT: Rate lock expiring within 7 days ***")
+    else:
+        lines.append("RATE LOCK: Unable to load.")
+
+    return "\n".join(lines)
+
+
+@tool
+async def uw_application_detail(
+    application_id: int,
+    state: Annotated[dict, InjectedState],
+) -> str:
+    """Get a detailed view of a loan application for underwriting review.
+
+    Includes borrower profile, financial summary, loan details, documents
+    with quality flags, conditions, and rate lock status.
+
+    Args:
+        application_id: The loan application ID to inspect.
+    """
+    user = _user_context_from_state(state)
+    async with SessionLocal() as session:
+        app = await get_application(session, user, application_id)
+        if app is None:
+            return "Application not found or you don't have access to it."
+
+        # Financials -- separate query (session-per-tool isolation pattern)
+        financials = await get_financials(session, application_id)
+
+        documents, doc_total = await list_documents(session, user, application_id, limit=50)
+        conditions = await get_conditions(session, user, application_id)
+        rate_lock = await get_rate_lock_status(session, user, application_id)
+
+        # Format output before commit to avoid expired-attribute errors
+        output = _format_application_detail(
+            application_id, app, financials, documents, doc_total, conditions, rate_lock
+        )
+
+        await write_audit_event(
+            session,
+            event_type="data_access",
+            user_id=user.user_id,
+            user_role=user.role.value,
+            application_id=application_id,
+            event_data={"action": "underwriter_detail_view"},
+        )
+        await session.commit()
+        return output
+
+
+# Loan type -> term in months mapping
+_LOAN_TERM_MAP = {
+    "conventional_30": 360,
+    "conventional_15": 180,
+    "fha": 360,
+    "va": 360,
+    "jumbo": 360,
+    "usda": 360,
+    "arm": 360,
+}
+
+
+@tool
+async def uw_predict_loan_approval(
+    application_id: int,
+    state: Annotated[dict, InjectedState],
+) -> str:
+    """Run the external predictive ML model on a loan application.
+
+    Maps application data to the model's input fields and returns the
+    prediction. Returns unavailability message when the model is not
+    configured.
+
+    Args:
+        application_id: The loan application ID.
+    """
+    if not is_predictive_model_available():
+        return "Predictive model not configured."
+
+    predictive_tool = get_predictive_tool()
+    if predictive_tool is None:
+        return "Predictive model tool not found."
+
+    user = _user_context_from_state(state)
+    async with SessionLocal() as session:
+        app = await get_application(session, user, application_id)
+        if app is None:
+            return "Application not found or you don't have access to it."
+
+        financials = await get_financials(session, application_id)
+
+        # Aggregate financials across all borrowers
+        total_income = sum((f.gross_monthly_income or 0) for f in financials) if financials else 0
+        total_assets = sum((f.total_assets or 0) for f in financials) if financials else 0
+        credit_scores = [f.credit_score for f in financials if f.credit_score] if financials else []
+        min_credit = min(credit_scores) if credit_scores else 0
+
+        # Derive employment status
+        emp_statuses = []
+        for ab in app.application_borrowers or []:
+            if ab.borrower and ab.borrower.employment_status:
+                emp_statuses.append(ab.borrower.employment_status.value)
+        is_self_employed = "self_employed" in emp_statuses
+
+        # Derive loan term from loan type
+        loan_type_val = app.loan_type.value if app.loan_type else "conventional_30"
+        loan_term = _LOAN_TERM_MAP.get(loan_type_val, 360)
+
+        # Synthesize missing fields using application_id for variation
+        app_hash = hash(application_id)
+        no_of_dependents = abs(app_hash) % 5
+        graduated = abs(app_hash) % 2 == 0
+
+        # Split total assets across 4 categories (40/10/20/30)
+        residential_assets = float(total_assets) * 0.4
+        commercial_assets = float(total_assets) * 0.1
+        luxury_assets = float(total_assets) * 0.2
+        bank_assets = float(total_assets) * 0.3
+
+        # Capture loan_amount before session closes (commit expires ORM objects)
+        loan_amount = float(app.loan_amount or 0)
+
+        await write_audit_event(
+            session,
+            event_type="agent_tool_called",
+            user_id=user.user_id,
+            user_role=user.role.value,
+            application_id=application_id,
+            event_data={"tool": "uw_predict_loan_approval"},
+        )
+        await session.commit()
+
+    invoke_args = {
+        "no_of_dependents": no_of_dependents,
+        "graduated": graduated,
+        "self_employed": is_self_employed,
+        "income_annum": float(total_income) * 12,
+        "loan_amount": loan_amount,
+        "loan_term": loan_term,
+        "cibil_score": min_credit,
+        "residential_assets_value": residential_assets,
+        "commercial_assets_value": commercial_assets,
+        "luxury_assets_value": luxury_assets,
+        "bank_asset_value": bank_assets,
+    }
+    # Invoke the external MCP tool
+    try:
+        result = await predictive_tool.ainvoke(invoke_args)
+        return str(result)
+    except Exception as e:
+        logger.exception("Predictive model call failed for app %s", application_id)
+        return f"Predictive model call failed: {e}"
+
+
+@tool
+async def uw_save_risk_assessment(
+    application_id: int,
+    dti_value: float | None,
+    dti_rating: str | None,
+    ltv_value: float | None,
+    ltv_rating: str | None,
+    credit_value: int | None,
+    credit_rating: str | None,
+    credit_source: str,
+    income_stability_value: str | None,
+    income_stability_rating: str | None,
+    asset_sufficiency_value: float | None,
+    asset_sufficiency_rating: str | None,
+    overall_risk: str | None,
+    recommendation: str,
+    rationale: list[str] | None,
+    conditions: list[str] | None,
+    compensating_factors: list[str] | None,
+    warnings: list[str] | None,
+    predictive_model_result: str | None = None,
+    predictive_model_available: bool | None = None,
+    state: Annotated[dict, InjectedState] = None,
+) -> str:
+    """Save a completed risk assessment to the database.
+
+    Call this after computing all risk factors and the recommendation
+    using the individual MCP risk tools. Persists the assessment and
+    writes an audit event.
+
+    Args:
+        application_id: The loan application ID.
+        dti_value: Computed DTI percentage (or null if unavailable).
+        dti_rating: DTI risk rating (Low/Medium/High or null).
+        ltv_value: Computed LTV percentage (or null if unavailable).
+        ltv_rating: LTV risk rating (Low/Medium/High or null).
+        credit_value: Credit score used (or null if unavailable).
+        credit_rating: Credit risk rating (Low/Medium/High or null).
+        credit_source: 'bureau_hard_pull' or 'self_reported'.
+        income_stability_value: Employment status summary (or null).
+        income_stability_rating: Income stability rating (Low/Medium/High or null).
+        asset_sufficiency_value: Asset ratio percentage (or null).
+        asset_sufficiency_rating: Asset sufficiency rating (Low/Medium/High or null).
+        overall_risk: Overall risk rating (Low/Medium/High or null).
+        recommendation: Approve, Approve with Conditions, Suspend, or Deny.
+        rationale: List of reasons for the recommendation.
+        conditions: List of conditions (if Approve with Conditions).
+        compensating_factors: List of compensating factors found.
+        warnings: List of data quality warnings.
+        predictive_model_result: ML model prediction (Loan approved/rejected or null).
+        predictive_model_available: Whether the predictive model was available.
+    """
+    user = _user_context_from_state(state)
+    async with SessionLocal() as session:
+        app = await get_application(session, user, application_id)
+        if app is None:
+            return "Application not found or you don't have access to it."
+
+        if app.stage != ApplicationStage.UNDERWRITING:
+            stage_val = app.stage.value if app.stage else "unknown"
+            await write_audit_event(
+                session,
+                event_type="agent_tool_called",
+                user_id=user.user_id,
+                user_role=user.role.value,
+                application_id=application_id,
+                event_data={
+                    "tool": "uw_save_risk_assessment",
+                    "error": f"wrong_stage:{stage_val}",
+                },
+            )
+            await session.commit()
+            return (
+                f"Risk assessment save is only available for applications in the "
+                f"UNDERWRITING stage. Application #{application_id} is in "
+                f"{format_enum_label(stage_val)}."
+            )
+
+        await create_risk_assessment(
+            session,
+            application_id=application_id,
+            dti_value=dti_value,
+            dti_rating=dti_rating,
+            ltv_value=ltv_value,
+            ltv_rating=ltv_rating,
+            credit_value=credit_value,
+            credit_rating=credit_rating,
+            credit_source=credit_source,
+            income_stability_value=income_stability_value,
+            income_stability_rating=income_stability_rating,
+            asset_sufficiency_value=asset_sufficiency_value,
+            asset_sufficiency_rating=asset_sufficiency_rating,
+            compensating_factors=compensating_factors or None,
+            warnings=warnings or None,
+            overall_risk=overall_risk,
+            assessed_by=user.user_id,
+            recommendation=recommendation,
+            recommendation_rationale=rationale or None,
+            recommendation_conditions=conditions or None,
+            predictive_model_result=predictive_model_result,
+            predictive_model_available=predictive_model_available,
+        )
+
+        await write_audit_event(
+            session,
+            event_type="agent_tool_called",
+            user_id=user.user_id,
+            user_role=user.role.value,
+            application_id=application_id,
+            event_data={
+                "tool": "uw_save_risk_assessment",
+                "dti": dti_value,
+                "ltv": ltv_value,
+                "credit": credit_value,
+                "credit_source": credit_source,
+                "recommendation": recommendation,
+                "predictive_model_result": predictive_model_result,
+            },
+        )
+        await session.commit()
+
+    return (
+        f"Risk assessment saved for application #{application_id}. "
+        f"Recommendation: {recommendation}."
+    )
+
+
+@tool
+async def uw_preliminary_recommendation(
+    application_id: int,
+    state: Annotated[dict, InjectedState],
+) -> str:
+    """Re-evaluate the preliminary recommendation for an application.
+
+    Args:
+        application_id: The loan application ID to evaluate.
+    """
+    user = _user_context_from_state(state)
+    async with SessionLocal() as session:
+        app = await get_application(session, user, application_id)
+        if app is None:
+            return "Application not found or you don't have access to it."
+
+        if app.stage != ApplicationStage.UNDERWRITING:
+            stage_val = app.stage.value if app.stage else "unknown"
+            await write_audit_event(
+                session,
+                event_type="agent_tool_called",
+                user_id=user.user_id,
+                user_role=user.role.value,
+                application_id=application_id,
+                event_data={
+                    "tool": "uw_preliminary_recommendation",
+                    "error": f"wrong_stage:{stage_val}",
+                },
+            )
+            await session.commit()
+            return (
+                f"Preliminary recommendation is only available for applications in the "
+                f"UNDERWRITING stage. Application #{application_id} is in "
+                f"{format_enum_label(stage_val)}."
+            )
+
+        financials = await get_financials(session, application_id)
+
+        # Prefer bureau credit score from hard-pull CreditReport
+        bureau_score = None
+        cr_result = await session.execute(
+            select(CreditReport)
+            .where(
+                CreditReport.application_id == application_id,
+                CreditReport.pull_type == "hard",
+            )
+            .order_by(CreditReport.pulled_at.desc())
+            .limit(1)
+        )
+        hard_pull = cr_result.scalars().first()
+        if hard_pull:
+            bureau_score = hard_pull.credit_score
+
+        _documents, doc_total = await list_documents(session, user, application_id, limit=50)
+        borrowers = extract_borrower_info(app)
+        risk = compute_risk_factors(app, financials, borrowers, bureau_credit_score=bureau_score)
+        rec = compute_recommendation(
+            risk,
+            borrowers,
+            has_financials=bool(financials),
+            doc_total=doc_total,
+        )
+
+        # Persist recommendation on the latest risk assessment
+        await update_recommendation(
+            session,
+            application_id,
+            recommendation=rec.recommendation,
+            rationale=rec.rationale or None,
+            conditions=rec.conditions or None,
+            assessed_by=user.user_id,
+        )
+
+        # Audit
+        await write_audit_event(
+            session,
+            event_type="agent_tool_called",
+            user_id=user.user_id,
+            user_role=user.role.value,
+            application_id=application_id,
+            event_data={
+                "tool": "uw_preliminary_recommendation",
+                "recommendation": rec.recommendation,
+            },
+        )
+        await session.commit()
+
+    # Format output
+    lines = [
+        f"Preliminary Recommendation -- Application #{application_id}",
+        "",
+        f"RECOMMENDATION: {rec.recommendation}",
+        "",
+    ]
+
+    if rec.rationale:
+        lines.append("RATIONALE:")
+        for r in rec.rationale:
+            lines.append(f"  - {r}")
+        lines.append("")
+
+    if rec.conditions:
+        lines.append("CONDITIONS:")
+        for i, c in enumerate(rec.conditions, 1):
+            lines.append(f"  {i}. {c}")
+        lines.append("")
+
+    if risk.compensating_factors:
+        lines.append("COMPENSATING FACTORS:")
+        for cf in risk.compensating_factors:
+            lines.append(f"  + {cf}")
+        lines.append("")
+
+    lines.append(
+        "DISCLAIMER: This is an advisory recommendation only. It does NOT "
+        "constitute an official underwriting decision. Final decisions require "
+        "human underwriter review and approval. All regulatory information is "
+        "simulated for demonstration purposes."
+    )
+
+    return "\n".join(lines)
