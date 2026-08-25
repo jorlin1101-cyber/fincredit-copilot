@@ -36,6 +36,17 @@ _TIER_DIRS = {
 
 _KB_DATA_ROOT = Path(__file__).resolve().parents[6] / "data" / "compliance-kb"
 
+_CJK_RUN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]+")
+_LATIN_TOKEN = re.compile(r"[a-zA-Z0-9]+(?:[.%/-][a-zA-Z0-9]+)*")
+
+
+def build_search_text(text: str) -> str:
+    """Create deterministic Chinese bigram + Latin tokens for PostgreSQL FTS."""
+    tokens = [match.group(0).lower() for match in _LATIN_TOKEN.finditer(text)]
+    for run in _CJK_RUN.findall(text):
+        tokens.extend(run[index : index + 2] for index in range(max(1, len(run) - 1)))
+    return " ".join(dict.fromkeys(tokens))
+
 
 def _parse_optional_date(value: str | None, *, field_name: str, filename: str) -> datetime | None:
     """Parse an ISO date from policy frontmatter without hiding bad metadata."""
@@ -293,6 +304,14 @@ async def ingest_kb_content(
                 chunk = KBChunk(
                     document_id=doc.id,
                     chunk_text=chunk_data["text"],
+                    search_text=build_search_text(
+                        " ".join(
+                            filter(
+                                None,
+                                [policy.title, chunk_data["section_ref"], chunk_data["text"]],
+                            )
+                        )
+                    ),
                     section_ref=chunk_data["section_ref"],
                     chunk_index=i,
                     embedding=embedding,

@@ -1,175 +1,170 @@
 # This project was developed with assistance from AI tools.
-"""Tests for compliance KB vector search with tier boosting."""
+"""Tests for version-aware Chinese hybrid policy retrieval."""
 
 from datetime import date
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.services.compliance.knowledge_base.search import search_kb
+from src.services.compliance.knowledge_base.search import (
+    KBSearchResult,
+    reciprocal_rank_fusion,
+    search_kb,
+)
 
 
-def _make_row(chunk_text, title, section_ref, tier, effective_date, similarity):
-    """Create a mock DB row for search results."""
+def _make_row(
+    chunk_text: str,
+    title: str,
+    section_ref: str | None,
+    tier: int,
+    *,
+    row_id: int,
+    similarity: float = 0.0,
+    keyword_score: float = 0.0,
+):
     row = MagicMock()
-    row.id = 1
+    row.id = row_id
+    row.document_id = row_id + 100
     row.chunk_text = chunk_text
     row.title = title
     row.section_ref = section_ref
     row.tier = tier
-    row.effective_date = effective_date
+    row.effective_date = "2026-03-25"
     row.similarity = similarity
+    row.keyword_score = keyword_score
+    row.issuer = "测试发布机构"
+    row.source_url = f"https://example.gov.cn/{row_id}"
+    row.jurisdiction = "chengdu" if tier == 2 else "national"
+    row.source_type = "official"
+    row.version = "2026-v1"
+    row.published_date = "2026-03-24"
+    row.expires_at = None
     return row
 
 
-class TestSearchKb:
-    """Tests for vector search with tier boosting."""
+def _db_result(rows):
+    result = MagicMock()
+    result.fetchall.return_value = rows
+    return result
 
-    @pytest.mark.asyncio
-    async def test_tier_boost_reranks_results(self, monkeypatch):
-        """Tier-1 result at 0.7 similarity should outrank tier-3 at 0.85 after boost."""
-        mock_session = AsyncMock()
 
-        # tier-3 internal at 0.85, tier-1 federal at 0.7
-        rows = [
-            _make_row(
-                "Internal policy: DTI max 40%",
-                "Internal Policies",
-                "DTI Limits",
-                3,
-                None,
-                0.85,
-            ),
-            _make_row(
-                "Federal regulation: DTI safe harbor 43%",
-                "ATR/QM Rule",
-                "QM Safe Harbor",
-                1,
-                "2014-01-10",
-                0.70,
-            ),
-        ]
-        mock_result = MagicMock()
-        mock_result.fetchall.return_value = rows
-        mock_session.execute = AsyncMock(return_value=mock_result)
+def _search_result(name: str, tier: int, vector_rank=None, keyword_rank=None):
+    return KBSearchResult(
+        chunk_text=f"{name}正文",
+        source_document=name,
+        section_ref="测试条款",
+        tier=tier,
+        tier_label="测试层级",
+        similarity=0.8,
+        boosted_similarity=0.8,
+        effective_date="2026-03-25",
+        vector_rank=vector_rank,
+        keyword_rank=keyword_rank,
+    )
 
-        fake_embedding = [0.1] * 768
-        import src.services.compliance.knowledge_base.search as mod
 
-        monkeypatch.setattr(mod, "get_embeddings", AsyncMock(return_value=[fake_embedding]))
+def test_rrf_rewards_evidence_found_by_both_retrievers():
+    shared_vector = _search_result("共同证据", 2, vector_rank=2)
+    shared_keyword = _search_result("共同证据", 2, keyword_rank=1)
+    vector_only = _search_result("仅向量证据", 1, vector_rank=1)
 
-        results = await search_kb(mock_session, "DTI requirements")
+    fused = reciprocal_rank_fusion([vector_only, shared_vector], [shared_keyword])
 
-        assert len(results) == 2
-        # Federal (0.7 * 1.5 = 1.05) should outrank internal (0.85 * 1.0 = 0.85)
-        assert results[0].tier == 1
-        assert results[0].boosted_similarity == pytest.approx(0.7 * 1.5)
-        assert results[1].tier == 3
-        assert results[1].boosted_similarity == pytest.approx(0.85 * 1.0)
+    assert fused[0].source_document == "共同证据"
+    assert fused[0].vector_rank == 2
+    assert fused[0].keyword_rank == 1
+    assert fused[0].rrf_score > fused[1].rrf_score
 
-    @pytest.mark.asyncio
-    async def test_returns_empty_for_no_results(self, monkeypatch):
-        """Results below threshold return empty list."""
-        mock_session = AsyncMock()
-        rows = [
-            _make_row("Unrelated content", "Doc", None, 1, None, 0.1),
-        ]
-        mock_result = MagicMock()
-        mock_result.fetchall.return_value = rows
-        mock_session.execute = AsyncMock(return_value=mock_result)
 
-        fake_embedding = [0.1] * 768
-        import src.services.compliance.knowledge_base.search as mod
-
-        monkeypatch.setattr(mod, "get_embeddings", AsyncMock(return_value=[fake_embedding]))
-
-        results = await search_kb(mock_session, "something unrelated")
-
-        assert results == []
-
-    @pytest.mark.asyncio
-    async def test_respects_top_k_limit(self, monkeypatch):
-        """Only top_k results returned after boosting."""
-        mock_session = AsyncMock()
-        rows = [_make_row(f"Chunk {i}", "Doc", None, 1, None, 0.9 - i * 0.05) for i in range(10)]
-        mock_result = MagicMock()
-        mock_result.fetchall.return_value = rows
-        mock_session.execute = AsyncMock(return_value=mock_result)
-
-        fake_embedding = [0.1] * 768
-        import src.services.compliance.knowledge_base.search as mod
-
-        monkeypatch.setattr(mod, "get_embeddings", AsyncMock(return_value=[fake_embedding]))
-
-        results = await search_kb(mock_session, "query", top_k=3)
-
-        assert len(results) == 3
-
-    @pytest.mark.asyncio
-    async def test_includes_citation_metadata(self, monkeypatch):
-        """Results include source_document, section_ref, and tier_label."""
-        mock_session = AsyncMock()
-        rows = [
-            _make_row(
-                "Content about TRID timing",
-                "TRID Rule",
-                "Loan Estimate Timing",
-                1,
-                "2015-10-03",
-                0.85,
-            ),
-        ]
-        mock_result = MagicMock()
-        mock_result.fetchall.return_value = rows
-        mock_session.execute = AsyncMock(return_value=mock_result)
-
-        fake_embedding = [0.1] * 768
-        import src.services.compliance.knowledge_base.search as mod
-
-        monkeypatch.setattr(mod, "get_embeddings", AsyncMock(return_value=[fake_embedding]))
-
-        results = await search_kb(mock_session, "loan estimate timing")
-
-        assert len(results) == 1
-        r = results[0]
-        assert r.source_document == "TRID Rule"
-        assert r.section_ref == "Loan Estimate Timing"
-        assert r.tier_label == "Federal Regulation"
-        assert r.effective_date == "2015-10-03"
-        assert r.similarity == pytest.approx(0.85)
-
-    @pytest.mark.asyncio
-    async def test_returns_empty_when_embedding_fails(self, monkeypatch):
-        """When embedding generation fails, returns empty results."""
-        mock_session = AsyncMock()
-
-        import src.services.compliance.knowledge_base.search as mod
-
-        monkeypatch.setattr(mod, "get_embeddings", AsyncMock(side_effect=RuntimeError("No model")))
-
-        results = await search_kb(mock_session, "any query")
-
-        assert results == []
-
-    @pytest.mark.asyncio
-    async def test_passes_as_of_and_provenance_filters_to_database(self, monkeypatch):
-        mock_session = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.fetchall.return_value = []
-        mock_session.execute = AsyncMock(return_value=mock_result)
-
-        import src.services.compliance.knowledge_base.search as mod
-
-        monkeypatch.setattr(mod, "get_embeddings", AsyncMock(return_value=[[0.1] * 768]))
-        await search_kb(
-            mock_session,
-            "成都公积金贷款",
-            as_of=date(2026, 8, 25),
-            jurisdiction="chengdu",
-            source_type="official",
+@pytest.mark.asyncio
+async def test_hybrid_search_fuses_vector_and_keyword_results(monkeypatch):
+    vector_rows = [
+        _make_row("还款能力审查", "个人贷款管理办法", "第十二条", 1, row_id=1, similarity=0.8)
+    ]
+    keyword_rows = [
+        _make_row(
+            "月还款额不超过家庭月收入的50%",
+            "成都商转公管理办法",
+            "额度与还款能力",
+            2,
+            row_id=2,
+            keyword_score=0.9,
         )
+    ]
+    session = AsyncMock()
+    session.execute = AsyncMock(side_effect=[_db_result(vector_rows), _db_result(keyword_rows)])
 
-        params = mock_session.execute.await_args.args[1]
+    import src.services.compliance.knowledge_base.search as mod
+
+    monkeypatch.setattr(mod, "get_embeddings", AsyncMock(return_value=[[0.1] * 768]))
+    results = await search_kb(session, "成都商转公月供收入比例")
+
+    assert len(results) == 2
+    assert {result.source_document for result in results} == {
+        "个人贷款管理办法",
+        "成都商转公管理办法",
+    }
+    assert any(result.keyword_rank == 1 for result in results)
+    assert session.execute.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_keyword_search_survives_embedding_failure(monkeypatch):
+    keyword_rows = [
+        _make_row(
+            "全国最低首付款比例不低于15%",
+            "最低首付款政策",
+            "全国最低首付款比例",
+            1,
+            row_id=3,
+            keyword_score=1.0,
+        )
+    ]
+    session = AsyncMock()
+    session.execute = AsyncMock(return_value=_db_result(keyword_rows))
+
+    import src.services.compliance.knowledge_base.search as mod
+
+    monkeypatch.setattr(mod, "get_embeddings", AsyncMock(side_effect=RuntimeError("offline")))
+    results = await search_kb(session, "最低首付15%")
+
+    assert len(results) == 1
+    assert results[0].source_document == "最低首付款政策"
+    assert results[0].vector_rank is None
+    assert results[0].keyword_rank == 1
+
+
+@pytest.mark.asyncio
+async def test_low_vector_similarity_without_keyword_match_returns_empty(monkeypatch):
+    vector_rows = [_make_row("无关内容", "无关文件", None, 1, row_id=4, similarity=0.1)]
+    session = AsyncMock()
+    session.execute = AsyncMock(side_effect=[_db_result(vector_rows), _db_result([])])
+
+    import src.services.compliance.knowledge_base.search as mod
+
+    monkeypatch.setattr(mod, "get_embeddings", AsyncMock(return_value=[[0.1] * 768]))
+    assert await search_kb(session, "成都公积金") == []
+
+
+@pytest.mark.asyncio
+async def test_passes_date_and_provenance_filters_to_both_retrievers(monkeypatch):
+    session = AsyncMock()
+    session.execute = AsyncMock(side_effect=[_db_result([]), _db_result([])])
+
+    import src.services.compliance.knowledge_base.search as mod
+
+    monkeypatch.setattr(mod, "get_embeddings", AsyncMock(return_value=[[0.1] * 768]))
+    await search_kb(
+        session,
+        "成都公积金贷款",
+        as_of=date(2026, 8, 25),
+        jurisdiction="chengdu",
+        source_type="official",
+    )
+
+    for call in session.execute.await_args_list:
+        params = call.args[1]
         assert params["as_of"] == date(2026, 8, 25)
         assert params["jurisdiction"] == "chengdu"
         assert params["source_type"] == "official"

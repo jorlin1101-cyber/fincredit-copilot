@@ -13,6 +13,7 @@ from src.services.compliance.knowledge_base.ingestion import (
     _chunk_markdown,
     _parse_frontmatter,
     _validated_metadata,
+    build_search_text,
     ingest_kb_content,
 )
 
@@ -115,6 +116,15 @@ class TestChunkMarkdown:
     def test_empty_body(self):
         chunks = _chunk_markdown("")
         assert chunks == []
+
+
+def test_build_search_text_supports_chinese_and_financial_terms():
+    tokens = build_search_text("成都公积金 DTI 50% 首付款").split()
+    assert "成都" in tokens
+    assert "都公" in tokens
+    assert "dti" in tokens
+    assert "50" in tokens
+    assert "首付" in tokens
 
 
 class TestIngestKbContent:

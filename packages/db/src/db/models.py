@@ -488,6 +488,7 @@ class KBChunk(Base):
         Integer, ForeignKey("kb_documents.id", ondelete="CASCADE"), nullable=False, index=True,
     )
     chunk_text = Column(Text, nullable=False)
+    search_text = Column(Text, nullable=False)
     section_ref = Column(String(500), nullable=True)
     chunk_index = Column(Integer, nullable=False)
     embedding = Column(Vector(768), nullable=True)
