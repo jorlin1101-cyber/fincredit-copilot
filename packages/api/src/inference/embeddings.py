@@ -92,7 +92,12 @@ class RemoteEmbeddingProvider(EmbeddingProvider):
     ) -> None:
         from openai import AsyncOpenAI
 
-        self._client = AsyncOpenAI(base_url=endpoint, api_key=api_key)
+        self._client = AsyncOpenAI(
+            base_url=endpoint,
+            api_key=api_key,
+            max_retries=1,
+            timeout=60.0,
+        )
         self._model_name = model_name
         self._dimensions = dimensions
         self._batch_size = batch_size

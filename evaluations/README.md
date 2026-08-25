@@ -1,5 +1,20 @@
 # Agent Evaluation
 
+## FinCredit Policy RAG A/B/C
+
+住房贷款政策检索使用固定 30 题数据集 `datasets/fincredit_policy_pilot.json`：10 条简单事实、10 条跨段落、5 条过期/冲突、5 条知识库无答案。三组必须在同一数据集运行：
+
+- A：纯向量检索。
+- B：向量 + PostgreSQL FTS + RRF。
+- C：B + 最多一次查询改写、一次重试和证据不足拒答。
+
+```powershell
+# 先启动数据库/API 依赖并完成迁移、政策入库，再运行：
+packages\api\.venv\Scripts\python.exe -m evaluations.run_policy_rag_eval --group all
+```
+
+输出写入 `evaluations/results/`（默认不提交 Git），包含 Recall@5、MRR、引用正确率、无答案 F1、P95 延迟、实际改写 Token 和平均检索轮数。没有实际运行时不得把目标值写成结果。
+
 MLflow GenAI evaluation framework for the multi-agent loan origination system.
 
 ## Quick Start

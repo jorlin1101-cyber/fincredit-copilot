@@ -15,7 +15,7 @@ import logging
 from datetime import UTC, datetime, timedelta
 
 from db import AuditEvent, Decision
-from sqlalchemy import func, select, text
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -226,6 +226,95 @@ async def get_events_by_decision(
     )
     result = await session.execute(stmt)
     return list(result.scalars().all())
+
+
+async def get_events_by_trace(session: AsyncSession, trace_id: str) -> list[AuditEvent]:
+    """Find events whose session_id or structured event_data carries the trace ID."""
+    stmt = (
+        select(AuditEvent)
+        .where(
+            or_(
+                AuditEvent.session_id == trace_id,
+                AuditEvent.event_data["trace_id"].as_string() == trace_id,
+            )
+        )
+        .order_by(AuditEvent.timestamp.asc(), AuditEvent.id.asc())
+    )
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
+def classify_trace_event(event: AuditEvent) -> str:
+    """Classify a timeline event into an interview-friendly replay stage."""
+    data = event.event_data or {}
+    event_type = event.event_type
+    if data.get("tool") == "kb_search" or data.get("citation_ids"):
+        return "retrieval"
+    if data.get("model") or data.get("rewrite_model") or data.get("prompt_version"):
+        return "model"
+    if event_type in {
+        "document_extraction_corrected",
+        "decision",
+        "override",
+        "condition_cleared",
+        "condition_waived",
+    }:
+        return "human_action"
+    if event_type in {
+        "document_consistency_checked",
+        "deterministic_risk_assessment",
+        "compliance_check",
+        "agent_tool_called",
+    }:
+        return "deterministic_tool"
+    return "workflow"
+
+
+def build_trace_summary(events: list[AuditEvent]) -> tuple[dict[str, int], dict[str, bool]]:
+    stage_counts = {
+        "model": 0,
+        "retrieval": 0,
+        "deterministic_tool": 0,
+        "human_action": 0,
+        "workflow": 0,
+    }
+    human_types = {
+        "document_extraction_corrected",
+        "decision",
+        "override",
+        "condition_cleared",
+        "condition_waived",
+    }
+    tool_types = {
+        "document_consistency_checked",
+        "deterministic_risk_assessment",
+        "compliance_check",
+        "agent_tool_called",
+    }
+    for event in events:
+        data = event.event_data or {}
+        matched = False
+        if data.get("model") or data.get("rewrite_model") or data.get("prompt_version"):
+            stage_counts["model"] += 1
+            matched = True
+        if data.get("tool") == "kb_search" or data.get("citation_ids"):
+            stage_counts["retrieval"] += 1
+            matched = True
+        if event.event_type in tool_types:
+            stage_counts["deterministic_tool"] += 1
+            matched = True
+        if event.event_type in human_types:
+            stage_counts["human_action"] += 1
+            matched = True
+        if not matched:
+            stage_counts["workflow"] += 1
+    capabilities = {
+        "model_and_prompt": stage_counts["model"] > 0,
+        "retrieval_and_citations": stage_counts["retrieval"] > 0,
+        "deterministic_tools": stage_counts["deterministic_tool"] > 0,
+        "human_actions": stage_counts["human_action"] > 0,
+    }
+    return stage_counts, capabilities
 
 
 async def search_events(

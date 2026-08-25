@@ -8,7 +8,7 @@ from datetime import date
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.inference.client import get_completion
+from src.inference.client import get_completion_result
 from src.inference.config import get_model_config
 
 from .search import KBSearchResult, search_kb
@@ -31,6 +31,8 @@ class RetrievalOutcome:
     rewrite_attempted: bool = False
     rewritten_query: str | None = None
     rewrite_model: str | None = None
+    rewrite_input_tokens: int | None = None
+    rewrite_output_tokens: int | None = None
     prompt_version: str = REWRITE_PROMPT_VERSION
     search_attempts: int = 1
 
@@ -69,7 +71,9 @@ def _parse_rewrite(content: str, original_query: str) -> str | None:
     return rewritten
 
 
-async def _rewrite_query_once(query: str) -> tuple[str | None, str | None]:
+async def _rewrite_query_once(
+    query: str,
+) -> tuple[str | None, str | None, int | None, int | None]:
     """Use the configured Qwen text model once; never generate a policy answer here."""
     model_name = str(get_model_config("llm")["model_name"])
     messages = [
@@ -84,7 +88,7 @@ async def _rewrite_query_once(query: str) -> tuple[str | None, str | None]:
         {"role": "user", "content": query},
     ]
     try:
-        content = await get_completion(
+        result = await get_completion_result(
             messages,
             tier="llm",
             temperature=0,
@@ -93,8 +97,13 @@ async def _rewrite_query_once(query: str) -> tuple[str | None, str | None]:
         )
     except Exception:
         logger.warning("Policy query rewrite failed", exc_info=True)
-        return None, model_name
-    return _parse_rewrite(content, query), model_name
+        return None, model_name, None, None
+    return (
+        _parse_rewrite(result.content, query),
+        model_name,
+        result.input_tokens,
+        result.output_tokens,
+    )
 
 
 async def retrieve_policy_evidence(
@@ -121,7 +130,7 @@ async def retrieve_policy_evidence(
             reason=reason,
         )
 
-    rewritten_query, model_name = await _rewrite_query_once(query)
+    rewritten_query, model_name, input_tokens, output_tokens = await _rewrite_query_once(query)
     if not rewritten_query:
         return RetrievalOutcome(
             original_query=query,
@@ -131,6 +140,8 @@ async def retrieve_policy_evidence(
             reason=f"{reason}；一次查询改写未产生有效检索词",
             rewrite_attempted=True,
             rewrite_model=model_name,
+            rewrite_input_tokens=input_tokens,
+            rewrite_output_tokens=output_tokens,
         )
 
     retry_results = await search_kb(
@@ -149,5 +160,7 @@ async def retrieve_policy_evidence(
         rewrite_attempted=True,
         rewritten_query=rewritten_query,
         rewrite_model=model_name,
+        rewrite_input_tokens=input_tokens,
+        rewrite_output_tokens=output_tokens,
         search_attempts=2,
     )

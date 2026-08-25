@@ -16,7 +16,12 @@ from fastapi.testclient import TestClient
 from src.middleware.auth import get_current_user
 from src.routes.audit import router as audit_router
 from src.schemas.auth import DataScope, UserContext
-from src.services.audit import get_events_by_session, write_audit_event
+from src.services.audit import (
+    build_trace_summary,
+    get_events_by_session,
+    get_events_by_trace,
+    write_audit_event,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -51,6 +56,7 @@ def _make_borrower() -> UserContext:
 def _mock_audit_session(prev_event=None):
     """Build a mock session that supports advisory lock + latest-event query."""
     mock_session = AsyncMock()
+    mock_session.add = MagicMock()
     # execute is called twice: advisory lock, then latest-event query
     lock_result = MagicMock()
     query_result = MagicMock()
@@ -151,6 +157,38 @@ async def test_get_events_by_session_queries_by_session_id():
     mock_session.execute.assert_awaited_once()
 
 
+@pytest.mark.asyncio
+async def test_get_events_by_trace_queries_session_and_structured_trace_id():
+    mock_session = AsyncMock()
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = []
+    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    assert await get_events_by_trace(mock_session, "trace-001") == []
+    mock_session.execute.assert_awaited_once()
+
+
+def test_trace_summary_covers_model_retrieval_tools_and_human_actions():
+    events = []
+    for event_type, event_data in [
+        ("agent_tool_called", {"tool": "kb_search", "rewrite_model": "qwen"}),
+        ("deterministic_risk_assessment", {"trace_id": "trace-001"}),
+        ("document_extraction_corrected", {"operator": "reviewer"}),
+    ]:
+        event = MagicMock()
+        event.event_type = event_type
+        event.event_data = event_data
+        events.append(event)
+
+    counts, capabilities = build_trace_summary(events)
+    assert counts["retrieval"] == 1
+    assert counts["deterministic_tool"] == 2
+    assert counts["human_action"] == 1
+    assert capabilities["retrieval_and_citations"] is True
+    assert capabilities["deterministic_tools"] is True
+    assert capabilities["human_actions"] is True
+
+
 # ---------------------------------------------------------------------------
 # Endpoint tests
 # ---------------------------------------------------------------------------
@@ -189,6 +227,7 @@ def test_audit_endpoint_returns_events_for_session():
     mock_event.user_role = "prospect"
     mock_event.application_id = None
     mock_event.decision_id = None
+    mock_event.session_id = "sess-abc-123"
     mock_event.event_data = '{"tool_name": "product_info"}'
 
     admin = _make_admin()
@@ -201,6 +240,28 @@ def test_audit_endpoint_returns_events_for_session():
     assert data["session_id"] == "sess-abc-123"
     assert data["count"] == 1
     assert data["events"][0]["event_type"] == "tool_invocation"
+
+
+def test_trace_endpoint_returns_replay_bundle():
+    mock_event = MagicMock()
+    mock_event.id = 2
+    mock_event.timestamp = "2026-08-25T10:00:00+00:00"
+    mock_event.event_type = "deterministic_risk_assessment"
+    mock_event.user_id = "underwriter-1"
+    mock_event.user_role = "underwriter"
+    mock_event.application_id = 101
+    mock_event.decision_id = None
+    mock_event.session_id = "trace-001"
+    mock_event.event_data = {"trace_id": "trace-001"}
+
+    app = _make_app(_make_admin(), audit_events=[mock_event])
+    response = TestClient(app).get("/api/audit/trace/trace-001")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["trace_id"] == "trace-001"
+    assert data["application_ids"] == [101]
+    assert data["stage_counts"]["deterministic_tool"] == 1
 
 
 def test_audit_endpoint_returns_empty_for_unknown_session():

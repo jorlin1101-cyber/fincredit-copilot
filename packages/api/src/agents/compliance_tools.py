@@ -81,6 +81,8 @@ async def kb_search(
                 "rewrite_attempted": outcome.rewrite_attempted,
                 "rewritten_query": outcome.rewritten_query,
                 "rewrite_model": outcome.rewrite_model,
+                "rewrite_input_tokens": outcome.rewrite_input_tokens,
+                "rewrite_output_tokens": outcome.rewrite_output_tokens,
                 "prompt_version": outcome.prompt_version,
             },
         )

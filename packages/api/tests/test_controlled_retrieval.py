@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from src.inference.client import CompletionResult
 from src.services.compliance.knowledge_base.controlled_retrieval import (
     _parse_rewrite,
     _rewrite_query_once,
@@ -47,16 +48,25 @@ def test_parse_rewrite_accepts_json_only_and_rejects_answer_text():
 
 @pytest.mark.asyncio
 async def test_qwen_rewrite_is_single_bounded_json_call(monkeypatch):
-    completion = AsyncMock(return_value='{"query":"成都商转公月供收入比例"}')
+    completion = AsyncMock(
+        return_value=CompletionResult(
+            content='{"query":"成都商转公月供收入比例"}',
+            model="qwen-test",
+            input_tokens=35,
+            output_tokens=12,
+        )
+    )
     import src.services.compliance.knowledge_base.controlled_retrieval as mod
 
-    monkeypatch.setattr(mod, "get_completion", completion)
+    monkeypatch.setattr(mod, "get_completion_result", completion)
     monkeypatch.setattr(mod, "get_model_config", lambda _tier: {"model_name": "qwen-test"})
 
-    rewritten, model = await _rewrite_query_once("商转公月供最多多少")
+    rewritten, model, input_tokens, output_tokens = await _rewrite_query_once("商转公月供最多多少")
 
     assert rewritten == "成都商转公月供收入比例"
     assert model == "qwen-test"
+    assert input_tokens == 35
+    assert output_tokens == 12
     completion.assert_awaited_once()
     kwargs = completion.await_args.kwargs
     assert kwargs["temperature"] == 0
@@ -83,7 +93,7 @@ async def test_sufficient_first_search_does_not_call_qwen(monkeypatch):
 @pytest.mark.asyncio
 async def test_insufficient_search_rewrites_and_retries_exactly_once(monkeypatch):
     search = AsyncMock(side_effect=[[], [_evidence()]])
-    rewrite = AsyncMock(return_value=("全国商业住房贷款最低首付款比例", "qwen-test"))
+    rewrite = AsyncMock(return_value=("全国商业住房贷款最低首付款比例", "qwen-test", 30, 10))
     import src.services.compliance.knowledge_base.controlled_retrieval as mod
 
     monkeypatch.setattr(mod, "search_kb", search)
@@ -95,6 +105,8 @@ async def test_insufficient_search_rewrites_and_retries_exactly_once(monkeypatch
     assert outcome.rewrite_attempted
     assert outcome.search_attempts == 2
     assert outcome.rewrite_model == "qwen-test"
+    assert outcome.rewrite_input_tokens == 30
+    assert outcome.rewrite_output_tokens == 10
     assert search.await_count == 2
     rewrite.assert_awaited_once()
 
@@ -108,7 +120,7 @@ async def test_second_insufficient_search_fails_closed(monkeypatch):
     monkeypatch.setattr(
         mod,
         "_rewrite_query_once",
-        AsyncMock(return_value=("成都未知住房贷款政策", "qwen-test")),
+        AsyncMock(return_value=("成都未知住房贷款政策", "qwen-test", 30, 10)),
     )
 
     outcome = await retrieve_policy_evidence(AsyncMock(), "未知问题")
@@ -124,7 +136,11 @@ async def test_invalid_rewrite_stops_without_unbounded_retry(monkeypatch):
     import src.services.compliance.knowledge_base.controlled_retrieval as mod
 
     monkeypatch.setattr(mod, "search_kb", search)
-    monkeypatch.setattr(mod, "_rewrite_query_once", AsyncMock(return_value=(None, "qwen-test")))
+    monkeypatch.setattr(
+        mod,
+        "_rewrite_query_once",
+        AsyncMock(return_value=(None, "qwen-test", None, None)),
+    )
 
     outcome = await retrieve_policy_evidence(AsyncMock(), "未知问题")
 

@@ -3,7 +3,7 @@
 
 import logging
 from dataclasses import dataclass, replace
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 
 from sqlalchemy import text
@@ -19,6 +19,17 @@ _TIER_BOOST = {1: 1.15, 2: 1.10, 3: 1.0}
 _TIER_LABELS = {1: "全国监管政策", 2: "成都市地方规则", 3: "内部演示规则"}
 _MIN_SIMILARITY = 0.3
 _RRF_K = 60
+
+
+def is_policy_active(
+    effective_date: date | datetime | None,
+    expires_at: date | datetime | None,
+    as_of: date,
+) -> bool:
+    """Pure counterpart of the SQL validity filter, used by tests and diagnostics."""
+    effective = effective_date.date() if isinstance(effective_date, datetime) else effective_date
+    expires = expires_at.date() if isinstance(expires_at, datetime) else expires_at
+    return (effective is None or effective <= as_of) and (expires is None or expires >= as_of)
 
 
 @dataclass

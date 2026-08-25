@@ -18,6 +18,7 @@ class AuditEventItem(BaseModel):
     user_role: str | None = None
     application_id: int | None = None
     decision_id: int | None = None
+    session_id: str | None = None
     event_data: dict[str, Any] | None = None
 
     @field_validator("event_data", mode="before")
@@ -68,6 +69,17 @@ class AuditChainVerifyResponse(BaseModel):
     status: str
     events_checked: int
     first_break_id: int | None = None
+
+
+class TraceBundleResponse(BaseModel):
+    """End-to-end replay bundle correlated by trace_id/session_id."""
+
+    trace_id: str
+    count: int
+    application_ids: list[int]
+    timeline: list[AuditEventItem]
+    stage_counts: dict[str, int]
+    replay_capabilities: dict[str, bool]
 
 
 class DecisionTraceEvent(BaseModel):

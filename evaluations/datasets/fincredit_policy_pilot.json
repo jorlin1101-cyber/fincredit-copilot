@@ -1,0 +1,35 @@
+[
+  {"id":"S01","category":"simple_fact","question":"全国商业性个人住房贷款最低首付款比例是多少？","as_of":"2026-08-25","expected_sources":["优化个人住房贷款最低首付款比例政策"],"expected_sections":["全国最低首付款比例"],"should_answer":true,"jurisdiction":"national"},
+  {"id":"S02","category":"simple_fact","question":"个人贷款管理办法从哪一天开始施行？","as_of":"2026-08-25","expected_sources":["个人贷款管理办法"],"expected_sections":["第十二条 借款条件"],"should_answer":true,"jurisdiction":"national"},
+  {"id":"S03","category":"simple_fact","question":"个人贷款审查是否需要关注借款人的还款能力？","as_of":"2026-08-25","expected_sources":["个人贷款管理办法"],"expected_sections":["第十二条 借款条件"],"should_answer":true,"jurisdiction":"national"},
+  {"id":"S04","category":"simple_fact","question":"贷款人应核实申请材料的哪些质量属性？","as_of":"2026-08-25","expected_sources":["个人贷款管理办法"],"expected_sections":["第十三至十五条 申请材料与尽职调查"],"should_answer":true,"jurisdiction":"national"},
+  {"id":"S05","category":"simple_fact","question":"个人住房贷款能否适用二十万元以下个人贷款的简化调查？","as_of":"2026-08-25","expected_sources":["个人贷款管理办法"],"expected_sections":["第十六至十七条 调查方式"],"should_answer":true,"jurisdiction":"national"},
+  {"id":"S06","category":"simple_fact","question":"成都2026年住房公积金阶段性政策何时生效？","as_of":"2026-08-25","expected_sources":["成都住房公积金贷款有关政策调整"],"expected_sections":["新建住房阶段性安排"],"should_answer":true,"jurisdiction":"chengdu"},
+  {"id":"S07","category":"simple_fact","question":"成都申请人无住房公积金贷款余额时执行哪类政策？","as_of":"2026-08-25","expected_sources":["成都住房公积金贷款有关政策调整"],"expected_sections":["首套政策认定"],"should_answer":true,"jurisdiction":"chengdu"},
+  {"id":"S08","category":"simple_fact","question":"成都商转公的月还款额原则上不超过家庭月收入多少？","as_of":"2026-08-25","expected_sources":["成都商业性个人住房贷款转住房公积金"],"expected_sections":["额度与还款能力"],"should_answer":true,"jurisdiction":"chengdu"},
+  {"id":"S09","category":"simple_fact","question":"成都商转公一般贷款成数上限是多少？","as_of":"2026-08-25","expected_sources":["成都商业性个人住房贷款转住房公积金"],"expected_sections":["额度与还款能力"],"should_answer":true,"jurisdiction":"chengdu"},
+  {"id":"S10","category":"simple_fact","question":"成都商转公贷款期限最长多少年？","as_of":"2026-08-25","expected_sources":["成都商业性个人住房贷款转住房公积金"],"expected_sections":["期限与材料"],"should_answer":true,"jurisdiction":"chengdu"},
+
+  {"id":"X01","category":"cross_passage","question":"全国商业住房贷款首付底线与成都公积金首套认定分别是什么？","as_of":"2026-08-25","expected_sources":["优化个人住房贷款最低首付款比例政策","成都住房公积金贷款有关政策调整"],"expected_sections":["全国最低首付款比例","首套政策认定"],"should_answer":true,"jurisdiction":null},
+  {"id":"X02","category":"cross_passage","question":"成都商转公需要哪些基本条件，并如何审查还款能力？","as_of":"2026-08-25","expected_sources":["成都商业性个人住房贷款转住房公积金"],"expected_sections":["基本条件","额度与还款能力"],"should_answer":true,"jurisdiction":"chengdu"},
+  {"id":"X03","category":"cross_passage","question":"成都商转公的额度、抵押物价值和月收入之间有哪些约束？","as_of":"2026-08-25","expected_sources":["成都商业性个人住房贷款转住房公积金"],"expected_sections":["额度与还款能力"],"should_answer":true,"jurisdiction":"chengdu"},
+  {"id":"X04","category":"cross_passage","question":"成都商转公需要核对哪些身份证明、产权和原贷款材料？","as_of":"2026-08-25","expected_sources":["成都商业性个人住房贷款转住房公积金"],"expected_sections":["期限与材料"],"should_answer":true,"jurisdiction":"chengdu"},
+  {"id":"X05","category":"cross_passage","question":"住房贷款尽调需要核实哪些申请材料，并且能否把责任完全交给第三方？","as_of":"2026-08-25","expected_sources":["个人贷款管理办法"],"expected_sections":["第十三至十五条 申请材料与尽职调查","第十六至十七条 调查方式"],"should_answer":true,"jurisdiction":"national"},
+  {"id":"X06","category":"cross_passage","question":"成都新房公积金贷款在2026年有哪些次数和余额认定安排？","as_of":"2026-08-25","expected_sources":["成都住房公积金贷款有关政策调整"],"expected_sections":["新建住房阶段性安排","首套政策认定"],"should_answer":true,"jurisdiction":"chengdu"},
+  {"id":"X07","category":"cross_passage","question":"普通信用与不良信用情形下，成都商转公贷款成数如何区分？","as_of":"2026-08-25","expected_sources":["成都商业性个人住房贷款转住房公积金"],"expected_sections":["额度与还款能力"],"should_answer":true,"jurisdiction":"chengdu"},
+  {"id":"X08","category":"cross_passage","question":"内部演示规则如何同时处理收入差异和DTI/LTV复核？","as_of":"2026-08-25","expected_sources":["收入一致性复核规则","DTI/LTV 复核分层规则"],"expected_sections":["收入差异阈值","DTI 复核分层"],"should_answer":true,"jurisdiction":"internal_demo"},
+  {"id":"X09","category":"cross_passage","question":"为什么全国15%首付底线不能直接替代成都商转公的80%成数规则？","as_of":"2026-08-25","expected_sources":["优化个人住房贷款最低首付款比例政策","成都商业性个人住房贷款转住房公积金"],"expected_sections":["适用边界","额度与还款能力"],"should_answer":true,"jurisdiction":null},
+  {"id":"X10","category":"cross_passage","question":"审批辅助系统应如何结合还款能力、材料真实性和人工审批边界？","as_of":"2026-08-25","expected_sources":["个人贷款管理办法","DTI/LTV 复核分层规则"],"expected_sections":["第十二条 借款条件","人工审批边界"],"should_answer":true,"jurisdiction":null},
+
+  {"id":"E01","category":"expired_or_conflict","question":"2026年3月24日成都住房公积金住房套数应按哪个历史版本回溯？","as_of":"2026-03-24","expected_sources":["住房套数认定调整"],"expected_sections":["历史住房套数认定"],"should_answer":true,"jurisdiction":"chengdu"},
+  {"id":"E02","category":"expired_or_conflict","question":"2026年3月25日成都新房公积金贷款是否还应直接使用2023年历史认定摘要？","as_of":"2026-03-25","expected_sources":["成都住房公积金贷款有关政策调整"],"expected_sections":["新建住房阶段性安排"],"should_answer":true,"jurisdiction":"chengdu"},
+  {"id":"E03","category":"expired_or_conflict","question":"2027年1月1日还能否引用成公积金〔2026〕12号作为现行阶段性政策？","as_of":"2027-01-01","expected_sources":[],"expected_sections":[],"should_answer":false,"jurisdiction":"chengdu"},
+  {"id":"E04","category":"expired_or_conflict","question":"全国最低首付15%和内部演示LTV中关注上限85%是否是同一种规则？","as_of":"2026-08-25","expected_sources":["优化个人住房贷款最低首付款比例政策","DTI/LTV 复核分层规则"],"expected_sections":["适用边界","LTV 复核分层"],"should_answer":true,"jurisdiction":null},
+  {"id":"E05","category":"expired_or_conflict","question":"收入差异15%阈值是不是国家监管统一规定？","as_of":"2026-08-25","expected_sources":["收入一致性复核规则"],"expected_sections":["收入差异阈值"],"should_answer":true,"jurisdiction":"internal_demo"},
+
+  {"id":"N01","category":"no_answer","question":"北京住房公积金贷款2026年最高额度是多少？","as_of":"2026-08-25","expected_sources":[],"expected_sections":[],"should_answer":false,"jurisdiction":null},
+  {"id":"N02","category":"no_answer","question":"成都今天各家银行实时房贷利率分别是多少？","as_of":"2026-08-25","expected_sources":[],"expected_sections":[],"should_answer":false,"jurisdiction":"chengdu"},
+  {"id":"N03","category":"no_answer","question":"企业经营贷款的担保费率上限是多少？","as_of":"2026-08-25","expected_sources":[],"expected_sections":[],"should_answer":false,"jurisdiction":null},
+  {"id":"N04","category":"no_answer","question":"请查询某位真实客户的个人征信逾期记录。","as_of":"2026-08-25","expected_sources":[],"expected_sections":[],"should_answer":false,"jurisdiction":null},
+  {"id":"N05","category":"no_answer","question":"汽车消费贷款最低首付比例是多少？","as_of":"2026-08-25","expected_sources":[],"expected_sections":[],"should_answer":false,"jurisdiction":null}
+]

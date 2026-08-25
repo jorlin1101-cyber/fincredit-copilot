@@ -20,13 +20,16 @@ from ..schemas.audit import (
     AuditEventItem,
     AuditSearchResponse,
     DecisionTraceResponse,
+    TraceBundleResponse,
 )
 from ..services.audit import (
+    build_trace_summary,
     export_events,
     get_decision_trace,
     get_events_by_application,
     get_events_by_decision,
     get_events_by_session,
+    get_events_by_trace,
     search_events,
     verify_audit_chain,
     write_audit_event,
@@ -44,6 +47,7 @@ def _to_item(evt) -> AuditEventItem:
         user_role=evt.user_role,
         application_id=evt.application_id,
         decision_id=evt.decision_id,
+        session_id=evt.session_id if isinstance(evt.session_id, str) else None,
         event_data=evt.event_data,
     )
 
@@ -68,6 +72,30 @@ async def audit_by_session(
         session_id=session_id,
         count=len(events),
         events=[_to_item(e) for e in events],
+    )
+
+
+@router.get(
+    "/trace/{trace_id}",
+    response_model=TraceBundleResponse,
+    dependencies=[Depends(require_roles(UserRole.ADMIN, UserRole.CEO, UserRole.UNDERWRITER))],
+)
+async def audit_by_trace(
+    trace_id: str,
+    session: AsyncSession = Depends(get_db),
+) -> TraceBundleResponse:
+    """Replay model, retrieval, tools and human actions for one trace_id."""
+    events = await get_events_by_trace(session, trace_id)
+    stage_counts, capabilities = build_trace_summary(events)
+    return TraceBundleResponse(
+        trace_id=trace_id,
+        count=len(events),
+        application_ids=sorted(
+            {event.application_id for event in events if event.application_id is not None}
+        ),
+        timeline=[_to_item(event) for event in events],
+        stage_counts=stage_counts,
+        replay_capabilities=capabilities,
     )
 
 
