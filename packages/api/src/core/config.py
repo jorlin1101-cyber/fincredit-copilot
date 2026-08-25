@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     )
 
     # -- App --
-    APP_NAME: str = "mortgage-ai"
-    COMPANY_NAME: str = "Acme FinTech Company"
+    APP_NAME: str = "fincredit-copilot"
+    COMPANY_NAME: str = "融安住房金融（虚构演示机构）"
     AGENT_NAME: str = ""
     DEBUG: bool = False
 
@@ -101,22 +101,26 @@ class Settings(BaseSettings):
     # These env vars are consumed by config/models.yaml via ${VAR:-default}
     # substitution (see inference/config.py).  Settings here provide defaults
     # that pydantic-settings exposes; the YAML loader reads os.environ directly.
+    DASHSCOPE_API_KEY: str | None = Field(
+        default=None,
+        description="Alibaba Cloud Model Studio API key shared by Qwen model tiers.",
+    )
     LLM_API_KEY: str = Field(
         default="not-needed",
         description="API key for OpenAI-compatible LLM endpoint.",
     )
     LLM_BASE_URL: str = Field(
-        default="https://api.openai.com/v1",
+        default="https://dashscope.aliyuncs.com/compatible-mode/v1",
         description="Base URL for OpenAI-compatible LLM endpoint.",
     )
     LLM_MODEL: str = Field(
-        default="gpt-4o-mini",
+        default="qwen3.7-plus",
         description="Model name for the primary LLM.",
     )
 
     # -- Vision model (optional, falls back to main LLM when unset) --
     VISION_MODEL: str | None = Field(
-        default=None,
+        default="qwen3-vl-flash",
         description="Vision-capable model name. Defaults to LLM_MODEL if not set.",
     )
     VISION_BASE_URL: str | None = Field(
@@ -126,6 +130,17 @@ class Settings(BaseSettings):
     VISION_API_KEY: str | None = Field(
         default=None,
         description="Vision model API key. Defaults to LLM_API_KEY if not set.",
+    )
+
+    # -- Embedding model --
+    EMBEDDING_PROVIDER: str = "openai_compatible"
+    EMBEDDING_MODEL: str = "text-embedding-v4"
+    EMBEDDING_BASE_URL: str | None = None
+    EMBEDDING_API_KEY: str | None = None
+    EMBEDDING_DIMENSIONS: int = Field(
+        default=768,
+        gt=0,
+        description="Embedding width; must match the pgvector Vector(768) schema.",
     )
 
     # -- Storage (S3 / MinIO) --

@@ -2,12 +2,13 @@
 """Tests for the embedding provider abstraction."""
 
 import time
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import numpy as np
 import pytest
 
 from src.inference.embeddings import (
+    EmbeddingDimensionError,
     LocalEmbeddingProvider,
     RemoteEmbeddingProvider,
     _build_provider,
@@ -96,6 +97,7 @@ class TestProviderFactory:
         )
         provider = _build_provider()
         assert isinstance(provider, RemoteEmbeddingProvider)
+        assert provider._dimensions == 768
 
     def test_defaults_to_remote_for_backward_compat(self, monkeypatch):
         """Existing configs without a provider key must not break --
@@ -179,3 +181,66 @@ class TestConfigReloadResetsProvider:
             config_mod._cached_config = None
             config_mod._cached_mtime = 0.0
             reset_embedding_provider()
+
+
+class TestRemoteEmbeddingProvider:
+    """Bailian embedding requests must be bounded and dimension-safe."""
+
+    @pytest.mark.asyncio
+    async def test_requests_dimensions_and_batches_at_provider_limit(self):
+        provider = RemoteEmbeddingProvider(
+            endpoint="https://example.test/v1",
+            model_name="text-embedding-v4",
+            api_key="test-key",
+            dimensions=3,
+            batch_size=2,
+        )
+        first = MagicMock()
+        first.data = [MagicMock(embedding=[0.1, 0.2, 0.3]), MagicMock(embedding=[0.4, 0.5, 0.6])]
+        second = MagicMock()
+        second.data = [MagicMock(embedding=[0.7, 0.8, 0.9])]
+        create = AsyncMock(side_effect=[first, second])
+        provider._client.embeddings.create = create
+
+        result = await provider.embed(["a", "b", "c"])
+
+        assert len(result) == 3
+        assert create.await_args_list == [
+            call(
+                model="text-embedding-v4",
+                input=["a", "b"],
+                dimensions=3,
+                encoding_format="float",
+            ),
+            call(
+                model="text-embedding-v4",
+                input=["c"],
+                dimensions=3,
+                encoding_format="float",
+            ),
+        ]
+
+    @pytest.mark.asyncio
+    async def test_rejects_wrong_provider_dimension(self):
+        provider = RemoteEmbeddingProvider(
+            endpoint="https://example.test/v1",
+            model_name="text-embedding-v4",
+            dimensions=3,
+        )
+        response = MagicMock()
+        response.data = [MagicMock(embedding=[0.1, 0.2])]
+        provider._client.embeddings.create = AsyncMock(return_value=response)
+
+        with pytest.raises(EmbeddingDimensionError, match="expected 3, received 2"):
+            await provider.embed(["bad width"])
+
+    @pytest.mark.asyncio
+    async def test_empty_input_does_not_call_provider(self):
+        provider = RemoteEmbeddingProvider(
+            endpoint="https://example.test/v1",
+            model_name="text-embedding-v4",
+        )
+        provider._client.embeddings.create = AsyncMock()
+
+        assert await provider.embed([]) == []
+        provider._client.embeddings.create.assert_not_awaited()

@@ -1,1 +1,8 @@
-pnpm commitlint --edit $1
+if [ -f node_modules/@commitlint/cli/cli.js ]; then
+  node node_modules/@commitlint/cli/cli.js --edit "$1"
+elif command -v pnpm >/dev/null 2>&1; then
+  pnpm commitlint --edit "$1"
+else
+  echo "Install dependencies before committing (commitlint is unavailable)" >&2
+  exit 1
+fi

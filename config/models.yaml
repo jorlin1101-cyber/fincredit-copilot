@@ -1,4 +1,4 @@
-# Model configuration for Mortgage AI.
+# Model configuration for FinCredit Copilot.
 #
 # Hot-reloaded per conversation via mtime check -- no restart required.
 #
@@ -11,22 +11,22 @@ routing:
 models:
   llm:
     provider: openai_compatible
-    model_name: "${LLM_MODEL:-gpt-4o-mini}"
-    description: "Primary LLM for all agent interactions and tool use"
-    endpoint: "${LLM_BASE_URL:-https://api.openai.com/v1}"
-    api_key: "${LLM_API_KEY:-not-needed}"
+    model_name: "${LLM_MODEL:-qwen3.7-plus}"
+    description: "Qwen text model for agent reasoning and tool use"
+    endpoint: "${LLM_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}"
+    api_key: "${LLM_API_KEY:-}"
   vision:
     provider: openai_compatible
-    model_name: "${VISION_MODEL:-${LLM_MODEL:-gpt-4o-mini}}"
-    description: "Vision-capable model for document image extraction"
-    endpoint: "${VISION_BASE_URL:-${LLM_BASE_URL:-https://api.openai.com/v1}}"
-    api_key: "${VISION_API_KEY:-${LLM_API_KEY:-not-needed}}"
+    model_name: "${VISION_MODEL:-qwen3-vl-flash}"
+    description: "Qwen-VL model for scanned Chinese document extraction"
+    endpoint: "${VISION_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}"
+    api_key: "${VISION_API_KEY:-}"
   embedding:
-    provider: "${EMBEDDING_PROVIDER:-local}"
-    model_name: "${EMBEDDING_MODEL:-nomic-ai/nomic-embed-text-v1.5}"
-    description: "Embedding model for compliance KB vector search"
-    # Used only when provider=openai_compatible. Set EMBEDDING_BASE_URL to
-    # override; falls back to LLM_BASE_URL if unset.
-    endpoint: "${EMBEDDING_BASE_URL:-https://api.openai.com/v1}"
-    api_key: "${EMBEDDING_API_KEY:-not-needed}"
-    dimensions: 768
+    provider: "${EMBEDDING_PROVIDER:-openai_compatible}"
+    model_name: "${EMBEDDING_MODEL:-text-embedding-v4}"
+    description: "Bailian multilingual embedding model for controlled RAG"
+    endpoint: "${EMBEDDING_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}"
+    api_key: "${EMBEDDING_API_KEY:-}"
+    # The database uses Vector(768). The provider must request and return
+    # exactly this dimension; startup/ingestion validation rejects mismatches.
+    dimensions: "${EMBEDDING_DIMENSIONS:-768}"

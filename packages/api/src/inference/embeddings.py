@@ -22,6 +22,25 @@ from .config import get_model_config
 logger = logging.getLogger(__name__)
 
 
+class EmbeddingDimensionError(ValueError):
+    """Raised before invalid-width vectors can reach pgvector."""
+
+
+def validate_embedding_dimensions(
+    vectors: list[list[float]], expected_dimensions: int
+) -> list[list[float]]:
+    """Reject provider responses that do not match the database vector width."""
+    for index, vector in enumerate(vectors):
+        actual = len(vector)
+        if actual != expected_dimensions:
+            raise EmbeddingDimensionError(
+                "Embedding dimension mismatch at vector "
+                f"{index}: expected {expected_dimensions}, received {actual}. "
+                "Check EMBEDDING_MODEL and EMBEDDING_DIMENSIONS before ingestion."
+            )
+    return vectors
+
+
 class EmbeddingProvider(ABC):
     """Common interface for embedding providers."""
 
@@ -54,25 +73,44 @@ class LocalEmbeddingProvider(EmbeddingProvider):
         # sentence-transformers returns numpy ndarray
         vectors = model.encode(texts, normalize_embeddings=True)
         if isinstance(vectors, np.ndarray):
-            return vectors.tolist()
-        return [v.tolist() if hasattr(v, "tolist") else list(v) for v in vectors]
+            result = vectors.tolist()
+        else:
+            result = [v.tolist() if hasattr(v, "tolist") else list(v) for v in vectors]
+        return validate_embedding_dimensions(result, self._dimensions)
 
 
 class RemoteEmbeddingProvider(EmbeddingProvider):
     """Embedding via an OpenAI-compatible ``/v1/embeddings`` endpoint."""
 
-    def __init__(self, endpoint: str, model_name: str, api_key: str = "not-needed") -> None:
+    def __init__(
+        self,
+        endpoint: str,
+        model_name: str,
+        api_key: str = "not-needed",
+        dimensions: int = 768,
+        batch_size: int = 10,
+    ) -> None:
         from openai import AsyncOpenAI
 
         self._client = AsyncOpenAI(base_url=endpoint, api_key=api_key)
         self._model_name = model_name
+        self._dimensions = dimensions
+        self._batch_size = batch_size
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
-        response = await self._client.embeddings.create(
-            model=self._model_name,
-            input=texts,
-        )
-        return [item.embedding for item in response.data]
+        if not texts:
+            return []
+
+        vectors: list[list[float]] = []
+        for start in range(0, len(texts), self._batch_size):
+            response = await self._client.embeddings.create(
+                model=self._model_name,
+                input=texts[start : start + self._batch_size],
+                dimensions=self._dimensions,
+                encoding_format="float",
+            )
+            vectors.extend(item.embedding for item in response.data)
+        return validate_embedding_dimensions(vectors, self._dimensions)
 
 
 # --- singleton management ---
@@ -88,7 +126,7 @@ def _build_provider() -> EmbeddingProvider:
     if provider_type == "local":
         return LocalEmbeddingProvider(
             model_name=cfg["model_name"],
-            dimensions=cfg.get("dimensions", 768),
+            dimensions=int(cfg.get("dimensions", 768)),
         )
 
     # Default: openai_compatible (covers vLLM, LMStudio, TEI, etc.)
@@ -100,6 +138,7 @@ def _build_provider() -> EmbeddingProvider:
         endpoint=endpoint,
         model_name=cfg["model_name"],
         api_key=api_key,
+        dimensions=int(cfg.get("dimensions", 768)),
     )
 
 

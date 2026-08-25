@@ -1,4 +1,13 @@
-pnpm lint-staged
+if [ -f node_modules/lint-staged/bin/lint-staged.js ]; then
+  # Calling the installed Node entrypoint works in POSIX shells and Git Bash,
+  # including Windows setups where only a pnpm.cmd shim is available.
+  node node_modules/lint-staged/bin/lint-staged.js
+elif command -v pnpm >/dev/null 2>&1; then
+  pnpm lint-staged
+else
+  echo "Install dependencies before committing (lint-staged is unavailable)" >&2
+  exit 1
+fi
 
 # Run HMDA isolation check when API Python files are staged
 if git diff --cached --name-only | grep -q '^packages/api/.*\.py$'; then

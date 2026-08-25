@@ -144,6 +144,60 @@ def test_env_var_uses_default_when_empty(monkeypatch):
     assert result["model"] == "fallback-model"
 
 
+def test_shared_dashscope_key_fills_empty_tier_keys(tmp_path, monkeypatch):
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "shared-test-key")
+    cfg = tmp_path / "models.yaml"
+    cfg.write_text(
+        textwrap.dedent("""\
+        models:
+          llm:
+            provider: openai_compatible
+            model_name: qwen-test
+            endpoint: https://example.test/v1
+            api_key: ""
+        """)
+    )
+
+    config = load_config(cfg)
+
+    assert config["models"]["llm"]["api_key"] == "shared-test-key"
+
+
+def test_embedding_dimensions_are_coerced_to_integer(tmp_path):
+    cfg = tmp_path / "models.yaml"
+    cfg.write_text(
+        textwrap.dedent("""\
+        models:
+          embedding:
+            provider: openai_compatible
+            model_name: text-embedding-v4
+            endpoint: https://example.test/v1
+            dimensions: "768"
+        """)
+    )
+
+    config = load_config(cfg)
+
+    assert config["models"]["embedding"]["dimensions"] == 768
+
+
+def test_invalid_embedding_dimensions_are_rejected(tmp_path):
+    cfg = tmp_path / "models.yaml"
+    cfg.write_text(
+        textwrap.dedent("""\
+        models:
+          embedding:
+            provider: openai_compatible
+            model_name: text-embedding-v4
+            endpoint: https://example.test/v1
+            dimensions: 0
+        """)
+    )
+
+    with pytest.raises(ValueError, match="dimensions must be a positive integer"):
+        load_config(cfg)
+
+
 # -- Hot-reload --
 
 

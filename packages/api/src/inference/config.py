@@ -95,6 +95,15 @@ def _validate_config(config: dict[str, Any]) -> None:
         if provider in _REMOTE_PROVIDERS and "endpoint" not in model:
             raise ValueError(f"Model '{name}' with provider '{provider}' requires 'endpoint'")
 
+        if "dimensions" in model:
+            try:
+                dimensions = int(model["dimensions"])
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"Model '{name}' dimensions must be a positive integer") from exc
+            if dimensions <= 0:
+                raise ValueError(f"Model '{name}' dimensions must be a positive integer")
+            model["dimensions"] = dimensions
+
 
 def load_config(path: Path | None = None) -> dict[str, Any]:
     """Load and validate models.yaml from disk."""
@@ -105,6 +114,14 @@ def load_config(path: Path | None = None) -> dict[str, Any]:
     raw = config_path.read_text()
     config = yaml.safe_load(raw)
     config = _resolve_env_vars(config)
+    # A single Bailian key is the safe local default while retaining separate
+    # per-tier override variables for deployments that isolate credentials.
+    shared_api_key = os.environ.get("DASHSCOPE_API_KEY") or "not-needed"
+    models = config.get("models") if isinstance(config, dict) else None
+    if isinstance(models, dict):
+        for model in models.values():
+            if isinstance(model, dict) and not model.get("api_key"):
+                model["api_key"] = shared_api_key
     _validate_config(config)
     return config
 
