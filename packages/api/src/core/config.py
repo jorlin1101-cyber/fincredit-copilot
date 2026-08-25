@@ -143,6 +143,14 @@ class Settings(BaseSettings):
         description="Embedding width; must match the pgvector Vector(768) schema.",
     )
 
+    # -- Document extraction --
+    EXTRACTION_CONFIDENCE_THRESHOLD: float = Field(
+        default=0.8,
+        ge=0.0,
+        le=1.0,
+        description="Fields below this confidence require human review.",
+    )
+
     # -- Storage (S3 / MinIO) --
     S3_ENDPOINT: str = "http://localhost:9090"
     S3_ACCESS_KEY: str = "minio"

@@ -125,6 +125,10 @@ QUALITY_FLAGS = [
     "future_date",
     "document_type_mismatch",
     "unsigned",
+    "low_confidence",
+    "evidence_not_found",
+    "page_extraction_failed",
+    "cross_page_document_type_conflict",
 ]
 
 # Only demographic fields that must be blocked from the lending path.
@@ -157,24 +161,26 @@ HMDA_DEMOGRAPHIC_KEYWORDS: set[str] = {
 }
 
 
-def build_extraction_prompt(doc_type: str, text: str) -> list[dict]:
+def build_extraction_prompt(doc_type: str, text: str, source_page: int = 1) -> list[dict]:
     """Build messages for text-based LLM extraction."""
     fields = EXTRACTION_FIELDS.get(doc_type, [])
     fields_csv = ", ".join(fields) if fields else "any relevant fields"
 
     system_msg = (
-        "You are a document extraction assistant for a mortgage lending system. "
-        "Extract structured data from the provided document text. "
+        "你是住房贷款材料抽取助手。请从当前这一页的中文或英文材料中抽取结构化字段。"
+        "严禁猜测，不得使用页面之外的信息。"
         "Respond ONLY with valid JSON matching this schema:\n"
         "{\n"
         '  "extractions": [\n'
         '    {"field_name": "<name>", "field_value": "<value>", '
-        '"confidence": <0.0-1.0>, "source_page": <int>}\n'
+        '"confidence": <0.0-1.0>, "source_page": <int>, '
+        '"evidence_text": "<verbatim short text from this page>"}\n'
         "  ],\n"
         f'  "quality_flags": [<zero or more of: {", ".join(QUALITY_FLAGS)}>],\n'
         f'  "detected_doc_type": "<one of: {", ".join(VALID_DOC_TYPES)}>"\n'
         "}\n\n"
         f"The uploader tagged this document as: {doc_type}\n"
+        f"Current page number: {source_page}. Every source_page must equal {source_page}.\n"
         "For detected_doc_type, classify based on the ACTUAL document content, "
         "NOT the uploader's tag. If the content is clearly a different type, "
         "use the correct type.\n"
@@ -182,7 +188,8 @@ def build_extraction_prompt(doc_type: str, text: str) -> list[dict]:
         "IMPORTANT: If the document contains any demographic or government "
         "monitoring information (race, ethnicity, sex, gender, age), "
         "extract those fields as well.\n"
-        "If a field is not found, omit it. Do not guess values."
+        "evidence_text 必须是当前页可核验的简短原文，并且包含或直接支持 field_value。"
+        "如果字段不存在就省略，不得猜测；金额和日期保留原始写法，标准化由程序完成。"
     )
 
     return [
@@ -191,7 +198,7 @@ def build_extraction_prompt(doc_type: str, text: str) -> list[dict]:
     ]
 
 
-def build_image_extraction_prompt(doc_type: str) -> dict:
+def build_image_extraction_prompt(doc_type: str, source_page: int = 1) -> dict:
     """Build system message for image-based LLM extraction.
 
     The image content block is added separately by the caller.
@@ -202,18 +209,20 @@ def build_image_extraction_prompt(doc_type: str) -> dict:
     return {
         "role": "system",
         "content": (
-            "You are a document extraction assistant for a mortgage lending system. "
-            "Extract structured data from the provided document image. "
+            "你是住房贷款材料抽取助手。请从当前这一页图像中抽取结构化字段。"
+            "严禁猜测，不得使用图像之外的信息。"
             "Respond ONLY with valid JSON matching this schema:\n"
             "{\n"
             '  "extractions": [\n'
             '    {"field_name": "<name>", "field_value": "<value>", '
-            '"confidence": <0.0-1.0>, "source_page": <int>}\n'
+            '"confidence": <0.0-1.0>, "source_page": <int>, '
+            '"evidence_text": "<verbatim short text from this page>"}\n'
             "  ],\n"
             f'  "quality_flags": [<zero or more of: {", ".join(QUALITY_FLAGS)}>],\n'
             f'  "detected_doc_type": "<one of: {", ".join(VALID_DOC_TYPES)}>"\n'
             "}\n\n"
             f"The uploader tagged this document as: {doc_type}\n"
+            f"Current page number: {source_page}. Every source_page must equal {source_page}.\n"
             "For detected_doc_type, classify based on the ACTUAL document content, "
             "NOT the uploader's tag. If the content is clearly a different type, "
             "use the correct type.\n"
@@ -221,6 +230,7 @@ def build_image_extraction_prompt(doc_type: str) -> dict:
             "IMPORTANT: If the document contains any demographic or government "
             "monitoring information (race, ethnicity, sex, gender, age), "
             "extract those fields as well.\n"
-            "If a field is not found, omit it. Do not guess values."
+            "evidence_text 必须是当前页图像中可核验的简短原文，并且包含或直接支持 field_value。"
+            "如果字段不存在就省略，不得猜测；金额和日期保留原始写法，标准化由程序完成。"
         ),
     }

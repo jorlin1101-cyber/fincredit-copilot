@@ -4,7 +4,7 @@
 from typing import Literal
 
 from db.enums import ExtractionMethod
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class EvidenceField(BaseModel):
@@ -82,3 +82,34 @@ class BankStatementSchema(BaseModel):
 
 
 ChineseDocumentSchema = IdentityCardSchema | IncomeCertificateSchema | BankStatementSchema
+
+
+class LLMExtractionField(BaseModel):
+    """Strict wire schema for one field returned by a text or vision model."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    field_name: str = Field(min_length=1, max_length=255, pattern=r"^[a-z][a-z0-9_]*$")
+    field_value: str | None = None
+    confidence: float = Field(ge=0.0, le=1.0)
+    source_page: int | None = Field(default=None, ge=1)
+    evidence_text: str = Field(min_length=1, max_length=500)
+
+    @field_validator("field_value", mode="before")
+    @classmethod
+    def stringify_scalar_value(cls, value):
+        if value is None or isinstance(value, str):
+            return value
+        if isinstance(value, (int, float)):
+            return str(value)
+        raise ValueError("field_value must be a string, number, or null")
+
+
+class LLMExtractionResponse(BaseModel):
+    """Strict model response validated before any value reaches the database."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    extractions: list[LLMExtractionField]
+    quality_flags: list[str] = Field(default_factory=list)
+    detected_doc_type: str = Field(min_length=1, max_length=100)

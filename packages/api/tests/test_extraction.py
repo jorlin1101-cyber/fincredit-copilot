@@ -66,12 +66,14 @@ def _llm_response(
                     "field_value": "Acme Corp",
                     "confidence": 0.95,
                     "source_page": 1,
+                    "evidence_text": "Acme Corp",
                 },
                 {
                     "field_name": "wages",
                     "field_value": "85000",
                     "confidence": 0.90,
                     "source_page": 1,
+                    "evidence_text": "85000",
                 },
             ],
             "quality_flags": quality_flags or [],
@@ -103,6 +105,19 @@ def _get_blank_pdf():
     import fitz
 
     pdf = fitz.open()
+    pdf.new_page()
+    data = pdf.tobytes()
+    pdf.close()
+    return data
+
+
+def _get_mixed_two_page_pdf():
+    """Create one text page followed by one scanned/blank page."""
+    import fitz
+
+    pdf = fitz.open()
+    text_page = pdf.new_page()
+    text_page.insert_text((72, 72), "Employee Name: Zhang Chen\nMonthly Income: 20000 yuan")
     pdf.new_page()
     data = pdf.tobytes()
     pdf.close()
@@ -162,6 +177,15 @@ class TestExtractTextFromPdf:
         assert result is not None
         assert len(result) < 50
 
+    def test_pdf_is_split_and_scanned_page_is_rendered(self):
+        pages = ExtractionService._extract_pages_from_pdf_sync(_get_mixed_two_page_pdf())
+        assert pages is not None
+        assert [page.page_no for page in pages] == [1, 2]
+        assert "Monthly Income" in pages[0].text
+        assert pages[0].image_data is None
+        assert pages[1].text == ""
+        assert pages[1].image_data is not None
+
 
 # ---------------------------------------------------------------------------
 # Scanned PDF fallback
@@ -184,6 +208,9 @@ class TestScannedPdfFallback:
                         "field_value": "Acme",
                         "confidence": 0.8,
                         "source_page": 1,
+                        "evidence_text": "Acme",
+                        "normalized_value": "acme",
+                        "extraction_method": "vision",
                     }
                 ],
                 "quality_flags": [],
@@ -194,6 +221,65 @@ class TestScannedPdfFallback:
         assert result is not None
         assert result["extractions"][0]["field_name"] == "employer_name"
         mock_vision.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_mixed_pdf_processes_every_page_with_correct_method(self):
+        svc = ExtractionService()
+        text_result = {
+            "extractions": [
+                {
+                    "field_name": "employee_name",
+                    "field_value": "Zhang Chen",
+                    "normalized_value": "zhangchen",
+                    "confidence": 0.95,
+                    "source_page": 1,
+                    "evidence_text": "Employee Name: Zhang Chen",
+                    "extraction_method": "text_layer",
+                }
+            ],
+            "quality_flags": [],
+            "detected_doc_type": "income_certificate",
+        }
+        vision_result = {
+            "extractions": [
+                {
+                    "field_name": "monthly_gross_income",
+                    "field_value": "20000",
+                    "normalized_value": "20000.00",
+                    "confidence": 0.91,
+                    "source_page": 2,
+                    "evidence_text": "月收入 20000 元",
+                    "extraction_method": "vision",
+                }
+            ],
+            "quality_flags": [],
+            "detected_doc_type": "income_certificate",
+        }
+
+        with (
+            patch.object(
+                svc,
+                "_extract_via_llm",
+                new_callable=AsyncMock,
+                return_value=text_result,
+            ) as mock_text,
+            patch.object(
+                svc,
+                "_extract_image_via_llm",
+                new_callable=AsyncMock,
+                return_value=vision_result,
+            ) as mock_vision,
+        ):
+            result = await svc._process_pdf(_get_mixed_two_page_pdf(), "income_certificate")
+
+        assert result is not None
+        assert [item["source_page"] for item in result["extractions"]] == [1, 2]
+        assert {item["extraction_method"] for item in result["extractions"]} == {
+            "text_layer",
+            "vision",
+        }
+        assert mock_text.call_args.kwargs["source_page"] == 1
+        assert mock_vision.call_args.kwargs["source_page"] == 2
 
 
 # ---------------------------------------------------------------------------
@@ -209,7 +295,7 @@ class TestLlmExtraction:
         svc = ExtractionService()
         with patch("src.services.extraction.get_completion", new_callable=AsyncMock) as mock_llm:
             mock_llm.return_value = _llm_response()
-            result = await svc._extract_via_llm("some document text", "w2")
+            result = await svc._extract_via_llm("Employer Acme Corp, wages 85000", "w2")
 
         assert result is not None
         assert len(result["extractions"]) == 2
@@ -220,7 +306,7 @@ class TestLlmExtraction:
         svc = ExtractionService()
         with patch("src.services.extraction.get_completion", new_callable=AsyncMock) as mock_llm:
             mock_llm.return_value = "not valid json {{"
-            result = await svc._extract_via_llm("some document text", "w2")
+            result = await svc._extract_via_llm("Employer Acme Corp, wages 85000", "w2")
 
         assert result is None
 
@@ -231,7 +317,7 @@ class TestLlmExtraction:
         fenced = "```json\n" + _llm_response() + "\n```"
         with patch("src.services.extraction.get_completion", new_callable=AsyncMock) as mock_llm:
             mock_llm.return_value = fenced
-            result = await svc._extract_via_llm("some document text", "w2")
+            result = await svc._extract_via_llm("Employer Acme Corp, wages 85000", "w2")
 
         assert result is not None
         assert len(result["extractions"]) == 2
@@ -244,10 +330,47 @@ class TestLlmExtraction:
         fenced = "```\n" + _llm_response() + "\n```"
         with patch("src.services.extraction.get_completion", new_callable=AsyncMock) as mock_llm:
             mock_llm.return_value = fenced
-            result = await svc._extract_via_llm("some document text", "w2")
+            result = await svc._extract_via_llm("Employer Acme Corp, wages 85000", "w2")
 
         assert result is not None
         assert result["extractions"][0]["field_name"] == "employer_name"
+
+    @pytest.mark.asyncio
+    async def test_invalid_schema_is_repaired_once(self):
+        svc = ExtractionService()
+        invalid = '{"extractions": [{"field_name": "wages"}]}'
+        with patch("src.services.extraction.get_completion", new_callable=AsyncMock) as mock_llm:
+            mock_llm.side_effect = [invalid, _llm_response()]
+            result = await svc._extract_via_llm(
+                "Acme Corp reported wages of 85000",
+                "w2",
+            )
+
+        assert result is not None
+        assert mock_llm.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_text_page_provenance_overrides_model_page(self):
+        svc = ExtractionService()
+        response = json.loads(_llm_response())
+        for extraction in response["extractions"]:
+            extraction["source_page"] = 99
+        with patch(
+            "src.services.extraction.get_completion",
+            new_callable=AsyncMock,
+            return_value=json.dumps(response),
+        ):
+            result = await svc._extract_via_llm(
+                "Acme Corp reported wages of 85000",
+                "w2",
+                source_page=3,
+            )
+
+        assert result is not None
+        assert {item["source_page"] for item in result["extractions"]} == {3}
+        assert {item["extraction_method"] for item in result["extractions"]} == {"text_layer"}
+        wages = next(item for item in result["extractions"] if item["field_name"] == "wages")
+        assert wages["normalized_value"] == "85000.00"
 
     @pytest.mark.asyncio
     async def test_llm_returns_empty_extractions(self):
@@ -668,6 +791,47 @@ class TestQualityFlags:
         flags = json.loads(mock_doc.quality_flags)
         assert "blurry" in flags
         assert "incomplete" in flags
+
+    @pytest.mark.asyncio
+    async def test_low_confidence_field_requires_human_review(self):
+        svc = ExtractionService()
+        mock_doc = _make_mock_doc()
+        mock_session = AsyncMock()
+        mock_session.add = MagicMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_doc
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        mock_storage = MagicMock()
+        mock_storage.download_file = AsyncMock(return_value=_get_minimal_pdf())
+        low_confidence = _llm_response(
+            extractions=[
+                {
+                    "field_name": "wages",
+                    "field_value": "85000",
+                    "confidence": 0.55,
+                    "source_page": 1,
+                    "evidence_text": "wages 85000",
+                }
+            ]
+        )
+
+        with (
+            patch("src.services.extraction.SessionLocal") as mock_session_cls,
+            patch("src.services.extraction.get_storage_service", return_value=mock_storage),
+            patch(
+                "src.services.extraction.get_completion",
+                new_callable=AsyncMock,
+                return_value=low_confidence,
+            ),
+        ):
+            mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=mock_session)
+            mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+            await svc.process_document(1)
+
+        from db.enums import DocumentStatus
+
+        assert mock_doc.status == DocumentStatus.PENDING_REVIEW
+        assert "low_confidence" in json.loads(mock_doc.quality_flags)
 
     @pytest.mark.asyncio
     async def test_document_type_reclassified_on_mismatch(self):

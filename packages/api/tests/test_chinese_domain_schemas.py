@@ -14,6 +14,7 @@ from src.schemas.chinese_document import (
     EvidenceField,
     IdentityCardSchema,
     IncomeCertificateSchema,
+    LLMExtractionResponse,
 )
 from src.schemas.policy import PolicyMetadata
 
@@ -48,6 +49,24 @@ def test_evidence_field_rejects_invalid_confidence_and_page():
             source_page=0,
             evidence_text="月收入20,000元",
             extraction_method=ExtractionMethod.TEXT_LAYER,
+        )
+
+
+def test_llm_extraction_schema_requires_grounding_evidence():
+    with pytest.raises(ValidationError):
+        LLMExtractionResponse.model_validate(
+            {
+                "extractions": [
+                    {
+                        "field_name": "employee_name",
+                        "field_value": "张晨",
+                        "confidence": 0.9,
+                        "source_page": 1,
+                    }
+                ],
+                "quality_flags": [],
+                "detected_doc_type": "income_certificate",
+            }
         )
 
 

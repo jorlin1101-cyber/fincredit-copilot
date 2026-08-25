@@ -20,7 +20,14 @@ def _make_text_pdf() -> bytes:
 
     doc = fitz.open()
     page = doc.new_page()
-    page.insert_text((72, 72), "Employee Name: Sarah Mitchell\nGross Income: $102,000")
+    page.insert_text(
+        (72, 72),
+        "Employee Name: Sarah Mitchell\n"
+        "Employer Name: Acme Corp\n"
+        "Gross Income: $102,000\n"
+        "Race: White\n"
+        "Ethnicity: Not Hispanic",
+    )
     pdf_bytes = doc.tobytes()
     doc.close()
     return pdf_bytes
@@ -42,9 +49,24 @@ def _make_scanned_pdf() -> bytes:
 _LLM_RESPONSE_WITH_DEMOGRAPHICS = json.dumps(
     {
         "extractions": [
-            {"field_name": "gross_income", "field_value": "102000", "confidence": 0.95},
-            {"field_name": "race", "field_value": "White", "confidence": 0.90},
-            {"field_name": "ethnicity", "field_value": "Not Hispanic", "confidence": 0.88},
+            {
+                "field_name": "gross_income",
+                "field_value": "102000",
+                "confidence": 0.95,
+                "evidence_text": "Gross Income: $102,000",
+            },
+            {
+                "field_name": "race",
+                "field_value": "White",
+                "confidence": 0.90,
+                "evidence_text": "Race: White",
+            },
+            {
+                "field_name": "ethnicity",
+                "field_value": "Not Hispanic",
+                "confidence": 0.88,
+                "evidence_text": "Ethnicity: Not Hispanic",
+            },
         ],
         "quality_flags": [],
         "detected_doc_type": "w2",
@@ -54,8 +76,18 @@ _LLM_RESPONSE_WITH_DEMOGRAPHICS = json.dumps(
 _LLM_RESPONSE_NO_DEMOGRAPHICS = json.dumps(
     {
         "extractions": [
-            {"field_name": "gross_income", "field_value": "102000", "confidence": 0.95},
-            {"field_name": "employer_name", "field_value": "Acme Corp", "confidence": 0.92},
+            {
+                "field_name": "gross_income",
+                "field_value": "102000",
+                "confidence": 0.95,
+                "evidence_text": "Gross Income: $102,000",
+            },
+            {
+                "field_name": "employer_name",
+                "field_value": "Acme Corp",
+                "confidence": 0.92,
+                "evidence_text": "Employer Name: Acme Corp",
+            },
         ],
         "quality_flags": [],
         "detected_doc_type": "w2",
