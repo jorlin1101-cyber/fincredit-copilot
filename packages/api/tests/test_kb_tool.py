@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from src.agents.compliance_tools import kb_search
+from src.services.compliance.knowledge_base.controlled_retrieval import RetrievalOutcome
 from src.services.compliance.knowledge_base.search import KBSearchResult
 
 
@@ -17,7 +18,7 @@ def _make_result(
     effective_date: str | None = "2024-01-01",
 ) -> KBSearchResult:
     """Create a KBSearchResult for testing."""
-    tier_labels = {1: "Federal Regulation", 2: "Agency Guideline", 3: "Internal Policy"}
+    tier_labels = {1: "全国监管政策", 2: "成都市地方规则", 3: "内部演示规则"}
     return KBSearchResult(
         chunk_text=chunk_text,
         source_document=source,
@@ -27,6 +28,21 @@ def _make_result(
         similarity=0.8,
         boosted_similarity=0.8,
         effective_date=effective_date,
+        issuer="测试发布机构",
+        source_url="https://example.gov.cn/policy",
+        version="2026-v1",
+        citation_id="POL-1-1",
+        rrf_score=0.03,
+    )
+
+
+def _outcome(results, *, sufficient=True):
+    return RetrievalOutcome(
+        original_query="测试问题",
+        effective_query="测试问题",
+        results=results,
+        status="sufficient" if sufficient else "insufficient",
+        reason="证据充分" if sufficient else "未找到政策证据",
     )
 
 
@@ -74,16 +90,16 @@ class TestKbSearchTool:
         with (
             patch("src.agents.compliance_tools.SessionLocal", return_value=mock_ctx),
             patch(
-                "src.agents.compliance_tools.search_kb",
+                "src.agents.compliance_tools.retrieve_policy_evidence",
                 new_callable=AsyncMock,
-                return_value=results,
+                return_value=_outcome(results),
             ),
             patch("src.agents.compliance_tools.detect_conflicts", return_value=[]),
             patch("src.agents.compliance_tools.write_audit_event", new_callable=AsyncMock),
         ):
             output = await kb_search.ainvoke({"query": "DTI requirements", "state": agent_state})
 
-        assert "[Federal Regulation]" in output
+        assert "[全国监管政策]" in output
         assert "12 CFR 1026.43" in output
         assert "QM Safe Harbor" in output
         assert "2014-01-10" in output
@@ -96,12 +112,17 @@ class TestKbSearchTool:
 
         with (
             patch("src.agents.compliance_tools.SessionLocal", return_value=mock_ctx),
-            patch("src.agents.compliance_tools.search_kb", new_callable=AsyncMock, return_value=[]),
+            patch(
+                "src.agents.compliance_tools.retrieve_policy_evidence",
+                new_callable=AsyncMock,
+                return_value=_outcome([], sufficient=False),
+            ),
             patch("src.agents.compliance_tools.write_audit_event", new_callable=AsyncMock),
         ):
             output = await kb_search.ainvoke({"query": "something obscure", "state": agent_state})
 
-        assert "rephrase" in output.lower() or "no relevant" in output.lower()
+        assert "政策证据不足" in output
+        assert "人工复核" in output
 
     @pytest.mark.asyncio
     async def test_writes_audit_event(self, agent_state, mock_session_factory):
@@ -111,7 +132,11 @@ class TestKbSearchTool:
 
         with (
             patch("src.agents.compliance_tools.SessionLocal", return_value=mock_ctx),
-            patch("src.agents.compliance_tools.search_kb", new_callable=AsyncMock, return_value=[]),
+            patch(
+                "src.agents.compliance_tools.retrieve_policy_evidence",
+                new_callable=AsyncMock,
+                return_value=_outcome([], sufficient=False),
+            ),
             patch("src.agents.compliance_tools.write_audit_event", mock_audit),
         ):
             await kb_search.ainvoke({"query": "DTI limits", "state": agent_state})
@@ -131,16 +156,16 @@ class TestKbSearchTool:
         with (
             patch("src.agents.compliance_tools.SessionLocal", return_value=mock_ctx),
             patch(
-                "src.agents.compliance_tools.search_kb",
+                "src.agents.compliance_tools.retrieve_policy_evidence",
                 new_callable=AsyncMock,
-                return_value=results,
+                return_value=_outcome(results),
             ),
             patch("src.agents.compliance_tools.detect_conflicts", return_value=[]),
             patch("src.agents.compliance_tools.write_audit_event", new_callable=AsyncMock),
         ):
             output = await kb_search.ainvoke({"query": "any query", "state": agent_state})
 
-        assert "simulated for demonstration purposes" in output
+        assert "不构成法律、监管或授信意见" in output
 
     @pytest.mark.asyncio
     async def test_conflict_section_in_output(self, agent_state, mock_session_factory):
@@ -165,16 +190,16 @@ class TestKbSearchTool:
         with (
             patch("src.agents.compliance_tools.SessionLocal", return_value=mock_ctx),
             patch(
-                "src.agents.compliance_tools.search_kb",
+                "src.agents.compliance_tools.retrieve_policy_evidence",
                 new_callable=AsyncMock,
-                return_value=results,
+                return_value=_outcome(results),
             ),
             patch("src.agents.compliance_tools.detect_conflicts", return_value=conflicts),
             patch("src.agents.compliance_tools.write_audit_event", new_callable=AsyncMock),
         ):
             output = await kb_search.ainvoke({"query": "DTI limits", "state": agent_state})
 
-        assert "CONFLICTS DETECTED" in output
-        assert "Numeric Threshold" in output
+        assert "检测到规则差异" in output
+        assert "numeric_threshold" in output
         assert "43%" in output
         assert "40%" in output
