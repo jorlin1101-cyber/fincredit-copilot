@@ -8,6 +8,7 @@ and returns results with citation metadata.
 
 import logging
 from dataclasses import dataclass
+from datetime import date
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -47,6 +48,10 @@ async def search_kb(
     session: AsyncSession,
     query: str,
     top_k: int = 5,
+    *,
+    as_of: date | None = None,
+    jurisdiction: str | None = None,
+    source_type: str | None = None,
 ) -> list[KBSearchResult]:
     """Search the compliance KB using vector similarity with tier boosting.
 
@@ -58,6 +63,8 @@ async def search_kb(
     Returns:
         List of KBSearchResult ordered by boosted similarity (descending).
     """
+    as_of = as_of or date.today()
+
     # Get query embedding
     try:
         embeddings = await get_embeddings([query])
@@ -77,13 +84,23 @@ async def search_kb(
         FROM kb_chunks c
         JOIN kb_documents d ON c.document_id = d.id
         WHERE c.embedding IS NOT NULL
+          AND (d.effective_date IS NULL OR d.effective_date <= :as_of)
+          AND (d.expires_at IS NULL OR d.expires_at >= :as_of)
+          AND (:jurisdiction IS NULL OR d.jurisdiction = :jurisdiction)
+          AND (:source_type IS NULL OR d.source_type = :source_type)
         ORDER BY c.embedding <=> :query_vec
         LIMIT :fetch_limit
     """)
 
     result = await session.execute(
         sql,
-        {"query_vec": str(query_vec), "fetch_limit": fetch_limit},
+        {
+            "query_vec": str(query_vec),
+            "fetch_limit": fetch_limit,
+            "as_of": as_of,
+            "jurisdiction": jurisdiction,
+            "source_type": source_type,
+        },
     )
     rows = result.fetchall()
 

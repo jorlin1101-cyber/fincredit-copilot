@@ -1,6 +1,7 @@
 # This project was developed with assistance from AI tools.
 """Tests for compliance KB vector search with tier boosting."""
 
+from datetime import date
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -149,3 +150,26 @@ class TestSearchKb:
         results = await search_kb(mock_session, "any query")
 
         assert results == []
+
+    @pytest.mark.asyncio
+    async def test_passes_as_of_and_provenance_filters_to_database(self, monkeypatch):
+        mock_session = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.fetchall.return_value = []
+        mock_session.execute = AsyncMock(return_value=mock_result)
+
+        import src.services.compliance.knowledge_base.search as mod
+
+        monkeypatch.setattr(mod, "get_embeddings", AsyncMock(return_value=[[0.1] * 768]))
+        await search_kb(
+            mock_session,
+            "成都公积金贷款",
+            as_of=date(2026, 8, 25),
+            jurisdiction="chengdu",
+            source_type="official",
+        )
+
+        params = mock_session.execute.await_args.args[1]
+        assert params["as_of"] == date(2026, 8, 25)
+        assert params["jurisdiction"] == "chengdu"
+        assert params["source_type"] == "official"

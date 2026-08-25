@@ -8,6 +8,7 @@ sections, embeds via the embedding model tier, and stores in the DB.
 Idempotent: clear_kb_content() removes all KB data before re-ingestion.
 """
 
+import hashlib
 import logging
 import re
 from datetime import UTC, datetime
@@ -18,6 +19,7 @@ from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.inference.client import get_embeddings
+from src.schemas.policy import PolicyMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +29,9 @@ _OVERLAP_CHARS = 64 * 4  # ~64 tokens
 
 # Tier directory mapping
 _TIER_DIRS = {
-    1: "tier1-federal",
-    2: "tier2-agency",
-    3: "tier3-internal",
+    1: "tier1-national",
+    2: "tier2-chengdu",
+    3: "tier3-internal-demo",
 }
 
 _KB_DATA_ROOT = Path(__file__).resolve().parents[6] / "data" / "compliance-kb"
@@ -55,6 +57,42 @@ def _metadata_enum(enum_type, value: str | None, default, *, field_name: str, fi
     except ValueError:
         logger.warning("Invalid %s in %s: %s", field_name, filename, value)
         return default
+
+
+def _validated_metadata(metadata: dict[str, str], *, tier: int, filename: str) -> PolicyMetadata:
+    """Validate provenance fields before any policy text reaches retrieval."""
+    default_jurisdiction = {
+        1: PolicyJurisdiction.NATIONAL,
+        2: PolicyJurisdiction.CHENGDU,
+        3: PolicyJurisdiction.INTERNAL_DEMO,
+    }[tier]
+    default_source_type = PolicySourceType.INTERNAL_DEMO if tier == 3 else PolicySourceType.OFFICIAL
+    payload = {
+        "title": metadata.get("title", Path(filename).stem),
+        "issuer": metadata.get("issuer") or "融安住房金融（虚构演示机构）",
+        "source_url": metadata.get("source_url") or None,
+        "jurisdiction": _metadata_enum(
+            PolicyJurisdiction,
+            metadata.get("jurisdiction"),
+            default_jurisdiction,
+            field_name="jurisdiction",
+            filename=filename,
+        ),
+        "source_type": _metadata_enum(
+            PolicySourceType,
+            metadata.get("source_type"),
+            default_source_type,
+            field_name="source_type",
+            filename=filename,
+        ),
+        "version": metadata.get("version") or None,
+        "published_date": metadata.get("published_date") or None,
+        "effective_date": metadata.get("effective_date") or None,
+        "expires_at": metadata.get("expires_at") or None,
+        "retrieved_date": metadata.get("retrieved_date"),
+        "description": metadata.get("description") or None,
+    }
+    return PolicyMetadata.model_validate(payload)
 
 
 def _parse_frontmatter(content: str) -> tuple[dict[str, str], str]:
@@ -198,41 +236,18 @@ async def ingest_kb_content(
             content = md_file.read_text(encoding="utf-8")
             metadata, body = _parse_frontmatter(content)
 
-            default_jurisdiction = (
-                PolicyJurisdiction.CHENGDU
-                if tier == 2
-                else (
-                    PolicyJurisdiction.INTERNAL_DEMO if tier == 3 else PolicyJurisdiction.NATIONAL
-                )
-            )
-            default_source_type = (
-                PolicySourceType.INTERNAL_DEMO if tier == 3 else PolicySourceType.OFFICIAL
-            )
-            jurisdiction = _metadata_enum(
-                PolicyJurisdiction,
-                metadata.get("jurisdiction"),
-                default_jurisdiction,
-                field_name="jurisdiction",
-                filename=md_file.name,
-            )
-            source_type = _metadata_enum(
-                PolicySourceType,
-                metadata.get("source_type"),
-                default_source_type,
-                field_name="source_type",
-                filename=md_file.name,
-            )
+            policy = _validated_metadata(metadata, tier=tier, filename=md_file.name)
 
             doc = KBDocument(
-                title=metadata.get("title", md_file.stem),
+                title=policy.title,
                 tier=tier,
                 source_file=str(md_file.relative_to(root)),
-                description=metadata.get("description"),
-                issuer=metadata.get("issuer"),
-                source_url=metadata.get("source_url"),
-                jurisdiction=jurisdiction,
-                source_type=source_type,
-                version=metadata.get("version"),
+                description=policy.description,
+                issuer=policy.issuer,
+                source_url=policy.source_url,
+                jurisdiction=policy.jurisdiction,
+                source_type=policy.source_type,
+                version=policy.version,
                 published_date=_parse_optional_date(
                     metadata.get("published_date"),
                     field_name="published_date",
@@ -248,6 +263,12 @@ async def ingest_kb_content(
                     field_name="expires_at",
                     filename=md_file.name,
                 ),
+                retrieved_at=_parse_optional_date(
+                    metadata.get("retrieved_date"),
+                    field_name="retrieved_date",
+                    filename=md_file.name,
+                ),
+                content_hash=hashlib.sha256(body.encode("utf-8")).hexdigest(),
             )
             session.add(doc)
             await session.flush()  # Get doc.id

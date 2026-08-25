@@ -468,6 +468,8 @@ class KBDocument(Base):
     published_date = Column(DateTime(timezone=True), nullable=True)
     effective_date = Column(DateTime(timezone=True), nullable=True)
     expires_at = Column(DateTime(timezone=True), nullable=True)
+    retrieved_at = Column(DateTime(timezone=True), nullable=True)
+    content_hash = Column(String(64), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     chunks = relationship("KBChunk", back_populates="document", cascade="all, delete-orphan")

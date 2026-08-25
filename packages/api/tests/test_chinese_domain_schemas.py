@@ -77,6 +77,7 @@ def test_official_policy_requires_source_url():
             issuer="监管机构",
             jurisdiction=PolicyJurisdiction.NATIONAL,
             source_type=PolicySourceType.OFFICIAL,
+            retrieved_date=date(2026, 8, 25),
         )
 
 
@@ -97,6 +98,7 @@ def test_policy_rejects_invalid_date_range():
             source_type=PolicySourceType.OFFICIAL,
             effective_date=date(2026, 8, 2),
             expires_at=date(2026, 8, 1),
+            retrieved_date=date(2026, 8, 25),
         )
 
 
@@ -107,4 +109,5 @@ def test_internal_demo_policy_must_be_explicitly_labelled():
             issuer="融安住房金融（虚构）",
             jurisdiction=PolicyJurisdiction.NATIONAL,
             source_type=PolicySourceType.INTERNAL_DEMO,
+            retrieved_date=date(2026, 8, 25),
         )

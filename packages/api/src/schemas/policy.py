@@ -21,6 +21,7 @@ class PolicyMetadata(BaseModel):
     published_date: date | None = None
     effective_date: date | None = None
     expires_at: date | None = None
+    retrieved_date: date
     description: str | None = None
 
     @model_validator(mode="after")
@@ -29,6 +30,8 @@ class PolicyMetadata(BaseModel):
             raise ValueError("official policy metadata requires source_url")
         if self.effective_date and self.expires_at and self.expires_at < self.effective_date:
             raise ValueError("expires_at must not be earlier than effective_date")
+        if self.published_date and self.retrieved_date < self.published_date:
+            raise ValueError("retrieved_date must not be earlier than published_date")
         if (
             self.source_type == PolicySourceType.INTERNAL_DEMO
             and self.jurisdiction != PolicyJurisdiction.INTERNAL_DEMO

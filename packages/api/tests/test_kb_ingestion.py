@@ -2,6 +2,7 @@
 """Tests for compliance KB ingestion pipeline."""
 
 import textwrap
+from pathlib import Path
 from unittest.mock import AsyncMock
 
 import pytest
@@ -11,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.services.compliance.knowledge_base.ingestion import (
     _chunk_markdown,
     _parse_frontmatter,
+    _validated_metadata,
     ingest_kb_content,
 )
 
@@ -121,7 +123,7 @@ class TestIngestKbContent:
     @pytest.fixture
     def kb_data_dir(self, tmp_path):
         """Create a temporary KB data directory with test content."""
-        tier1 = tmp_path / "tier1-federal"
+        tier1 = tmp_path / "tier1-national"
         tier1.mkdir()
         (tier1 / "test-reg.md").write_text(
             textwrap.dedent("""\
@@ -136,6 +138,7 @@ class TestIngestKbContent:
             published_date: "2023-12-01"
             effective_date: "2024-01-01"
             expires_at: "2027-01-01"
+            retrieved_date: "2026-08-25"
             ---
 
             DISCLAIMER: Simulated content.
@@ -149,13 +152,14 @@ class TestIngestKbContent:
             Content for section B.
         """)
         )
-        tier3 = tmp_path / "tier3-internal"
+        tier3 = tmp_path / "tier3-internal-demo"
         tier3.mkdir()
         (tier3 / "test-policy.md").write_text(
             textwrap.dedent("""\
             ---
             title: "Test Policy"
             source_document: "Internal Manual"
+            retrieved_date: "2026-08-25"
             ---
 
             ## Policy Section
@@ -195,6 +199,8 @@ class TestIngestKbContent:
         assert official.version == "2026-v1"
         assert official.published_date.isoformat().startswith("2023-12-01")
         assert official.expires_at.isoformat().startswith("2027-01-01")
+        assert official.retrieved_at.isoformat().startswith("2026-08-25")
+        assert len(official.content_hash) == 64
 
         internal = next(doc for doc in documents if doc.title == "Test Policy")
         assert internal.jurisdiction == PolicyJurisdiction.INTERNAL_DEMO
@@ -223,3 +229,23 @@ class TestIngestKbContent:
         chunk_objects = [o for o in added_objects if isinstance(o, KBChunk)]
         for chunk in chunk_objects:
             assert chunk.embedding is None
+
+
+def test_shipped_chinese_policy_corpus_has_valid_provenance():
+    root = Path(__file__).resolve().parents[3] / "data" / "compliance-kb"
+    tier_dirs = {
+        1: "tier1-national",
+        2: "tier2-chengdu",
+        3: "tier3-internal-demo",
+    }
+    validated = []
+    for tier, directory in tier_dirs.items():
+        for path in (root / directory).glob("*.md"):
+            metadata, body = _parse_frontmatter(path.read_text(encoding="utf-8"))
+            validated.append(_validated_metadata(metadata, tier=tier, filename=path.name))
+            assert body
+
+    assert len(validated) == 6
+    assert sum(item.jurisdiction == PolicyJurisdiction.NATIONAL for item in validated) == 2
+    assert sum(item.jurisdiction == PolicyJurisdiction.CHENGDU for item in validated) == 3
+    assert sum(item.source_type == PolicySourceType.INTERNAL_DEMO for item in validated) == 1
