@@ -21,12 +21,17 @@ from ..schemas.document import (
     DocumentResponse,
     DocumentStatusUpdate,
     DocumentUploadResponse,
+    ExtractionCorrectionListResponse,
+    ExtractionCorrectionRequest,
+    ExtractionCorrectionResponse,
+    ExtractionFieldResponse,
     ExtractionListResponse,
 )
 from ..services import document as doc_service
 from ..services.completeness import check_completeness
 from ..services.document import DocumentAccessDenied, DocumentUploadError
 from ..services.extraction import get_extraction_service
+from ..services.extraction_review import correct_extraction, list_corrections
 
 logger = logging.getLogger(__name__)
 
@@ -207,6 +212,79 @@ async def get_extractions(
     return ExtractionListResponse(
         document_id=document_id,
         extractions=doc.extractions or [],
+    )
+
+
+@router.patch(
+    "/applications/{application_id}/documents/{document_id}/extractions/{extraction_id}",
+    response_model=ExtractionCorrectionResponse,
+    dependencies=[Depends(require_roles(*_EXTRACTION_ROLES))],
+)
+async def correct_extracted_field(
+    application_id: int,
+    document_id: int,
+    extraction_id: int,
+    body: ExtractionCorrectionRequest,
+    user: CurrentUser,
+    session: AsyncSession = Depends(get_db),
+) -> ExtractionCorrectionResponse:
+    """Apply a human correction and retain its before/after audit evidence."""
+    try:
+        result = await correct_extraction(
+            session,
+            user,
+            application_id=application_id,
+            document_id=document_id,
+            extraction_id=extraction_id,
+            new_value=body.new_value,
+            reason=body.reason,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Extraction not found")
+    correction, extraction = result
+    return ExtractionCorrectionResponse(
+        id=correction.id,
+        extraction_id=correction.extraction_id,
+        old_value=correction.old_value,
+        new_value=correction.new_value,
+        old_normalized_value=correction.old_normalized_value,
+        new_normalized_value=correction.new_normalized_value,
+        reason=correction.reason,
+        corrected_by=correction.corrected_by,
+        corrected_at=correction.corrected_at,
+        extraction=ExtractionFieldResponse.model_validate(extraction),
+    )
+
+
+@router.get(
+    "/applications/{application_id}/documents/{document_id}/extractions/{extraction_id}/corrections",
+    response_model=ExtractionCorrectionListResponse,
+    dependencies=[Depends(require_roles(*_EXTRACTION_ROLES))],
+)
+async def get_extraction_corrections(
+    application_id: int,
+    document_id: int,
+    extraction_id: int,
+    user: CurrentUser,
+    session: AsyncSession = Depends(get_db),
+) -> ExtractionCorrectionListResponse:
+    """Return the append-only history for one extracted field."""
+    corrections = await list_corrections(
+        session,
+        user,
+        application_id=application_id,
+        document_id=document_id,
+        extraction_id=extraction_id,
+    )
+    if corrections is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Extraction not found")
+    return ExtractionCorrectionListResponse(
+        extraction_id=extraction_id,
+        corrections=[ExtractionCorrectionResponse.model_validate(item) for item in corrections],
     )
 
 

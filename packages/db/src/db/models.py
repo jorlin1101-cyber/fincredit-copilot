@@ -348,9 +348,40 @@ class DocumentExtraction(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     document = relationship("Document", back_populates="extractions")
+    corrections = relationship(
+        "ExtractionCorrection",
+        back_populates="extraction",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         return f"<DocumentExtraction(doc_id={self.document_id}, field='{self.field_name}')>"
+
+
+class ExtractionCorrection(Base):
+    """Append-only history of a human correction to an extracted field."""
+
+    __tablename__ = "extraction_corrections"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    extraction_id = Column(
+        Integer,
+        ForeignKey("document_extractions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    old_value = Column(Text, nullable=True)
+    new_value = Column(Text, nullable=False)
+    old_normalized_value = Column(Text, nullable=True)
+    new_normalized_value = Column(Text, nullable=True)
+    reason = Column(Text, nullable=False)
+    corrected_by = Column(String(255), nullable=False, index=True)
+    corrected_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    extraction = relationship("DocumentExtraction", back_populates="corrections")
+
+    def __repr__(self):
+        return f"<ExtractionCorrection(extraction_id={self.extraction_id})>"
 
 
 class AuditEvent(Base):

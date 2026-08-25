@@ -4,7 +4,7 @@
 from datetime import datetime
 
 from db.enums import DocumentStatus, DocumentType, ExtractionMethod
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from . import Pagination
 
@@ -88,3 +88,32 @@ class ExtractionListResponse(BaseModel):
 
     document_id: int
     extractions: list[ExtractionFieldResponse]
+
+
+class ExtractionCorrectionRequest(BaseModel):
+    """Human correction for one extracted field."""
+
+    new_value: str = Field(min_length=1, max_length=2000)
+    reason: str = Field(min_length=2, max_length=1000)
+
+
+class ExtractionCorrectionResponse(BaseModel):
+    """Before/after evidence returned after a correction."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    extraction_id: int
+    old_value: str | None = None
+    new_value: str
+    old_normalized_value: str | None = None
+    new_normalized_value: str | None = None
+    reason: str
+    corrected_by: str
+    corrected_at: datetime
+    extraction: ExtractionFieldResponse
+
+
+class ExtractionCorrectionListResponse(BaseModel):
+    extraction_id: int
+    corrections: list[ExtractionCorrectionResponse]
