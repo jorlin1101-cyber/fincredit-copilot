@@ -1,7 +1,7 @@
 # This project was developed with assistance from AI tools.
 """Tests for the disclosure acknowledgment service."""
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -10,6 +10,7 @@ from src.services.disclosure import (
     DISCLOSURE_BY_ID,
     REQUIRED_DISCLOSURES,
     get_disclosure_status,
+    record_disclosure_acknowledgment,
 )
 
 # ---------------------------------------------------------------------------
@@ -142,3 +143,51 @@ async def test_status_deduplicates_repeated_acknowledgments():
 
     assert result["acknowledged"] == ["loan_estimate"]
     assert len(result["pending"]) == 3
+
+
+@pytest.mark.asyncio
+@patch("src.services.disclosure.write_audit_event", new_callable=AsyncMock)
+async def test_record_acknowledgment_writes_audit_event(mock_write_audit):
+    session = AsyncMock()
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = []
+    session.execute.return_value = result_mock
+    user = MagicMock()
+    user.user_id = "borrower-1"
+    user.role.value = "borrower"
+
+    result = await record_disclosure_acknowledgment(
+        session,
+        user,
+        application_id=1,
+        disclosure_id="privacy_notice",
+        borrower_confirmation="我已阅读并确认",
+    )
+
+    assert result == DISCLOSURE_BY_ID["privacy_notice"]
+    mock_write_audit.assert_awaited_once()
+    session.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@patch("src.services.disclosure.write_audit_event", new_callable=AsyncMock)
+async def test_record_acknowledgment_is_idempotent(mock_write_audit):
+    session = AsyncMock()
+    result_mock = MagicMock()
+    result_mock.scalars.return_value.all.return_value = [_mock_audit_event("privacy_notice")]
+    session.execute.return_value = result_mock
+    user = MagicMock()
+    user.user_id = "borrower-1"
+    user.role.value = "borrower"
+
+    result = await record_disclosure_acknowledgment(
+        session,
+        user,
+        application_id=1,
+        disclosure_id="privacy_notice",
+        borrower_confirmation="我已阅读并确认",
+    )
+
+    assert result == DISCLOSURE_BY_ID["privacy_notice"]
+    mock_write_audit.assert_not_awaited()
+    session.commit.assert_not_awaited()

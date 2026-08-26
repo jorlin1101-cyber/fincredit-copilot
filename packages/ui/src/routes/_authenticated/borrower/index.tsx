@@ -36,7 +36,7 @@ import {
   useUploadDocument,
 } from '@/hooks/use-documents';
 import { useConditions } from '@/hooks/use-conditions';
-import { useDisclosures } from '@/hooks/use-disclosures';
+import { useAcknowledgeDisclosure, useDisclosures } from '@/hooks/use-disclosures';
 import { useRateLock } from '@/hooks/use-rate-lock';
 import { formatCny, formatDateZh, formatDaysZh, formatPercent } from '@/lib/format';
 import {
@@ -628,12 +628,15 @@ function DisclosureModal({
 
 function DisclosuresCard({
   disclosures,
+  applicationId,
   isLoading,
 }: {
   disclosures: DisclosureStatusResponse | undefined;
+  applicationId: number | undefined;
   isLoading: boolean;
 }) {
   const [reviewingItem, setReviewingItem] = useState<DisclosureItem | null>(null);
+  const acknowledgeMutation = useAcknowledgeDisclosure(applicationId);
 
   if (isLoading) {
     return (
@@ -670,20 +673,17 @@ function DisclosuresCard({
           onAcknowledge={() => {
             const item = reviewingItem;
             setReviewingItem(null);
-            window.dispatchEvent(
-              new CustomEvent('chat-prefill', {
-                detail: {
-                  message: `我已阅读并确认《${item.label}》[disclosure_id=${item.id}]`,
-                  displayMessage: `我已阅读并确认《${item.label}》`,
-                  autoSend: true,
-                },
-              }),
-            );
+            acknowledgeMutation.mutate(item.id);
           }}
         />
       )}
       <CardShell>
         <h3 className="mb-4 text-base font-semibold text-foreground">信息披露</h3>
+        {acknowledgeMutation.isError && (
+          <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+            确认记录保存失败，请重新操作。
+          </div>
+        )}
         <div className="divide-y divide-border">
           {items.map((item: DisclosureItem) => (
             <div
@@ -1022,6 +1022,7 @@ function BorrowerDashboard() {
             />
             <DisclosuresCard
               disclosures={disclosuresQuery.data}
+              applicationId={appId}
               isLoading={isInitialLoading || disclosuresQuery.isLoading}
             />
           </div>

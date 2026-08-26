@@ -20,3 +20,9 @@ class DisclosureStatusResponse(BaseModel):
     application_id: int
     all_acknowledged: bool
     disclosures: list[DisclosureItem]
+
+
+class DisclosureAcknowledgeRequest(BaseModel):
+    """Borrower's explicit confirmation after reviewing a disclosure."""
+
+    borrower_confirmation: str = "我已阅读并确认"

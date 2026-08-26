@@ -31,7 +31,11 @@ from ..services.condition import (
     get_conditions,
     respond_to_condition,
 )
-from ..services.disclosure import DISCLOSURE_BY_ID, get_disclosure_status
+from ..services.disclosure import (
+    DISCLOSURE_BY_ID,
+    get_disclosure_status,
+    record_disclosure_acknowledgment,
+)
 from ..services.document import list_documents
 from ..services.intake import (
     get_application_progress,
@@ -311,19 +315,13 @@ async def acknowledge_disclosure(
 
     user = _user_context_from_state(state)
     async with SessionLocal() as session:
-        await write_audit_event(
+        await record_disclosure_acknowledgment(
             session,
-            event_type="disclosure_acknowledged",
-            user_id=user.user_id,
-            user_role=user.role.value,
-            application_id=application_id,
-            event_data={
-                "disclosure_id": disclosure_id,
-                "disclosure_label": disclosure["label"],
-                "borrower_confirmation": borrower_confirmation,
-            },
+            user,
+            application_id,
+            disclosure_id,
+            borrower_confirmation,
         )
-        await session.commit()
 
     return f"Recorded: {disclosure['label']} acknowledged for application {application_id}."
 

@@ -25,14 +25,22 @@ from ..schemas.condition import (
     ConditionRespondRequest,
     ConditionResponse,
 )
-from ..schemas.disclosure import DisclosureItem, DisclosureStatusResponse
+from ..schemas.disclosure import (
+    DisclosureAcknowledgeRequest,
+    DisclosureItem,
+    DisclosureStatusResponse,
+)
 from ..schemas.rate_lock import RateLockResponse
 from ..schemas.status import ApplicationStatusResponse
 from ..schemas.urgency import UrgencyLevel
 from ..services import application as app_service
 from ..services.application import InvalidTransitionError
 from ..services.condition import get_conditions, respond_to_condition
-from ..services.disclosure import REQUIRED_DISCLOSURES, get_disclosure_status
+from ..services.disclosure import (
+    REQUIRED_DISCLOSURES,
+    get_disclosure_status,
+    record_disclosure_acknowledgment,
+)
 from ..services.products import PRODUCTS
 from ..services.rate_lock import get_rate_lock_status
 from ..services.status import get_application_status
@@ -349,6 +357,57 @@ async def list_disclosures(
         application_id=application_id,
         all_acknowledged=result["all_acknowledged"],
         disclosures=disclosures,
+    )
+
+
+@router.post(
+    "/{application_id}/disclosures/{disclosure_id}/acknowledge",
+    response_model=DisclosureStatusResponse,
+    dependencies=[Depends(require_roles(UserRole.BORROWER, UserRole.ADMIN))],
+)
+async def acknowledge_application_disclosure(
+    application_id: int,
+    disclosure_id: str,
+    body: DisclosureAcknowledgeRequest,
+    user: CurrentUser,
+    session: AsyncSession = Depends(get_db),
+) -> DisclosureStatusResponse:
+    """Record an explicit borrower acknowledgment without routing through chat."""
+    app = await app_service.get_application(session, user, application_id)
+    if app is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
+        )
+
+    recorded = await record_disclosure_acknowledgment(
+        session,
+        user,
+        application_id,
+        disclosure_id,
+        body.borrower_confirmation,
+    )
+    if recorded is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Disclosure not found",
+        )
+
+    result = await get_disclosure_status(session, application_id)
+    acknowledged_set = set(result["acknowledged"])
+    return DisclosureStatusResponse(
+        application_id=application_id,
+        all_acknowledged=result["all_acknowledged"],
+        disclosures=[
+            DisclosureItem(
+                id=disclosure["id"],
+                label=disclosure["label"],
+                summary=disclosure["summary"],
+                content=disclosure["content"],
+                acknowledged=disclosure["id"] in acknowledged_set,
+            )
+            for disclosure in REQUIRED_DISCLOSURES
+        ],
     )
 
 

@@ -12,6 +12,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.config import settings
+from ..schemas.auth import UserContext
+from .audit import write_audit_event
 
 # 借款人工作台使用的演示告知文件。保留既有 ID 以兼容审计记录，
 # 但展示内容采用中国个人住房贷款场景，不代表真实银行合同或法律意见。
@@ -103,6 +105,41 @@ REQUIRED_DISCLOSURES: list[dict[str, str]] = [
 
 _DISCLOSURE_IDS = {d["id"] for d in REQUIRED_DISCLOSURES}
 DISCLOSURE_BY_ID = {d["id"]: d for d in REQUIRED_DISCLOSURES}
+
+
+async def record_disclosure_acknowledgment(
+    session: AsyncSession,
+    user: UserContext,
+    application_id: int,
+    disclosure_id: str,
+    borrower_confirmation: str,
+) -> dict | None:
+    """Persist one disclosure acknowledgment once and return its definition.
+
+    The operation is idempotent so a retried HTTP request cannot create
+    duplicate audit records for the same application and disclosure.
+    """
+    disclosure = DISCLOSURE_BY_ID.get(disclosure_id)
+    if disclosure is None:
+        return None
+
+    current = await get_disclosure_status(session, application_id)
+    if disclosure_id not in current["acknowledged"]:
+        await write_audit_event(
+            session,
+            event_type="disclosure_acknowledged",
+            user_id=user.user_id,
+            user_role=user.role.value,
+            application_id=application_id,
+            event_data={
+                "disclosure_id": disclosure_id,
+                "disclosure_label": disclosure["label"],
+                "borrower_confirmation": borrower_confirmation,
+            },
+        )
+        await session.commit()
+
+    return disclosure
 
 
 async def get_disclosure_status(

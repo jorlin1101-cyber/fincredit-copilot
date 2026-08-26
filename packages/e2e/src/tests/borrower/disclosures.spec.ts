@@ -4,6 +4,7 @@ import { test, expect } from "@playwright/test";
 import { BorrowerDashboardPage } from "../../pages/borrower-dashboard.page";
 
 test.describe("Borrower Disclosures", () => {
+    test.describe.configure({ mode: "serial" });
     let dashboard: BorrowerDashboardPage;
 
     test.beforeEach(async ({ page }) => {
@@ -49,39 +50,19 @@ test.describe("Borrower Disclosures", () => {
         await expect(dashboard.disclosureModal).not.toBeVisible();
     });
 
-    // W-10: Added 5s rejection timeout to the chat-prefill promise so the test
-    // fails fast instead of hanging for 30s when the event is never fired.
-    test("should trigger chat-prefill when acknowledging disclosure", async ({ page }) => {
+    test("should immediately show acknowledgment without sending a chat message", async ({ page }) => {
         const reviewButton = page.getByRole("button", {
             name: "查看并确认",
         });
 
-        if ((await reviewButton.count()) > 0) {
+        const beforeCount = await reviewButton.count();
+        if (beforeCount > 0) {
             await reviewButton.first().click();
             await expect(dashboard.disclosureModal).toBeVisible();
-
-            // Listen for the chat-prefill event
-            const prefillPromise = page.evaluate(() => {
-                return new Promise<string>((resolve, reject) => {
-                    const timeout = setTimeout(
-                        () => reject(new Error("chat-prefill event not received within 5s")),
-                        5_000,
-                    );
-                    window.addEventListener(
-                        "chat-prefill",
-                        ((e: CustomEvent) => {
-                            clearTimeout(timeout);
-                            resolve(e.detail.message);
-                        }) as EventListener,
-                        { once: true },
-                    );
-                });
-            });
-
             await dashboard.modalAcknowledgeButton.click();
-
-            const message = await prefillPromise;
-            expect(message).toContain("已阅读并确认");
+            await expect(dashboard.disclosureModal).not.toBeVisible();
+            await expect(reviewButton).toHaveCount(beforeCount - 1);
+            await expect(page.getByText(/我已阅读并确认《/)).toHaveCount(0);
         }
     });
 });
