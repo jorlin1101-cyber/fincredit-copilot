@@ -8,6 +8,7 @@ import pytest
 
 from src.services.compliance.knowledge_base.search import (
     KBSearchResult,
+    _filters_sql,
     reciprocal_rank_fusion,
     search_kb,
 )
@@ -75,6 +76,15 @@ def test_rrf_rewards_evidence_found_by_both_retrievers():
     assert fused[0].vector_rank == 2
     assert fused[0].keyword_rank == 1
     assert fused[0].rrf_score > fused[1].rrf_score
+
+
+def test_optional_provenance_filters_have_explicit_postgres_types():
+    filters = _filters_sql()
+
+    assert "CAST(d.effective_date AT TIME ZONE 'UTC' AS DATE)" in filters
+    assert "CAST(d.expires_at AT TIME ZONE 'UTC' AS DATE)" in filters
+    assert "CAST(:jurisdiction AS VARCHAR(20))" in filters
+    assert "CAST(:source_type AS VARCHAR(20))" in filters
 
 
 @pytest.mark.asyncio

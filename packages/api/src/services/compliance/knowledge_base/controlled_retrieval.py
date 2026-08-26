@@ -3,6 +3,7 @@
 
 import json
 import logging
+import re
 from dataclasses import dataclass
 from datetime import date
 
@@ -17,6 +18,26 @@ logger = logging.getLogger(__name__)
 
 REWRITE_PROMPT_VERSION = "policy-query-rewrite-v1"
 _MIN_RRF_SCORE = 0.015
+_POLICY_REFERENCE_PATTERN = re.compile(r"[\u4e00-\u9fff]{1,12}〔\d{4}〕\d+号")
+_UNSUPPORTED_LOCALITIES = (
+    "北京",
+    "上海",
+    "天津",
+    "重庆",
+    "广州",
+    "深圳",
+    "杭州",
+    "南京",
+    "武汉",
+    "西安",
+)
+_UNSUPPORTED_PRODUCTS = ("汽车消费贷款", "车贷", "企业经营贷款", "经营贷")
+_QUERY_EXPANSIONS = {
+    "新房": "新建住房阶段性安排",
+    "首付": "最低首付款比例",
+    "首套": "首套政策认定",
+    "商转公": "商业性个人住房贷款转住房公积金个人住房贷款",
+}
 
 
 @dataclass
@@ -41,18 +62,60 @@ class RetrievalOutcome:
         return self.status == "sufficient"
 
 
-def assess_evidence(results: list[KBSearchResult]) -> tuple[bool, str]:
+def _scope_guard(query: str) -> str | None:
+    """Reject requests outside the declared nationwide + Chengdu housing scope."""
+    if any(locality in query for locality in _UNSUPPORTED_LOCALITIES):
+        return "地方知识库仅覆盖成都市，无法回答其他城市的地方政策"
+    if any(product in query for product in _UNSUPPORTED_PRODUCTS):
+        return "知识库仅覆盖住房贷款，不覆盖经营贷或汽车消费贷款"
+    if ("实时" in query or "今天" in query) and ("利率" in query or "各家银行" in query):
+        return "政策知识库不提供各银行实时利率"
+    if "真实客户" in query or ("个人征信" in query and "记录" in query):
+        return "政策检索不能查询真实客户的个人征信记录"
+    return None
+
+
+def _expand_query(query: str) -> str:
+    """Add deterministic domain synonyms without removing user constraints."""
+    expansions = [term for marker, term in _QUERY_EXPANSIONS.items() if marker in query]
+    return f"{' '.join(expansions)} {query}".strip()
+
+
+def _verified_evidence(results: list[KBSearchResult]) -> list[KBSearchResult]:
+    """Keep only chunks whose provenance can be independently verified."""
+    return [
+        result
+        for result in results
+        if result.source_document
+        and result.section_ref
+        and result.effective_date
+        and result.version
+        and result.citation_id
+        and (result.source_type != "official" or result.source_url)
+    ]
+
+
+def assess_evidence(results: list[KBSearchResult], *, query: str | None = None) -> tuple[bool, str]:
     """Require relevance plus citation provenance before evidence may reach an Agent."""
-    if not results:
+    verified = _verified_evidence(results)
+    if not verified:
         return False, "未检索到与问题相关且在有效期内的政策证据"
-    top = results[0]
+    top = verified[0]
     if top.rrf_score < _MIN_RRF_SCORE:
         return False, "检索相关性低于受控阈值"
-    for result in results:
-        if result.source_type == "official" and not result.source_url:
-            return False, "官方政策证据缺少可核验来源网址"
-        if not result.source_document or not result.section_ref:
-            return False, "政策证据缺少文件名或条款定位"
+    references = _POLICY_REFERENCE_PATTERN.findall(query or "")
+    if references:
+        evidence_text = " ".join(
+            " ".join(
+                filter(
+                    None,
+                    [result.version, result.source_document, result.section_ref, result.chunk_text],
+                )
+            )
+            for result in verified
+        )
+        if not all(reference in evidence_text for reference in references):
+            return False, "用户点名的政策版本在指定日期内无有效证据"
     return True, "已获得带版本、有效期和条款定位的可核验政策证据"
 
 
@@ -94,6 +157,7 @@ async def _rewrite_query_once(
             temperature=0,
             max_tokens=120,
             response_format={"type": "json_object"},
+            extra_body={"enable_thinking": False},
         )
     except Exception:
         logger.warning("Policy query rewrite failed", exc_info=True)
@@ -114,17 +178,29 @@ async def retrieve_policy_evidence(
     jurisdiction: str | None = None,
 ) -> RetrievalOutcome:
     """Retrieve evidence, optionally rewrite once, then stop rather than hallucinate."""
-    first_results = await search_kb(
-        session,
-        query,
-        as_of=as_of,
-        jurisdiction=jurisdiction,
-    )
-    sufficient, reason = assess_evidence(first_results)
-    if sufficient:
+    scope_reason = _scope_guard(query)
+    if scope_reason:
         return RetrievalOutcome(
             original_query=query,
             effective_query=query,
+            results=[],
+            status="insufficient",
+            reason=scope_reason,
+        )
+
+    expanded_query = _expand_query(query)
+    first_results = await search_kb(
+        session,
+        expanded_query,
+        as_of=as_of,
+        jurisdiction=jurisdiction,
+    )
+    first_results = _verified_evidence(first_results)
+    sufficient, reason = assess_evidence(first_results, query=query)
+    if sufficient:
+        return RetrievalOutcome(
+            original_query=query,
+            effective_query=expanded_query,
             results=first_results,
             status="sufficient",
             reason=reason,
@@ -144,16 +220,18 @@ async def retrieve_policy_evidence(
             rewrite_output_tokens=output_tokens,
         )
 
+    expanded_rewrite = _expand_query(rewritten_query)
     retry_results = await search_kb(
         session,
-        rewritten_query,
+        expanded_rewrite,
         as_of=as_of,
         jurisdiction=jurisdiction,
     )
-    sufficient, retry_reason = assess_evidence(retry_results)
+    retry_results = _verified_evidence(retry_results)
+    sufficient, retry_reason = assess_evidence(retry_results, query=query)
     return RetrievalOutcome(
         original_query=query,
-        effective_query=rewritten_query,
+        effective_query=expanded_rewrite,
         results=retry_results,
         status="sufficient" if sufficient else "insufficient",
         reason=retry_reason,

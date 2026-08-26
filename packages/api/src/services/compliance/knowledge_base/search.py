@@ -112,10 +112,22 @@ def _result_from_row(row: Any, *, mode: str, rank: int) -> KBSearchResult:
 
 def _filters_sql() -> str:
     return """
-      AND (d.effective_date IS NULL OR d.effective_date <= :as_of)
-      AND (d.expires_at IS NULL OR d.expires_at >= :as_of)
-      AND (:jurisdiction IS NULL OR d.jurisdiction = :jurisdiction)
-      AND (:source_type IS NULL OR d.source_type = :source_type)
+      AND (
+          d.effective_date IS NULL
+          OR CAST(d.effective_date AT TIME ZONE 'UTC' AS DATE) <= :as_of
+      )
+      AND (
+          d.expires_at IS NULL
+          OR CAST(d.expires_at AT TIME ZONE 'UTC' AS DATE) >= :as_of
+      )
+      AND (
+          CAST(:jurisdiction AS VARCHAR(20)) IS NULL
+          OR d.jurisdiction = CAST(:jurisdiction AS VARCHAR(20))
+      )
+      AND (
+          CAST(:source_type AS VARCHAR(20)) IS NULL
+          OR d.source_type = CAST(:source_type AS VARCHAR(20))
+      )
     """
 
 
@@ -147,7 +159,7 @@ async def _vector_search(
 def _keyword_tsquery(query: str) -> str:
     tokens = build_search_text(query).split()
     safe = [token for token in tokens if token.replace(".", "").replace("%", "").isalnum()]
-    return " | ".join(safe[:32])
+    return " | ".join(safe[:64])
 
 
 async def _keyword_search(
