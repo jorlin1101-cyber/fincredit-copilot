@@ -14,30 +14,34 @@ export const DEV_PASSWORD = process.env.E2E_DEV_PASSWORD || "demo1234";
 export const KEYCLOAK_PASSWORD = process.env.E2E_KEYCLOAK_PASSWORD || "demo";
 
 export function getPassword(): string {
-    return IS_DEV_AUTH ? DEV_PASSWORD : KEYCLOAK_PASSWORD;
+  return IS_DEV_AUTH ? DEV_PASSWORD : KEYCLOAK_PASSWORD;
 }
 
 export const PERSONAS = {
-    borrower: {
-        title: "Borrower",
-        email: "sarah.mitchell@example.com",
-        homeRoute: "/borrower",
-    },
-    loan_officer: {
-        title: "Loan Officer",
-        email: "james.torres@example.com",
-        homeRoute: "/loan-officer",
-    },
-    underwriter: {
-        title: "Underwriter",
-        email: "maria.chen@example.com",
-        homeRoute: "/underwriter",
-    },
-    ceo: {
-        title: "CEO",
-        email: "david.park@example.com",
-        homeRoute: "/ceo",
-    },
+  borrower: {
+    title: "Borrower",
+    testId: "persona-borrower",
+    email: "sarah.mitchell@example.com",
+    homeRoute: "/borrower",
+  },
+  loan_officer: {
+    title: "Loan Officer",
+    testId: "persona-loan_officer",
+    email: "james.torres@example.com",
+    homeRoute: "/loan-officer",
+  },
+  underwriter: {
+    title: "Underwriter",
+    testId: "persona-underwriter",
+    email: "maria.chen@example.com",
+    homeRoute: "/underwriter",
+  },
+  ceo: {
+    title: "CEO",
+    testId: "persona-ceo",
+    email: "david.park@example.com",
+    homeRoute: "/ceo",
+  },
 } as const;
 
 export type PersonaKey = keyof typeof PERSONAS;

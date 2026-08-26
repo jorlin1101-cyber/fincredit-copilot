@@ -272,6 +272,7 @@ function SignIn() {
                 {PERSONAS.map(({ role, label, icon: Icon, bg, text, hoverBg }) => (
                   <button
                     key={role}
+                    data-testid={`persona-${role}`}
                     type="button"
                     onClick={() => handlePersonaClick(role)}
                     className="group flex flex-col items-center gap-2 rounded-lg p-2 transition-colors hover:bg-slate-100 dark:hover:bg-white/10"

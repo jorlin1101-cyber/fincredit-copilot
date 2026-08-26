@@ -8,39 +8,43 @@ import { ChatProvider, useChatContext } from '../contexts/chat-context';
 import { useAuth } from '../contexts/auth-context';
 
 export const Route = createRootRoute({
-    component: RootLayout,
+  component: RootLayout,
 });
 
 function RootLayoutInner() {
-    const { isOpen, openChat } = useChatContext();
-    const { isAuthenticated } = useAuth();
-    const matchRoute = useMatchRoute();
-    const isFullscreen = !!matchRoute({ to: '/sign-in' as never });
+  const { isOpen, openChat } = useChatContext();
+  const { isAuthenticated } = useAuth();
+  const matchRoute = useMatchRoute();
+  const isFullscreen = !!matchRoute({ to: '/sign-in' as never });
 
-    if (isFullscreen) {
-        return <Outlet />;
-    }
+  if (isFullscreen) {
+    return <Outlet />;
+  }
 
-    // Authenticated routes get their own chat sidebar via _authenticated layout
-    const showPublicChat = !isAuthenticated;
+  // Authenticated routes get their own chat sidebar via _authenticated layout
+  const showPublicChat = !isAuthenticated;
 
-    return (
-        <div className={`flex flex-col ${isAuthenticated ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
-            <Header />
-            <main className={`flex-1 ${isAuthenticated ? 'overflow-hidden' : ''}`}>
-                <Outlet />
-            </main>
-            {showPublicChat && <Footer />}
-            {showPublicChat && !isOpen && <ChatFab onClick={() => openChat()} />}
-            {showPublicChat && <ChatPanel />}
-        </div>
-    );
+  return (
+    <div
+      className={`flex flex-col ${isAuthenticated ? 'h-dvh overflow-hidden' : 'min-h-screen'}`}
+    >
+      <Header />
+      <main
+        className={`flex-1 ${isAuthenticated ? 'flex min-h-0 overflow-hidden' : ''}`}
+      >
+        <Outlet />
+      </main>
+      {showPublicChat && <Footer />}
+      {showPublicChat && !isOpen && <ChatFab onClick={() => openChat()} />}
+      {showPublicChat && <ChatPanel />}
+    </div>
+  );
 }
 
 function RootLayout() {
-    return (
-        <ChatProvider>
-            <RootLayoutInner />
-        </ChatProvider>
-    );
+  return (
+    <ChatProvider>
+      <RootLayoutInner />
+    </ChatProvider>
+  );
 }
