@@ -42,11 +42,7 @@ export function Hero() {
                 进入角色演示
               </Link>
               <button
-                onClick={() =>
-                  openChat(
-                    '请介绍 FinCredit Copilot 的端到端授信辅助流程，以及每个 Agent 的职责。',
-                  )
-                }
+                onClick={() => openChat()}
                 className="inline-flex items-center gap-2 rounded-md bg-[#cc0000] px-6 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#990000] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cc0000] focus-visible:ring-offset-2"
               >
                 咨询智能助手

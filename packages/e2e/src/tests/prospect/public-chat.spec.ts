@@ -35,8 +35,16 @@ test.describe("Public Chat Panel", () => {
         await expect(landing.chatFab).toBeVisible();
     });
 
-    test("should open chat via Explore Products button on hero", async () => {
+    test("should open guided chat without auto-sending a hero prompt", async ({ page }) => {
         await landing.exploreProductsButton.click();
         await expect(landing.chatPanel).toBeVisible();
+        await expect(landing.chatSuggestions).toBeVisible();
+        await expect(landing.chatInput).toHaveValue("");
+        await expect(
+            page.getByText(
+                "请介绍 FinCredit Copilot 的端到端授信辅助流程，以及每个 Agent 的职责。",
+                { exact: true },
+            ),
+        ).toHaveCount(0);
     });
 });

@@ -34,10 +34,10 @@ export class LandingPage {
     this.page = page;
     this.heroHeading = page.getByRole("heading", { level: 1 });
     this.getPreQualifiedLink = page.getByRole("link", {
-      name: "Get Pre-Qualified",
+      name: "进入角色演示",
     });
     this.exploreProductsButton = page.getByRole("button", {
-      name: "Explore Products",
+      name: "咨询智能助手",
     });
     this.brandingText = page.getByText(COMPANY_NAME).first();
 
@@ -57,14 +57,14 @@ export class LandingPage {
       name: /咨询多 Agent 授信助手/,
     });
 
-    this.chatFab = page.locator('button[aria-label="Open AI chat assistant"]');
-    this.chatPanel = page.locator('aside[aria-label="AI Chat Assistant"]');
-    this.chatCloseButton = page.locator('button[aria-label="Close chat"]');
+    this.chatFab = page.locator('button[aria-label="打开智能助手"]');
+    this.chatPanel = page.locator('aside[aria-label="智能助手"]');
+    this.chatCloseButton = page.locator('button[aria-label="关闭智能助手"]');
     this.chatInput = page.locator(
-      'input[type="text"][placeholder="Type your message..."]',
+      'input[type="text"][placeholder="请输入您的问题…"]',
     );
     this.chatSuggestions = page.getByRole("button", {
-      name: /What loan products/,
+      name: /介绍端到端授信辅助流程/,
     });
   }
 
