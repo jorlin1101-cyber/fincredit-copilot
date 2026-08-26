@@ -122,6 +122,8 @@ services:
       KEYCLOAK_CLIENT_ID: mortgage-ai-ui
       COMPANY_NAME: "${COMPANY_NAME:-融安住房金融（虚构演示机构）}"
       AGENT_NAME: "${AGENT_NAME:-FinCredit Copilot}"
+    volumes:
+      - ./packages/ui/dist:/usr/share/nginx/html:ro
     depends_on:
       mortgage-ai-api:
         condition: service_healthy

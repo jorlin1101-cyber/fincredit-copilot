@@ -210,7 +210,7 @@ Pydantic validation errors (422) include detailed error information in the `deta
 |--------|------|-------------|
 | `GET` | `/health/` | Health check for API and database |
 | `GET` | `/api/public/products` | List available mortgage products (Conventional, FHA, VA, USDA, Jumbo) |
-| `POST` | `/api/public/calculate-affordability` | Estimate maximum loan amount and monthly payment based on income and debts |
+| `POST` | `/api/public/calculate-affordability` | 按中国商业住房贷款口径测算人民币购房预算、月供、DTI 与 LTV；同时应用 15% 最低首付下限、50% 住房支出收入比和 55% 总债务收入比 |
 
 ### Applications
 

@@ -69,6 +69,7 @@ This Quickstart demonstrates AI patterns for regulated industries:
 - **[Architecture](architecture.md)** -- System design, component boundaries, and data flow
 - **[Personas](personas.md)** -- Detailed persona workflows and capabilities
 - **[API Reference](api-reference.md)** -- REST and WebSocket API documentation
+- **[中国购房预算测算口径](china-housing-affordability-calculator.md)** -- 公式、适用边界与官方政策来源
 
 ## Project Goals
 

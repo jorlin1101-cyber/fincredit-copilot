@@ -36,22 +36,25 @@ def product_info() -> str:
 def affordability_calc(
     gross_annual_income: float,
     monthly_debts: float = 0,
+    monthly_property_fee: float = 0,
     down_payment: float = 0,
-    interest_rate: float = 6.5,
+    interest_rate: float = 3.5,
     loan_term_years: int = 30,
 ) -> str:
-    """Calculate mortgage affordability estimate.
+    """按中国审慎偿债口径测算商业住房贷款购房预算（人民币）。
 
     Args:
-        gross_annual_income: Borrower's total annual income before taxes.
-        monthly_debts: Total monthly debt obligations (car, student loans, etc.).
-        down_payment: Amount available for down payment.
-        interest_rate: Expected interest rate (default 6.5%).
-        loan_term_years: Loan term in years (default 30).
+        gross_annual_income: 家庭税前年收入，单位为人民币元。
+        monthly_debts: 其他债务月均偿付额，单位为人民币元。
+        monthly_property_fee: 月物业管理费，单位为人民币元。
+        down_payment: 可用首付款，单位为人民币元。
+        interest_rate: 年利率参考值，默认 3.5%，不代表银行实际报价。
+        loan_term_years: 贷款年限，默认 30 年。
     """
     req = AffordabilityRequest(
         gross_annual_income=gross_annual_income,
         monthly_debts=monthly_debts,
+        monthly_property_fee=monthly_property_fee,
         down_payment=down_payment,
         interest_rate=interest_rate,
         loan_term_years=loan_term_years,
@@ -59,13 +62,14 @@ def affordability_calc(
     result = calculate_affordability(req)
 
     parts = [
-        f"Max loan amount: ${result.max_loan_amount:,.2f}",
-        f"Estimated monthly payment: ${result.estimated_monthly_payment:,.2f}",
-        f"Estimated purchase price: ${result.estimated_purchase_price:,.2f}",
-        f"DTI ratio: {result.dti_ratio}%",
+        f"最高参考贷款额：¥{result.max_loan_amount:,.2f}",
+        f"预计月供：¥{result.estimated_monthly_payment:,.2f}",
+        f"参考购房总价：¥{result.estimated_purchase_price:,.2f}",
+        f"总债务收入比：{result.dti_ratio}%",
+        f"住房支出收入比：{result.housing_expense_ratio}%",
+        f"LTV：{result.ltv_ratio}%",
     ]
     if result.dti_warning:
-        parts.append(f"Warning: {result.dti_warning}")
-    if result.pmi_warning:
-        parts.append(f"Note: {result.pmi_warning}")
+        parts.append(f"提示：{result.dti_warning}")
+    parts.append("本结果仅作辅助测算，不构成银行授信审批或贷款承诺。")
     return "\n".join(parts)

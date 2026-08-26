@@ -39,9 +39,10 @@ def test_affordability_calc_tool_returns_estimate():
     result = affordability_calc.invoke(
         {"gross_annual_income": 80000, "monthly_debts": 500, "down_payment": 20000}
     )
-    assert "Max loan amount:" in result
-    assert "Estimated monthly payment:" in result
-    assert "DTI ratio:" in result
+    assert "最高参考贷款额：¥" in result
+    assert "预计月供：¥" in result
+    assert "总债务收入比：" in result
+    assert "不构成银行授信审批" in result
 
 
 # -- Registry --
