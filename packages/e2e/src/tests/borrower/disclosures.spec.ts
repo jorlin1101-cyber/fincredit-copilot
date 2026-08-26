@@ -12,12 +12,12 @@ test.describe("Borrower Disclosures", () => {
     });
 
     test("should show disclosures list or all-acknowledged message", async ({ page }) => {
-        const disclosuresHeading = page.getByRole("heading", { name: "Disclosures" });
+        const disclosuresHeading = page.getByRole("heading", { name: "信息披露" });
         await expect(disclosuresHeading).toBeVisible();
 
-        const allAcknowledged = page.getByText("All disclosures acknowledged");
+        const allAcknowledged = page.getByText("信息披露均已确认");
         const reviewButton = page.getByRole("button", {
-            name: "Review & Acknowledge",
+            name: "查看并确认",
         });
 
         const isAllDone = await allAcknowledged.isVisible();
@@ -28,7 +28,7 @@ test.describe("Borrower Disclosures", () => {
 
     test("should open disclosure modal on Review & Acknowledge click", async ({ page }) => {
         const reviewButton = page.getByRole("button", {
-            name: "Review & Acknowledge",
+            name: "查看并确认",
         });
         await expect(reviewButton.first()).toBeVisible({ timeout: 10_000 });
 
@@ -38,7 +38,7 @@ test.describe("Borrower Disclosures", () => {
 
     test("should close disclosure modal via close button", async ({ page }) => {
         const reviewButton = page.getByRole("button", {
-            name: "Review & Acknowledge",
+            name: "查看并确认",
         });
         await expect(reviewButton.first()).toBeVisible({ timeout: 10_000 });
 
@@ -53,7 +53,7 @@ test.describe("Borrower Disclosures", () => {
     // fails fast instead of hanging for 30s when the event is never fired.
     test("should trigger chat-prefill when acknowledging disclosure", async ({ page }) => {
         const reviewButton = page.getByRole("button", {
-            name: "Review & Acknowledge",
+            name: "查看并确认",
         });
 
         if ((await reviewButton.count()) > 0) {
@@ -81,7 +81,7 @@ test.describe("Borrower Disclosures", () => {
             await dashboard.modalAcknowledgeButton.click();
 
             const message = await prefillPromise;
-            expect(message).toContain("acknowledge");
+            expect(message).toContain("已阅读并确认");
         }
     });
 });

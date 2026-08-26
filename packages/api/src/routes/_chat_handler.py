@@ -14,7 +14,7 @@ import uuid
 import jwt as pyjwt
 from db.enums import UserRole
 from fastapi import APIRouter, Depends, Query, WebSocket
-from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage
+from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage, SystemMessage
 
 from ..agents.registry import get_agent
 from ..core.auth import build_data_scope
@@ -287,7 +287,7 @@ async def run_agent_stream(
             # Inject system context once on the first message of the conversation
             context_msgs: list = []
             if system_context:
-                context_msgs = [HumanMessage(content=system_context)]
+                context_msgs = [SystemMessage(content=system_context)]
                 system_context = ""  # Only inject once
 
             if use_checkpointer:
@@ -378,7 +378,10 @@ async def run_agent_stream(
         active_chat_sessions.labels(persona=persona).dec()
 
 
-async def _build_application_context(user: UserContext) -> str:
+async def _build_application_context(
+    user: UserContext,
+    application_id: int | None = None,
+) -> str:
     """Look up the user's applications and return a context string for the agent."""
     from db.database import SessionLocal
 
@@ -398,16 +401,31 @@ async def _build_application_context(user: UserContext) -> str:
     if user.role != UserRole.BORROWER:
         return ""
 
-    primary = apps[0]
-    stage = primary.stage.value.replace("_", " ").title()
-    loan = f"${primary.loan_amount:,.0f}" if primary.loan_amount else "amount not set"
-    addr = primary.property_address or "no address"
+    # Keep the agent focused on the same application shown by the borrower
+    # dashboard: the furthest-progressed application, then the most recently
+    # updated one (the API list is already ordered by updated_at descending).
+    stage_order = {
+        "inquiry": 0,
+        "prequalification": 1,
+        "application": 2,
+        "processing": 3,
+        "underwriting": 4,
+        "conditional_approval": 5,
+        "clear_to_close": 6,
+        "closed": 7,
+        "denied": -1,
+        "withdrawn": -2,
+    }
+    requested = next((app for app in apps if app.id == application_id), None)
+    primary = requested or max(apps, key=lambda app: stage_order.get(app.stage.value, -3))
+    stage = primary.stage.value
+    loan = f"人民币{primary.loan_amount:,.0f}元" if primary.loan_amount else "金额待录入"
+    addr = primary.property_address or "房产地址待录入"
 
     return (
-        f"[System context] The user's primary application is #{primary.id} "
-        f"({stage}, {loan}, {addr}). "
-        f"Use application_id={primary.id} for all tool calls. "
-        "Do NOT ask the user for their application ID."
+        f"[内部系统上下文] 当前借款人工作台展示的申请编号为#{primary.id}，"
+        f"阶段为{stage}，贷款金额为{loan}，房产地址为{addr}。"
+        f"所有工具调用统一使用application_id={primary.id}，不要向用户询问申请编号。"
     )
 
 
@@ -475,7 +493,7 @@ def create_authenticated_chat_router(
         messages_fallback: list | None = [] if not use_checkpointer else None
 
         # Build application context for authenticated agents
-        system_context = await _build_application_context(user)
+        system_context = await _build_application_context(user, app_id)
 
         await run_agent_stream(
             ws,

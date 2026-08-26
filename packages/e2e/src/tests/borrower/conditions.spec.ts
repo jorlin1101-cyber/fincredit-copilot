@@ -13,12 +13,12 @@ test.describe("Borrower Conditions", () => {
 
     test("should show conditions list or no-conditions message", async ({ page }) => {
         const conditionsHeading = page.getByRole("heading", {
-            name: "Underwriting Conditions",
+            name: "审批条件",
         });
         await expect(conditionsHeading).toBeVisible();
 
         // Either conditions are listed or "No outstanding conditions" is shown
-        const noConditions = page.getByText("No outstanding conditions");
+        const noConditions = page.getByText("暂无待处理条件");
         const conditionItems = page.locator(".rounded-lg.border.p-4");
 
         const hasNoConditions = await noConditions.isVisible();
@@ -29,7 +29,7 @@ test.describe("Borrower Conditions", () => {
 
     test("should show respond button on actionable conditions", async ({ page }) => {
         // Wait for conditions to load
-        const respondButton = page.getByRole("button", { name: "Respond" });
+        const respondButton = page.getByRole("button", { name: "去处理" });
         await expect(respondButton.first()).toBeVisible({ timeout: 10_000 });
         const count = await respondButton.count();
         expect(count).toBeGreaterThan(0);
@@ -38,7 +38,7 @@ test.describe("Borrower Conditions", () => {
     // W-10: Added 5s rejection timeout to the chat-prefill promise so the test
     // fails fast instead of hanging for 30s when the event is never fired.
     test("should populate chat input when clicking Respond", async ({ page }) => {
-        const respondButtons = page.getByRole("button", { name: "Respond" });
+        const respondButtons = page.getByRole("button", { name: "去处理" });
         const count = await respondButtons.count();
 
         if (count > 0) {
@@ -63,7 +63,7 @@ test.describe("Borrower Conditions", () => {
             await respondButtons.first().click();
 
             const message = await prefillPromise;
-            expect(message).toContain("condition");
+            expect(message).toContain("审批条件");
         }
     });
 });

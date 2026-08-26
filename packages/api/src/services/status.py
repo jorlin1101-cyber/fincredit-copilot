@@ -23,67 +23,67 @@ from ..services.completeness import check_completeness
 
 logger = logging.getLogger(__name__)
 
-# Human-readable descriptions for each application stage.
+# 面向借款人的中文流程说明。
 STAGE_INFO: dict[str, StageInfo] = {
     ApplicationStage.INQUIRY.value: StageInfo(
-        label="Inquiry",
-        description="Your inquiry has been received. A loan officer will reach out soon.",
-        next_step="Complete your loan application to move forward.",
-        typical_timeline="1-2 business days",
+        label="咨询",
+        description="您的住房贷款咨询已受理，客户经理将尽快联系您。",
+        next_step="填写基本申请信息并提交贷款需求。",
+        typical_timeline="预计1—2个工作日",
     ),
     ApplicationStage.PREQUALIFICATION.value: StageInfo(
-        label="Pre-Qualification",
-        description="We're reviewing your basic financial information for a preliminary assessment.",
-        next_step="You'll receive a pre-qualification letter if eligible.",
-        typical_timeline="1-3 business days",
+        label="预审",
+        description="正在依据您提供的收入、负债和首付款信息进行初步评估。",
+        next_step="符合条件后将生成预审结果，供后续正式申请参考。",
+        typical_timeline="预计1—3个工作日",
     ),
     ApplicationStage.APPLICATION.value: StageInfo(
-        label="Application",
-        description="Your formal loan application is in progress. Upload required documents to proceed.",
-        next_step="Submit all required documents so we can begin processing.",
-        typical_timeline="Depends on document submission",
+        label="申请中",
+        description="您的正式贷款申请正在办理，请按材料清单完成提交。",
+        next_step="补齐申请材料后进入资料核验。",
+        typical_timeline="视材料提交进度而定",
     ),
     ApplicationStage.PROCESSING.value: StageInfo(
-        label="Processing",
-        description="Your loan officer is verifying your information and ordering third-party reports.",
-        next_step="The file will be sent to underwriting once processing is complete.",
-        typical_timeline="1-2 weeks",
+        label="材料处理中",
+        description="客户经理正在核验申请信息，并协调征信、评估等必要环节。",
+        next_step="材料核验完成后提交授信审批。",
+        typical_timeline="预计1—2周",
     ),
     ApplicationStage.UNDERWRITING.value: StageInfo(
-        label="Underwriting",
-        description="An underwriter is evaluating your application against lending guidelines.",
-        next_step="You may receive conditions to satisfy before a decision is issued.",
-        typical_timeline="1-2 weeks",
+        label="授信审批",
+        description="审批人员正在依据授信政策评估还款能力、信用情况和房产信息。",
+        next_step="审批过程中可能需要您补充材料或说明。",
+        typical_timeline="预计1—2周",
     ),
     ApplicationStage.CONDITIONAL_APPROVAL.value: StageInfo(
-        label="Conditional Approval",
-        description="Your loan is conditionally approved. Outstanding conditions must be cleared.",
-        next_step="Submit documents or information to satisfy the listed conditions.",
-        typical_timeline="Varies by condition complexity",
+        label="附条件审批通过",
+        description="申请已附条件通过，仍需完成页面列出的待办事项。",
+        next_step="按审批条件补充相应材料或信息。",
+        typical_timeline="视条件复杂程度而定",
     ),
     ApplicationStage.CLEAR_TO_CLOSE.value: StageInfo(
-        label="Clear to Close",
-        description="All conditions are satisfied. Your loan is approved and ready for closing.",
-        next_step="Review and sign your closing documents.",
-        typical_timeline="3-5 business days to closing",
+        label="具备放款条件",
+        description="主要审批条件已满足，申请已进入合同确认与放款准备阶段。",
+        next_step="完成剩余条件，并核对、签署贷款合同及相关文件。",
+        typical_timeline="预计3—5个工作日进入放款环节",
     ),
     ApplicationStage.CLOSED.value: StageInfo(
-        label="Closed",
-        description="Your loan has been funded and closed. Congratulations!",
-        next_step="No further action required.",
-        typical_timeline="Complete",
+        label="已结案",
+        description="贷款已完成放款并结案。",
+        next_step="当前无需继续操作，请按合同约定还款。",
+        typical_timeline="已完成",
     ),
     ApplicationStage.DENIED.value: StageInfo(
-        label="Denied",
-        description="Your loan application was not approved at this time.",
-        next_step="You will receive a written notice explaining the reasons.",
-        typical_timeline="Complete",
+        label="未通过",
+        description="本次贷款申请暂未通过审批。",
+        next_step="请查看审批结果说明，或联系客户经理咨询。",
+        typical_timeline="已完成",
     ),
     ApplicationStage.WITHDRAWN.value: StageInfo(
-        label="Withdrawn",
-        description="This application has been withdrawn.",
-        next_step="No further action required. You may start a new application at any time.",
-        typical_timeline="Complete",
+        label="已撤回",
+        description="该笔申请已撤回。",
+        next_step="当前无需操作，如有需要可重新发起申请。",
+        typical_timeline="已完成",
     ),
 }
 
@@ -119,10 +119,10 @@ async def get_application_status(
     stage_info = STAGE_INFO.get(
         stage,
         StageInfo(
-            label=stage.replace("_", " ").title(),
-            description="Your application is being processed.",
-            next_step="Contact your loan officer for details.",
-            typical_timeline="Varies",
+            label="办理中",
+            description="您的贷款申请正在办理。",
+            next_step="如需了解详情，请联系客户经理。",
+            typical_timeline="视实际办理情况而定",
         ),
     )
 
@@ -148,7 +148,7 @@ async def get_application_status(
             pending_actions.append(
                 PendingAction(
                     action_type="upload_document",
-                    description=f"Upload {req.label}",
+                    description=f"请上传{req.label}",
                 )
             )
 
@@ -159,7 +159,7 @@ async def get_application_status(
                 pending_actions.append(
                     PendingAction(
                         action_type="resubmit_document",
-                        description=f"Resubmit {req.label} ({flags})",
+                        description=f"请重新提交{req.label}（{flags}）",
                     )
                 )
 
@@ -168,7 +168,7 @@ async def get_application_status(
             pending_actions.append(
                 PendingAction(
                     action_type="clear_conditions",
-                    description=f"{open_conditions_count} underwriting condition(s) to resolve",
+                    description=f"有{open_conditions_count}项审批条件待处理",
                 )
             )
 

@@ -56,8 +56,8 @@
       "username": "sarah.mitchell",
       "enabled": true,
       "email": "sarah.mitchell@example.com",
-      "firstName": "Sarah",
-      "lastName": "Mitchell",
+      "firstName": "晓雨",
+      "lastName": "李",
       "credentials": [
         { "type": "password", "value": "demo", "temporary": false }
       ],

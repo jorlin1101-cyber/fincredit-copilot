@@ -103,7 +103,7 @@ async def test_status_with_missing_docs(mock_completeness, mock_get_app):
     assert result.provided_doc_count == 1
     assert result.required_doc_count == 2
     assert result.stage == "application"
-    assert result.stage_info.label == "Application"
+    assert result.stage_info.label == "申请中"
 
     upload_actions = [a for a in result.pending_actions if a.action_type == "upload_document"]
     assert len(upload_actions) == 1

@@ -33,6 +33,11 @@ const dateTimeFmt = new Intl.DateTimeFormat('en-US', {
   hour: 'numeric',
   minute: '2-digit',
 });
+const zhDateFmt = new Intl.DateTimeFormat('zh-CN', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
 
 export function formatCurrency(value: number | null | undefined): string {
   if (value == null) return '--';
@@ -64,8 +69,18 @@ export function formatDateTime(value: string | null | undefined): string {
   return dateTimeFmt.format(new Date(value));
 }
 
+export function formatDateZh(value: string | null | undefined): string {
+  if (!value) return '--';
+  return zhDateFmt.format(new Date(value));
+}
+
 export function formatDays(value: number | null | undefined): string {
   if (value == null) return '--';
   if (value === 1) return '1 day';
   return `${Math.round(value)} days`;
+}
+
+export function formatDaysZh(value: number | null | undefined): string {
+  if (value == null) return '--';
+  return `${Math.round(value)}天`;
 }

@@ -319,3 +319,31 @@ class TestGetConversationHistory:
 
         assert len(result) == 1
         assert result[0]["content"] == "Tell me about **FHA loans** <think>test</think>"
+
+    @pytest.mark.asyncio
+    async def test_filters_legacy_internal_application_context(self):
+        """Internal routing instructions must never be returned as user history."""
+        service = ConversationService()
+        service._initialized = True
+
+        internal = MagicMock()
+        internal.type = "human"
+        internal.content = (
+            "[System context] The user's primary application is #115. "
+            "Use application_id=115 for all tool calls."
+        )
+        real_user = MagicMock()
+        real_user.type = "human"
+        real_user.content = "我想了解申请进度"
+
+        mock_tuple = MagicMock()
+        mock_tuple.checkpoint = {
+            "channel_values": {"messages": [internal, real_user]},
+        }
+        mock_saver = AsyncMock()
+        mock_saver.aget_tuple.return_value = mock_tuple
+        service._checkpointer = mock_saver
+
+        result = await service.get_conversation_history("user:test:agent:borrower")
+
+        assert result == [{"role": "user", "content": "我想了解申请进度"}]

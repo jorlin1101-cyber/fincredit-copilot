@@ -74,10 +74,7 @@ function AuthenticatedLayout() {
         <ChatSidebar />
       </div>
       <div className="fixed bottom-0 left-0 right-0 z-10 border-t border-border bg-slate-50 px-4 py-1.5 text-center text-[10px] leading-tight text-muted-foreground dark:bg-slate-900 lg:right-[320px]">
-        This organization, its activities and its employees are fictional and are not
-        intended to represent or depict any current or former business organization or
-        any individuals. Any resemblance to any individual or organization is purely
-        coincidental.
+        本平台及其中展示的机构、人员、申请与审批数据均为虚构演示内容，不代表任何真实金融机构、个人或授信结果；如有雷同，纯属巧合。
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 // This project was developed with assistance from AI tools.
 
 import { createFileRoute } from '@tanstack/react-router';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Root as DialogRoot,
   Portal as DialogPortal,
@@ -38,7 +38,7 @@ import {
 import { useConditions } from '@/hooks/use-conditions';
 import { useDisclosures } from '@/hooks/use-disclosures';
 import { useRateLock } from '@/hooks/use-rate-lock';
-import { formatCurrency, formatDate, formatDays, formatPercent } from '@/lib/format';
+import { formatCny, formatDateZh, formatDaysZh, formatPercent } from '@/lib/format';
 import {
   LOAN_TYPE_LABELS,
   STAGE_ORDER,
@@ -99,10 +99,46 @@ const STEPPER_STAGES: ApplicationStage[] = [
 ];
 
 const STEPPER_SHORT_LABELS: Partial<Record<ApplicationStage, string>> = {
-  prequalification: 'Pre-Qual',
-  underwriting: 'UW',
-  conditional_approval: 'Decision',
+  prequalification: '预审',
+  underwriting: '审查',
+  conditional_approval: '决策',
 };
+
+const DOCUMENT_STATUS_LABELS: Record<string, string> = {
+  uploaded: '已上传',
+  processing: '解析中',
+  processing_complete: '解析完成',
+  accepted: '已通过',
+  pending_review: '待审核',
+  flagged_for_resubmission: '需重新提交',
+  rejected: '未通过',
+  processing_failed: '解析失败',
+};
+
+const CONDITION_SEVERITY_LABELS: Record<string, string> = {
+  prior_to_approval: '审批前完成',
+  prior_to_docs: '合同出具前完成',
+  prior_to_closing: '放款签约前完成',
+  prior_to_funding: '放款前完成',
+};
+
+const CONDITION_STATUS_LABELS: Record<string, string> = {
+  open: '待处理',
+  responded: '已回复，待复核',
+  cleared: '已满足',
+  waived: '已豁免',
+};
+
+const CONDITION_DESCRIPTION_LABELS: Record<string, string> = {
+  'Provide updated proof of homeowners insurance': '请补充最新的房屋保险凭证',
+  'Verify employment prior to closing': '放款签约前完成工作及收入核验',
+  'Title insurance commitment': '补充房屋权属核验材料',
+  'Final loan disclosure signed': '完成贷款合同要素确认',
+};
+
+function localizeConditionDescription(description: string): string {
+  return CONDITION_DESCRIPTION_LABELS[description] ?? description;
+}
 
 function StageStepper({ currentStage }: { currentStage: ApplicationStage }) {
   const currentIdx = STAGE_ORDER.indexOf(currentStage);
@@ -204,14 +240,14 @@ function StatusCard({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold text-foreground">
-            Application #{application.id}
+            申请编号 #{application.id}
           </h2>
           <span className="rounded-full bg-[#1e3a5f]/10 px-3 py-0.5 text-xs font-semibold text-[#1e3a5f]">
             {APPLICATION_STAGE_LABELS[application.stage]}
           </span>
         </div>
         <p className="text-2xl font-bold text-foreground">
-          {formatCurrency(application.loan_amount)}
+          {formatCny(application.loan_amount)}
         </p>
       </div>
 
@@ -221,13 +257,13 @@ function StatusCard({
         {daysInStage != null && (
           <div className="flex items-center gap-1.5">
             <Clock className="h-4 w-4" />
-            <span>{formatDays(daysInStage)} in current stage</span>
+            <span>当前阶段已用时 {formatDaysZh(daysInStage)}</span>
           </div>
         )}
         {status.stage_info.next_step && (
           <div className="flex items-center gap-1.5">
             <ArrowRight className="h-4 w-4" />
-            <span>Next: {status.stage_info.next_step}</span>
+            <span>下一步：{status.stage_info.next_step}</span>
           </div>
         )}
       </div>
@@ -328,7 +364,7 @@ function DocumentsCard({
                     {DOC_TYPE_LABELS[doc.doc_type] ?? doc.doc_type}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {formatDate(doc.created_at)}
+                    {formatDateZh(doc.created_at)}
                   </p>
                 </div>
               </div>
@@ -338,7 +374,7 @@ function DocumentsCard({
                   statusColors[doc.status] ?? 'bg-slate-100 text-slate-700',
                 )}
               >
-                {doc.status.replace(/_/g, ' ')}
+                {DOCUMENT_STATUS_LABELS[doc.status] ?? '状态待更新'}
               </span>
             </div>
           ))}
@@ -363,8 +399,8 @@ function DocumentsCard({
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
           <p className="text-sm text-red-700 dark:text-red-400">
             {uploadMutation.error instanceof Error
-              ? uploadMutation.error.message
-              : 'Upload failed'}
+              ? '上传失败，请检查文件格式或稍后重试。'
+              : '上传失败，请稍后重试。'}
           </p>
         </div>
       )}
@@ -400,9 +436,7 @@ function DocumentsCard({
             <Upload className="h-6 w-6" />
           )}
           <p className="text-sm">
-            {uploadMutation.isPending
-              ? 'Uploading...'
-              : 'Drop files here or click to upload'}
+            {uploadMutation.isPending ? '正在上传…' : '将材料拖到此处，或点击选择文件'}
           </p>
         </div>
       </div>
@@ -484,7 +518,7 @@ function ConditionsCard({
                 )}
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">
-                    {condition.description}
+                    {localizeConditionDescription(condition.description)}
                   </p>
                   <div className="mt-1 flex items-center gap-2">
                     {severity && (
@@ -494,11 +528,13 @@ function ConditionsCard({
                           severityColors[severity] ?? 'text-muted-foreground',
                         )}
                       >
-                        {severity.replace(/_/g, ' ')}
+                        {CONDITION_SEVERITY_LABELS[severity] ?? '办理时点待确认'}
                       </span>
                     )}
                     <span className="text-xs text-muted-foreground">
-                      {condition.status}
+                      {condition.status
+                        ? (CONDITION_STATUS_LABELS[condition.status] ?? '状态待更新')
+                        : '状态待更新'}
                     </span>
                   </div>
                 </div>
@@ -507,7 +543,7 @@ function ConditionsCard({
                     window.dispatchEvent(
                       new CustomEvent('chat-prefill', {
                         detail: {
-                          message: `I'd like to respond to the condition: ${condition.description}`,
+                          message: `我想补充处理这项审批条件：${localizeConditionDescription(condition.description)}`,
                           autoSend: true,
                         },
                       }),
@@ -520,7 +556,7 @@ function ConditionsCard({
                       : 'border border-border text-foreground hover:bg-slate-50 dark:hover:bg-slate-800',
                   )}
                 >
-                  Respond
+                  去处理
                 </button>
               </div>
             </div>
@@ -560,7 +596,7 @@ function DisclosureModal({
             <DialogClose asChild>
               <button
                 className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-slate-100 hover:text-foreground dark:hover:bg-slate-800"
-                aria-label="Close"
+                aria-label="关闭"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -574,14 +610,14 @@ function DisclosureModal({
           <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
             <DialogClose asChild>
               <button className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">
-                Close
+                关闭
               </button>
             </DialogClose>
             <button
               onClick={onAcknowledge}
               className="rounded-md bg-[#1e3a5f] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#152e42]"
             >
-              I Acknowledge
+              我已阅读并确认
             </button>
           </div>
         </DialogContent>
@@ -637,8 +673,8 @@ function DisclosuresCard({
             window.dispatchEvent(
               new CustomEvent('chat-prefill', {
                 detail: {
-                  message: `I have reviewed and acknowledge the ${item.label} [disclosure_id=${item.id}]`,
-                  displayMessage: `I have reviewed and acknowledge the ${item.label}`,
+                  message: `我已阅读并确认《${item.label}》[disclosure_id=${item.id}]`,
+                  displayMessage: `我已阅读并确认《${item.label}》`,
                   autoSend: true,
                 },
               }),
@@ -668,11 +704,41 @@ function DisclosuresCard({
                   onClick={() => setReviewingItem(item)}
                   className="shrink-0 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
-                  Review & Acknowledge
+                  查看并确认
                 </button>
               )}
             </div>
           ))}
+        </div>
+        <div className="mt-4 border-t border-border pt-3 text-xs leading-relaxed text-muted-foreground">
+          <span>法规依据（官方）：</span>
+          <a
+            href="https://www.cac.gov.cn/2021-08/20/c_1631050028355286.htm"
+            target="_blank"
+            rel="noreferrer"
+            className="ml-1 text-[#1e3a5f] underline underline-offset-2 dark:text-blue-400"
+          >
+            《个人信息保护法》
+          </a>
+          <span>、</span>
+          <a
+            href="https://xzfg.moj.gov.cn/law/detail?LawID=362"
+            target="_blank"
+            rel="noreferrer"
+            className="text-[#1e3a5f] underline underline-offset-2 dark:text-blue-400"
+          >
+            《征信业管理条例》
+          </a>
+          <span>、</span>
+          <a
+            href="https://www.pbc.gov.cn/zhengwugongkai/attachDir/2025/11/2025111914422147275.pdf"
+            target="_blank"
+            rel="noreferrer"
+            className="text-[#1e3a5f] underline underline-offset-2 dark:text-blue-400"
+          >
+            《中国人民银行金融消费者权益保护实施办法》
+          </a>
+          <span>。本页面文件为演示文本，具体业务以持牌金融机构正式文件为准。</span>
         </div>
       </CardShell>
     </>
@@ -732,7 +798,7 @@ function RateLockCard({
           )}
         >
           <Lock className="h-3 w-3" />
-          {isExpired ? 'EXPIRED' : 'RATE LOCKED'}
+          {isExpired ? '已到期' : '利率已锁定'}
         </div>
       </div>
 
@@ -742,19 +808,19 @@ function RateLockCard({
             ? formatPercent(rateLock.locked_rate / 100)
             : '--'}
         </p>
-        <p className="text-sm text-muted-foreground">固定利率</p>
+        <p className="text-sm text-muted-foreground">当前执行年利率</p>
       </div>
 
       {rateLock.expiration_date && (
         <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
           <Calendar className="h-4 w-4" />
-          <span>Expires {formatDate(rateLock.expiration_date)}</span>
+          <span>有效期至 {formatDateZh(rateLock.expiration_date)}</span>
         </div>
       )}
 
       <div className="space-y-1.5">
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{formatDays(daysRemaining)} remaining</span>
+          <span>剩余 {formatDaysZh(daysRemaining)}</span>
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
           <div
@@ -822,7 +888,7 @@ function SummaryCard({
             <div>
               <p className="text-xs text-muted-foreground">房产价值</p>
               <p className="text-sm font-medium text-foreground">
-                {formatCurrency(application.property_value)}
+                {formatCny(application.property_value)}
               </p>
             </div>
           </div>
@@ -831,7 +897,7 @@ function SummaryCard({
             <div>
               <p className="text-xs text-muted-foreground">贷款金额</p>
               <p className="text-sm font-medium text-foreground">
-                {formatCurrency(application.loan_amount)}
+                {formatCny(application.loan_amount)}
               </p>
             </div>
           </div>
@@ -874,30 +940,32 @@ function PrequalificationCard({
           )}
         >
           <Award className="h-3 w-3" />
-          {isExpired ? 'EXPIRED' : 'PRE-QUALIFIED'}
+          {isExpired ? '已到期' : '预审已通过'}
         </div>
       </div>
 
       <div className="mb-4 text-center">
         <p className="text-3xl font-bold text-foreground">
-          {formatCurrency(prequal.max_loan_amount)}
+          {formatCny(prequal.max_loan_amount)}
         </p>
         <p className="text-sm text-muted-foreground">
-          {prequal.product_name} at {formatPercent(prequal.estimated_rate / 100)}
+          {LOAN_TYPE_LABELS[application?.loan_type ?? 'conventional_30'] ??
+            '个人住房贷款'}
+          ，参考利率 {formatPercent(prequal.estimated_rate / 100)}
         </p>
       </div>
 
       <div className="flex flex-col gap-2 border-t border-border pt-3 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4" />
-          <span>Issued {formatDate(prequal.issued_at)}</span>
+          <span>出具日期：{formatDateZh(prequal.issued_at)}</span>
         </div>
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4" />
           <span>
             {isExpired
-              ? `Expired ${formatDate(prequal.expires_at)}`
-              : `Expires ${formatDate(prequal.expires_at)}`}
+              ? `已于 ${formatDateZh(prequal.expires_at)} 到期`
+              : `有效期至 ${formatDateZh(prequal.expires_at)}`}
           </span>
         </div>
       </div>
@@ -914,6 +982,13 @@ function BorrowerDashboard() {
       )[0]
     : undefined;
   const appId = application?.id;
+
+  useEffect(() => {
+    if (!appId) return;
+    const value = String(appId);
+    sessionStorage.setItem('fincredit-borrower-current-app', value);
+    window.dispatchEvent(new CustomEvent('borrower-app-selected', { detail: value }));
+  }, [appId]);
 
   const statusQuery = useApplicationStatus(appId);
   const documentsQuery = useDocuments(appId);

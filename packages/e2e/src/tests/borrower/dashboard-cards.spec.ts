@@ -14,47 +14,46 @@ test.describe("Borrower Dashboard Cards", () => {
   test("should show status card with application number and stage", async ({
     page,
   }) => {
-    // Either shows an active application heading or "No active application found"
-    const appHeading = page.getByRole("heading", { name: /Application #/ });
-    const noApp = page.getByText("No active application found");
+    const appHeading = page.getByRole("heading", { name: /申请编号 #/ });
+    const noApp = page.getByText("暂无进行中的住房贷款申请。");
     await expect(appHeading.or(noApp).first()).toBeVisible();
   });
 
   test("should show stage stepper with stage labels", async ({ page }) => {
-    await expect(page.getByText(/Application #/)).toBeVisible({
+    await expect(page.getByRole("heading", { name: /申请编号 #/ })).toBeVisible({
       timeout: 10_000,
     });
 
     // Stage stepper renders responsive labels (two spans per stage: mobile hidden, desktop visible)
-    await expect(page.getByText("Inquiry").last()).toBeVisible();
-    await expect(page.getByText("Closed").last()).toBeVisible();
+    await expect(page.getByText("咨询").last()).toBeVisible();
+    await expect(page.getByText("已结案").last()).toBeVisible();
   });
 
   test("should display documents card", async () => {
     await expect(
-      dashboard.page.getByRole("heading", { name: "Documents" }),
+      dashboard.page.getByRole("heading", { name: "申请材料" }),
     ).toBeVisible();
   });
 
   test("should display conditions card", async ({ page }) => {
     // Either conditions list or "No outstanding conditions" message
     const conditionsHeading = page.getByRole("heading", {
-      name: "Underwriting Conditions",
+      name: "审批条件",
     });
     await expect(conditionsHeading).toBeVisible();
   });
 
   test("should display disclosures card", async () => {
     await expect(
-      dashboard.page.getByRole("heading", { name: "Disclosures" }),
+      dashboard.page.getByRole("heading", { name: "信息披露" }),
     ).toBeVisible();
   });
 
   test("should display rate lock or pre-qualification card", async ({
     page,
   }) => {
-    const rateLock = page.getByRole("heading", { name: "Rate Lock" });
-    const prequal = page.getByRole("heading", { name: "Pre-Qualification" });
+    const rateLock = page.getByRole("heading", { name: "利率锁定" });
+    const prequal = page.getByRole("heading", { name: "预审结果" });
     await expect(rateLock.or(prequal).first()).toBeVisible();
   });
 
@@ -62,21 +61,36 @@ test.describe("Borrower Dashboard Cards", () => {
     page,
   }) => {
     const summaryHeading = page.getByRole("heading", {
-      name: "Application Summary",
+      name: "申请摘要",
     });
     await expect(summaryHeading).toBeVisible();
   });
 
   test("should show loan amount in summary card", async ({ page }) => {
-    await expect(page.getByText(/Application #/)).toBeVisible({
+    await expect(page.getByRole("heading", { name: /申请编号 #/ })).toBeVisible({
       timeout: 10_000,
     });
 
     // Summary card should display a formatted currency value (may have multiple: property value + loan amount)
     const summaryCard = page
-      .getByRole("heading", { name: "Application Summary" })
+      .getByRole("heading", { name: "申请摘要" })
       .locator("../..");
-    await expect(summaryCard.getByText(/\$[\d,]+/).first()).toBeVisible();
+    await expect(summaryCard.getByText(/¥[\d,]+/).first()).toBeVisible();
+  });
+
+  test("should show the localized China demo scene without internal prompts", async ({
+    page,
+  }) => {
+    await expect(page.getByRole("heading", { name: /申请编号 #/ })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/成都市高新区/)).toBeVisible();
+    await expect(page.getByText("请补充最新的房屋保险凭证")).toBeVisible();
+    await expect(page.getByText("个人住房贷款要素确认书")).toBeVisible();
+    await expect(page.getByText("个人金融信息保护告知书")).toBeVisible();
+    await expect(page.getByText("个人征信查询与报送授权书")).toBeVisible();
+    await expect(page.getByText("金融消费者权益告知书")).toBeVisible();
+    await expect(page.getByText(/\[System context\]/)).toHaveCount(0);
+    await expect(page.getByText(/Use application_id=/)).toHaveCount(0);
+    await expect(page.getByText(/Aspen Ridge|Elm Street/)).toHaveCount(0);
   });
 
   test("should allow the authenticated content area to scroll", async ({
@@ -106,7 +120,7 @@ test.describe("Borrower Dashboard Cards", () => {
   test("should show document rows or empty message in documents card", async ({
     page,
   }) => {
-    const docsHeading = page.getByRole("heading", { name: "Documents" });
+    const docsHeading = page.getByRole("heading", { name: "申请材料" });
     await expect(docsHeading).toBeVisible();
 
     // Documents card should show either document rows or an empty/missing message.
@@ -114,7 +128,7 @@ test.describe("Borrower Dashboard Cards", () => {
     const docsCard = docsHeading.locator("../..");
     await expect(
       docsCard
-        .getByText(/No documents|Missing documents/)
+        .getByText(/尚未上传材料|缺失材料/)
         .or(docsCard.locator(".divide-y > div").first()),
     ).toBeVisible({ timeout: 5_000 });
   });

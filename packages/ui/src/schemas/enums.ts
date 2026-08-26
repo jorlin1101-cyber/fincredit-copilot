@@ -62,8 +62,8 @@ export const LoanTypeSchema = z.enum([
 export type LoanType = z.infer<typeof LoanTypeSchema>;
 
 export const LOAN_TYPE_LABELS: Record<LoanType, string> = {
-  conventional_30: '30 年期固定利率住房贷款',
-  conventional_15: '15 年期固定利率住房贷款',
+  conventional_30: '30 年期个人住房贷款',
+  conventional_15: '15 年期个人住房贷款',
   fha: '保障性住房贷款（兼容类型）',
   va: '专项住房贷款（兼容类型）',
   jumbo: '大额住房贷款',

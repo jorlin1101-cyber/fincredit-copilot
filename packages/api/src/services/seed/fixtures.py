@@ -219,16 +219,16 @@ def _tax_return_extractions(
 BORROWERS: list[dict] = [
     {
         "keycloak_user_id": SARAH_MITCHELL_ID,
-        "first_name": "Sarah",
-        "last_name": "Mitchell",
+        "first_name": "晓雨",
+        "last_name": "李",
         "email": "sarah.mitchell@example.com",
         "ssn": "ENC:293-84-1567",
         "dob": datetime(1988, 6, 15, tzinfo=UTC),
     },
     {
         "keycloak_user_id": JENNIFER_MITCHELL_ID,
-        "first_name": "Jennifer",
-        "last_name": "Mitchell",
+        "first_name": "晓雯",
+        "last_name": "李",
         "email": "jennifer.mitchell@example.com",
         "ssn": "ENC:384-71-2956",
         "dob": datetime(1990, 2, 8, tzinfo=UTC),
@@ -313,16 +313,16 @@ ACTIVE_APPLICATIONS: list[dict] = [
         "co_borrower_refs": [JENNIFER_MITCHELL_ID],
         "stage": ApplicationStage.APPLICATION,
         "loan_type": LoanType.CONVENTIONAL_30,
-        "property_address": "1234 Elm Street, Denver, CO 80203",
-        "loan_amount": Decimal("320000.00"),
-        "property_value": Decimal("400000.00"),
+        "property_address": "成都市高新区天府三街演示家园5栋2单元（虚构地址）",
+        "loan_amount": Decimal("1800000.00"),
+        "property_value": Decimal("2600000.00"),
         "assigned_to": JAMES_TORRES_ID,
         "created_at": _days_ago(14),
         "updated_at": _days_ago(0),
         "financials": {
-            "gross_monthly_income": Decimal("8500.00"),
-            "monthly_debts": Decimal("2400.00"),
-            "total_assets": Decimal("95000.00"),
+            "gross_monthly_income": Decimal("28000.00"),
+            "monthly_debts": Decimal("4800.00"),
+            "total_assets": Decimal("1250000.00"),
             "credit_score": 742,
             "dti_ratio": 0.282,
         },
@@ -330,12 +330,14 @@ ACTIVE_APPLICATIONS: list[dict] = [
             {
                 "doc_type": DocumentType.W2,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _w2_extractions("TechCorp Inc.", "$102,000"),
+                "extractions": _w2_extractions("成都远景科技有限公司", "¥336,000"),
             },
             {
                 "doc_type": DocumentType.PAY_STUB,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _pay_stub_extractions("TechCorp Inc.", "$3,923.08", ytd="$7,846.15"),
+                "extractions": _pay_stub_extractions(
+                    "成都远景科技有限公司", "¥28,000", ytd="¥168,000"
+                ),
             },
             {
                 "doc_type": DocumentType.BANK_STATEMENT,
@@ -371,7 +373,7 @@ ACTIVE_APPLICATIONS: list[dict] = [
             {
                 "doc_type": DocumentType.DRIVERS_LICENSE,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _id_extractions("Sarah Mitchell", expiration="2029-07-14"),
+                "extractions": _id_extractions("李晓雨", expiration="2029-07-14", state="四川"),
             },
         ],
     },
@@ -978,16 +980,16 @@ ACTIVE_APPLICATIONS: list[dict] = [
         "borrower_ref": SARAH_MITCHELL_ID,
         "stage": ApplicationStage.CLEAR_TO_CLOSE,
         "loan_type": LoanType.CONVENTIONAL_30,
-        "property_address": "4567 Aspen Ridge, Highlands Ranch, CO 80129",
-        "loan_amount": Decimal("425000.00"),
-        "property_value": Decimal("510000.00"),
+        "property_address": "成都市高新区天府三街演示家园8栋1单元1204号（虚构地址）",
+        "loan_amount": Decimal("2450000.00"),
+        "property_value": Decimal("3500000.00"),
         "assigned_to": JAMES_TORRES_ID,
         "created_at": _days_ago(60),
         "updated_at": _days_ago(2),
         "financials": {
-            "gross_monthly_income": Decimal("8500.00"),
-            "monthly_debts": Decimal("2400.00"),
-            "total_assets": Decimal("95000.00"),
+            "gross_monthly_income": Decimal("28000.00"),
+            "monthly_debts": Decimal("4800.00"),
+            "total_assets": Decimal("1250000.00"),
             "credit_score": 742,
             "dti_ratio": 0.282,
         },
@@ -995,29 +997,29 @@ ACTIVE_APPLICATIONS: list[dict] = [
             {
                 "doc_type": DocumentType.W2,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _w2_extractions("TechCorp Inc.", "$102,000"),
+                "extractions": _w2_extractions("成都远景科技有限公司", "¥336,000"),
             },
             {
                 "doc_type": DocumentType.PAY_STUB,
                 "status": DocumentStatus.ACCEPTED,
                 "extractions": _pay_stub_extractions(
-                    "TechCorp Inc.", "$3,923.08", ytd="$47,076.92"
+                    "成都远景科技有限公司", "¥28,000", ytd="¥280,000"
                 ),
             },
             {
                 "doc_type": DocumentType.BANK_STATEMENT,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _bank_statement_extractions("First National Bank", "$52,100.00"),
+                "extractions": _bank_statement_extractions("演示商业银行成都分行", "¥1,250,000"),
             },
             {
                 "doc_type": DocumentType.TAX_RETURN,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _tax_return_extractions("Sarah Mitchell", "$98,700"),
+                "extractions": _tax_return_extractions("李晓雨", "¥336,000"),
             },
             {
                 "doc_type": DocumentType.DRIVERS_LICENSE,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _id_extractions("Sarah Mitchell", expiration="2030-02-28"),
+                "extractions": _id_extractions("李晓雨", expiration="2030-02-28", state="四川"),
             },
             {
                 "doc_type": DocumentType.PROPERTY_APPRAISAL,
@@ -1025,19 +1027,19 @@ ACTIVE_APPLICATIONS: list[dict] = [
                 "extractions": [
                     {
                         "field_name": "appraised_value",
-                        "field_value": "$510,000",
+                        "field_value": "¥3,500,000",
                         "confidence": 0.96,
                         "source_page": 3,
                     },
                     {
                         "field_name": "property_type",
-                        "field_value": "Single Family",
+                        "field_value": "成套住宅",
                         "confidence": 0.99,
                         "source_page": 1,
                     },
                     {
                         "field_name": "condition",
-                        "field_value": "Good",
+                        "field_value": "维护状况良好",
                         "confidence": 0.94,
                         "source_page": 4,
                     },
@@ -1052,28 +1054,28 @@ ACTIVE_APPLICATIONS: list[dict] = [
         ],
         "conditions": [
             {
-                "description": "Verify employment prior to closing",
+                "description": "放款签约前完成工作及收入核验",
                 "severity": ConditionSeverity.PRIOR_TO_CLOSING,
                 "status": ConditionStatus.CLEARED,
                 "issued_by": MARIA_CHEN_ID,
                 "cleared_by": MARIA_CHEN_ID,
             },
             {
-                "description": "Title insurance commitment",
+                "description": "补充房屋权属核验材料",
                 "severity": ConditionSeverity.PRIOR_TO_CLOSING,
                 "status": ConditionStatus.CLEARED,
                 "issued_by": MARIA_CHEN_ID,
                 "cleared_by": JAMES_TORRES_ID,
             },
             {
-                "description": "Final loan disclosure signed",
+                "description": "完成贷款合同要素确认",
                 "severity": ConditionSeverity.PRIOR_TO_FUNDING,
                 "status": ConditionStatus.CLEARED,
                 "issued_by": MARIA_CHEN_ID,
                 "cleared_by": JAMES_TORRES_ID,
             },
             {
-                "description": "Provide updated proof of homeowners insurance",
+                "description": "请补充最新的房屋保险凭证",
                 "severity": ConditionSeverity.PRIOR_TO_CLOSING,
                 "status": ConditionStatus.OPEN,
                 "issued_by": MARIA_CHEN_ID,
@@ -1082,13 +1084,13 @@ ACTIVE_APPLICATIONS: list[dict] = [
         "decisions": [
             {
                 "decision_type": DecisionType.APPROVED,
-                "rationale": "All conditions cleared. Borrower meets all underwriting "
-                "requirements. Clear to close.",
+                "rationale": "申请人还款能力、信用情况及抵押物信息符合演示授信规则，"
+                "主要审批条件已满足，具备放款准备条件。",
                 "decided_by": MARIA_CHEN_ID,
             },
         ],
         "rate_lock": {
-            "locked_rate": 6.750,
+            "locked_rate": 3.100,
             "lock_date": _days_ago(20),
             "expiration_date": _days_from_now(25),
             "is_active": True,

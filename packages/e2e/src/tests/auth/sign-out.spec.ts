@@ -41,7 +41,7 @@ test.describe("Sign Out", () => {
         await page.waitForURL("**/borrower**");
 
         // Header should show the user's name and role badge
-        await expect(page.getByText("Sarah Mitchell")).toBeVisible();
+        await expect(page.getByText("李晓雨")).toBeVisible();
         await expect(page.getByText("Borrower").first()).toBeVisible();
     });
 });

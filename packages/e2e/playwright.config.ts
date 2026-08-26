@@ -2,7 +2,7 @@
 
 import { defineConfig, devices } from "@playwright/test";
 
-const BASE_URL = process.env.BASE_URL || "http://localhost:5173";
+const BASE_URL = process.env.MORTGAGE_E2E_BASE_URL || process.env.BASE_URL || "http://localhost:5173";
 const IS_CI = !!process.env.CI;
 
 export default defineConfig({

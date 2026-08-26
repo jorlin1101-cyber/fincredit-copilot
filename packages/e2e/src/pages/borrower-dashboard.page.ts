@@ -30,26 +30,26 @@ export class BorrowerDashboardPage {
     constructor(page: Page) {
         this.page = page;
 
-        this.statusCard = page.locator("div").filter({ has: page.getByRole("heading", { name: /Application #/ }) }).first();
-        this.applicationHeading = page.getByRole("heading", { name: /Application #/ });
+        this.statusCard = page.locator("div").filter({ has: page.getByRole("heading", { name: /申请编号 #/ }) }).first();
+        this.applicationHeading = page.getByRole("heading", { name: /申请编号 #/ });
 
-        this.documentsCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "Documents" }) }).first();
-        this.conditionsCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "Underwriting Conditions" }) }).first();
-        this.disclosuresCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "Disclosures" }) }).first();
-        this.rateLockCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "Rate Lock" }) }).first();
-        this.prequalCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "Pre-Qualification" }) }).first();
-        this.summaryCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "Application Summary" }) }).first();
+        this.documentsCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "申请材料" }) }).first();
+        this.conditionsCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "审批条件" }) }).first();
+        this.disclosuresCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "信息披露" }) }).first();
+        this.rateLockCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "利率锁定" }) }).first();
+        this.prequalCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "预审结果" }) }).first();
+        this.summaryCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "申请摘要" }) }).first();
 
-        this.uploadZone = page.getByRole("button", { name: /Drop files here|click to upload/ });
+        this.uploadZone = page.getByRole("button", { name: /将材料拖到此处|点击选择文件/ });
         this.fileInput = page.locator('input[type="file"]');
 
         this.acknowledgeButton = page.getByRole("button", {
-            name: "Review & Acknowledge",
+            name: "查看并确认",
         });
         this.disclosureModal = page.getByRole("dialog");
-        this.modalCloseButton = page.getByRole("dialog").getByLabel("Close");
+        this.modalCloseButton = page.getByRole("dialog").getByLabel("关闭");
         this.modalAcknowledgeButton = page.getByRole("button", {
-            name: "I Acknowledge",
+            name: "我已阅读并确认",
         });
     }
 

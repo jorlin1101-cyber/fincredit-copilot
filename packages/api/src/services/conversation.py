@@ -210,6 +210,15 @@ class ConversationService:
                 else:
                     continue  # skip tool, system, and function messages
                 content = getattr(msg, "content", str(msg))
+                # Older borrower conversations accidentally persisted internal
+                # application context as a HumanMessage. Never expose those
+                # implementation instructions through the history API.
+                if (
+                    role == "user"
+                    and isinstance(content, str)
+                    and content.lstrip().startswith(("[System context]", "[内部系统上下文]"))
+                ):
+                    continue
                 if content and role == "assistant":
                     # Clean LLM artifacts that were stored raw in checkpoints
                     content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL)

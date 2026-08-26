@@ -4,7 +4,7 @@
  * E2E environment configuration and auth mode detection.
  */
 
-export const BASE_URL = process.env.BASE_URL || "http://localhost:5173";
+export const BASE_URL = process.env.MORTGAGE_E2E_BASE_URL || process.env.BASE_URL || "http://localhost:5173";
 export const API_URL = process.env.API_URL || "http://localhost:8000";
 export const KEYCLOAK_URL = process.env.KEYCLOAK_URL || "http://localhost:8080";
 export const IS_DEV_AUTH = process.env.E2E_DEV_AUTH === "true";
