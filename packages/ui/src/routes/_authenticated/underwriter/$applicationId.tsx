@@ -53,9 +53,9 @@ function disabledReason(
   allowed: Set<ApplicationStage>,
 ): string | null {
   if (stageAllows(stage, allowed)) return null;
-  const label = stage ? APPLICATION_STAGE_LABELS[stage] : 'Unknown';
-  const names = [...allowed].map((s) => APPLICATION_STAGE_LABELS[s]).join(' or ');
-  return `Not available in ${label} stage. Requires ${names}.`;
+  const label = stage ? APPLICATION_STAGE_LABELS[stage] : '未知';
+  const names = [...allowed].map((s) => APPLICATION_STAGE_LABELS[s]).join('或');
+  return `当前处于“${label}”阶段，此操作仅适用于“${names}”阶段。`;
 }
 
 const STAGE_BADGE_COLORS: Partial<Record<ApplicationStage, string>> = {
@@ -76,10 +76,10 @@ export const Route = createFileRoute('/_authenticated/underwriter/$applicationId
 // -- Helpers ------------------------------------------------------------------
 
 const SEVERITY_LABELS: Record<string, string> = {
-  prior_to_approval: 'PTA',
-  prior_to_docs: 'PTD',
-  prior_to_closing: 'PTC',
-  prior_to_funding: 'PTF',
+  prior_to_approval: '审批前完成',
+  prior_to_docs: '合同文件出具前完成',
+  prior_to_closing: '放款签约前完成',
+  prior_to_funding: '放款前完成',
 };
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -101,10 +101,26 @@ const CONDITION_STATUS_COLORS: Record<string, string> = {
 };
 
 const DECISION_TYPE_LABELS: Record<string, string> = {
-  approved: 'Approved',
-  conditional_approval: 'Approved w/ Conditions',
-  suspended: 'Suspended',
-  denied: 'Denied',
+  approved: '同意',
+  conditional_approval: '有条件同意',
+  suspended: '暂缓',
+  denied: '拒绝',
+};
+
+const CONDITION_STATUS_LABELS: Record<string, string> = {
+  open: '待处理',
+  responded: '已反馈',
+  under_review: '复核中',
+  cleared: '已完成',
+  waived: '已豁免',
+  escalated: '已升级',
+};
+
+const COMPLIANCE_STATUS_LABELS: Record<string, string> = {
+  PASS: '通过',
+  CONDITIONAL_PASS: '有条件通过',
+  WARNING: '需关注',
+  FAIL: '未通过',
 };
 
 const DECISION_TYPE_COLORS: Record<string, string> = {
@@ -153,7 +169,42 @@ function CardShell({
 function borrowerName(app: ApplicationResponse): string {
   const primary = app.borrowers?.find((b) => b.is_primary) ?? app.borrowers?.[0];
   if (!primary) return `申请 #${app.id}`;
-  return `${primary.first_name} ${primary.last_name}`;
+  return /\p{Script=Han}/u.test(`${primary.first_name}${primary.last_name}`)
+    ? `${primary.last_name}${primary.first_name}`
+    : `${primary.first_name} ${primary.last_name}`;
+}
+
+function localizeConditionDescription(value: string): string {
+  const labels: Record<string, string> = {
+    'Verify employment with current employer': '核验借款人当前工作及收入情况',
+    'Provide most recent two months bank statements': '补充最近两个月的银行流水',
+    'USDA property eligibility verification required': '核验县域住房贷款房产资格',
+    'Income must not exceed 115% of area median for USDA eligibility':
+      '核验家庭收入与贷款方案准入要求',
+    'Final title insurance commitment required': '补充最终不动产权属核验材料',
+    'Hazard insurance binder with mortgagee clause': '补充含抵押权人信息的房屋保险凭证',
+  };
+  return labels[value] ?? value;
+}
+
+function localizeComplianceRationale(value: string): string {
+  return value
+    .replace(/PASS/gi, '通过')
+    .replace(/FAIL/gi, '未通过')
+    .replace(/WARNING/gi, '需关注')
+    .replace(/borrower/gi, '借款人')
+    .replace(/loan/gi, '贷款')
+    .replace(/income/gi, '收入')
+    .replace(/document(s)?/gi, '材料')
+    .replace(/disclosure(s)?/gi, '信息披露');
+}
+
+function recommendationLabel(value: string): string {
+  const normalized = value.toLowerCase();
+  if (normalized.includes('approve')) return '建议通过';
+  if (normalized.includes('deny') || normalized.includes('reject')) return '建议拒绝';
+  if (normalized.includes('suspend')) return '建议暂缓并补充核验';
+  return value;
 }
 
 const ASSESSMENT_SUGGESTION_LABELS: Record<string, string> = {
@@ -188,9 +239,11 @@ function DeterministicAssessmentCard({
             <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-bold text-[#1e3a5f]">
               确定性引擎
             </span>
-            <span className="text-xs text-muted-foreground">不由 LLM 执行算术</span>
+            <span className="text-xs text-muted-foreground">采用固定公式计算</span>
           </div>
-          <h3 className="text-lg font-bold text-foreground">DTI / LTV 与材料门禁</h3>
+          <h3 className="text-lg font-bold text-foreground">
+            负债收入比 / 贷款成数与材料校验
+          </h3>
           <p className="mt-1 text-xs text-muted-foreground">
             输入拟申请贷款的月供，系统按固定公式计算并保留规则版本。
           </p>
@@ -226,7 +279,7 @@ function DeterministicAssessmentCard({
       {!result && !assessment.isError && (
         <div className="rounded-lg border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
           尚未执行。本步骤会计算
-          DTI、LTV，核验身份证/收入证明/银行流水，并输出只供人工参考的风险建议。
+          负债收入比（DTI）、贷款成数（LTV），核验身份证、收入证明和银行流水，并输出只供人工参考的风险提示。
         </div>
       )}
 
@@ -285,9 +338,6 @@ function DeterministicAssessmentCard({
                 缺失材料：{result.documents.missing.join('、')}
               </p>
             )}
-          </div>
-          <div className="rounded-lg bg-slate-950 px-4 py-3 font-mono text-xs text-slate-200">
-            trace_id: {result.trace_id}
           </div>
         </div>
       )}
@@ -445,7 +495,7 @@ function RiskAssessmentCard({
               <div className="rounded-lg border border-border bg-slate-50 p-4 dark:bg-slate-800/50">
                 <div className="mb-2 flex items-center justify-between">
                   <span className="text-sm font-semibold text-muted-foreground">
-                    Auto U/W
+                    模型辅助结果
                   </span>
                   <CheckCircle2
                     className={cn(
@@ -459,14 +509,14 @@ function RiskAssessmentCard({
                   />
                 </div>
                 <p className="text-2xl font-bold text-foreground">
-                  {hasResult ? (isApproved ? 'Approve' : 'Reject') : '--'}
+                  {hasResult ? (isApproved ? '建议通过' : '建议复核') : '--'}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {hasResult
-                    ? 'Suggested'
+                    ? '仅供人工审批参考'
                     : hasData
-                      ? 'No prediction recorded'
-                      : 'Run assessment to generate'}
+                      ? '暂无模型结果'
+                      : '运行风险画像后生成'}
                 </p>
                 <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
                   <div
@@ -524,16 +574,16 @@ function ComplianceChecksCard({
   const tooltip = disabledReason(stage, ASSESSMENT_STAGES);
 
   const checks = [
-    { key: 'ecoa' as const, name: 'ECOA (Fair Lending)', icon: Scale },
-    { key: 'atr_qm' as const, name: 'ATR/QM (Ability to Repay)', icon: ShieldCheck },
-    { key: 'trid' as const, name: 'TRID (Disclosure Timing)', icon: FileText },
+    { key: 'ecoa' as const, name: '贷款申请与消费者权益审查', icon: Scale },
+    { key: 'atr_qm' as const, name: '还款能力与收入负债核验', icon: ShieldCheck },
+    { key: 'trid' as const, name: '合同与信息披露时点检查', icon: FileText },
   ];
 
   return (
     <CardShell>
       <div className="mb-4 flex items-center justify-between">
         <h4 className="text-sm font-bold uppercase tracking-wider text-foreground">
-          合规检查（兼容模块）
+          合规检查
           {hasData && result.overall_status && (
             <span
               className={cn(
@@ -541,7 +591,7 @@ function ComplianceChecksCard({
                 STATUS_BADGE[result.overall_status] ?? 'bg-slate-100 text-slate-600',
               )}
             >
-              {result.overall_status.replace(/_/g, ' ')}
+              {COMPLIANCE_STATUS_LABELS[result.overall_status] ?? result.overall_status}
             </span>
           )}
         </h4>
@@ -588,7 +638,7 @@ function ComplianceChecksCard({
                       STATUS_BADGE[status] ?? 'bg-slate-100 text-slate-600',
                     )}
                   >
-                    {status.replace(/_/g, ' ')}
+                    {COMPLIANCE_STATUS_LABELS[status] ?? status}
                   </span>
                 ) : (
                   <span className="text-xs text-muted-foreground">待检查</span>
@@ -596,7 +646,7 @@ function ComplianceChecksCard({
               </div>
               {rationale && (
                 <p className="mt-1.5 pl-10 text-xs text-muted-foreground">
-                  {rationale}
+                  {localizeComplianceRationale(rationale)}
                 </p>
               )}
             </div>
@@ -658,7 +708,9 @@ function ConditionsCard({ appId, stage }: { appId: number; stage?: ApplicationSt
             >
               <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground">{cond.description}</p>
+                <p className="font-medium text-foreground">
+                  {localizeConditionDescription(cond.description)}
+                </p>
                 {cond.response_text && (
                   <p className="mt-0.5 text-xs text-muted-foreground italic">
                     反馈：{cond.response_text}
@@ -674,7 +726,7 @@ function ConditionsCard({ appId, stage }: { appId: number; stage?: ApplicationSt
                         'bg-slate-100 text-slate-600',
                     )}
                   >
-                    {cond.status.replace(/_/g, ' ')}
+                    {CONDITION_STATUS_LABELS[cond.status] ?? cond.status}
                   </span>
                 )}
                 {cond.severity && (
@@ -706,10 +758,10 @@ function RecommendationBanner({ appId }: { appId: number }) {
     return (
       <div className="rounded-r-lg border-l-4 border-amber-500 bg-amber-50 p-4 dark:bg-amber-900/10">
         <p className="mb-1 text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-500">
-          Agent 初步建议
+          系统初步提示
         </p>
         <p className="text-sm text-amber-800/80 dark:text-amber-300/80">
-          请先执行上方确定性规则评估。Agent 建议仅作辅助，最终结论需人工确认。
+          请先执行上方规则评估。系统提示仅作辅助，最终结论须由审批人员确认。
         </p>
       </div>
     );
@@ -779,7 +831,7 @@ function RecommendationBanner({ appId }: { appId: number }) {
     <div className={cn('rounded-r-lg border-l-4 p-4', borderColor, bgColor)}>
       <p className={cn('mb-1 text-xs font-bold uppercase tracking-wider', titleColor)}>
         {hasRec
-          ? `辅助建议：${rec}`
+          ? `辅助建议：${recommendationLabel(rec)}`
           : `风险画像：${ASSESSMENT_RATING_LABELS[assessment.overall_risk ?? ''] ?? assessment.overall_risk}`}
       </p>
       {hasRec &&
@@ -942,7 +994,7 @@ function AppSummaryCard({ app }: { app: ApplicationResponse }) {
           </span>
         </div>
         <div className="flex justify-between border-t border-border pt-2">
-          <span className="text-muted-foreground">LTV</span>
+          <span className="text-muted-foreground">贷款成数（LTV）</span>
           <span className="font-bold text-foreground">{ltv}</span>
         </div>
       </div>
@@ -985,11 +1037,9 @@ const KB_TOPICS = [
 function ComplianceKBCard() {
   return (
     <CardShell>
-      <h4 className="mb-3 text-sm font-bold text-foreground">
-        受控型 Agentic RAG 政策库
-      </h4>
+      <h4 className="mb-3 text-sm font-bold text-foreground">政策库</h4>
       <p className="mb-3 text-xs text-muted-foreground">
-        首轮混合检索；证据不足时最多改写一次，并始终返回来源、章节、版本与生效日期。
+        查询全国通用监管政策与成都市地方规则，并查看政策来源、适用范围和生效日期。
       </p>
       <div className="grid grid-cols-2 gap-2">
         {KB_TOPICS.map((topic) => (

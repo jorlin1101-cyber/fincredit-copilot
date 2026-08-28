@@ -13,15 +13,14 @@ test.beforeEach(async ({ page }) => {
 
 test.describe("CEO Executive Dashboard", () => {
     test("should display dashboard heading and subtitle", async () => {
-        await expect(dashboard.heading).toHaveText("Executive Dashboard");
+        await expect(dashboard.heading).toHaveText("管理驾驶舱");
         await expect(dashboard.subtitle).toBeVisible();
     });
 
-    test("should display all 5 dashboard cards", async () => {
+    test("should display all dashboard cards", async () => {
         await expect(dashboard.pipelineCard).toBeVisible();
         await expect(dashboard.denialCard).toBeVisible();
         await expect(dashboard.loPerformanceCard).toBeVisible();
-        await expect(dashboard.modelHealthCard).toBeVisible();
         await expect(dashboard.auditCard).toBeVisible();
     });
 
@@ -38,35 +37,21 @@ test.describe("CEO Executive Dashboard", () => {
 
     test("should display LO performance card with table columns", async () => {
         const headers = dashboard.loTable.locator("thead th");
-        await expect(headers.nth(0)).toHaveText("Name");
-        await expect(headers.nth(1)).toHaveText("Active");
-        await expect(headers.nth(2)).toHaveText("Closed");
-        await expect(headers.nth(3)).toHaveText("Denial Rate");
+        await expect(headers.nth(0)).toHaveText("客户经理");
+        await expect(headers.nth(1)).toHaveText("在办申请");
+        await expect(headers.nth(2)).toHaveText("已结案");
+        await expect(headers.nth(3)).toHaveText("未通过率");
     });
 
     test("should display at least one loan officer row", async () => {
         await expect(dashboard.loTableRows.first()).toBeVisible();
     });
 
-    test("should display model health card with latency tiles or unavailable state", async () => {
-        // Wait for model health data to load (skeleton replaced by real content)
-        await expect(dashboard.latencyP50.or(dashboard.monitoringUnavailable)).toBeAttached({ timeout: 15_000 });
-    });
-
-    test("should display model health latency tiles when monitoring is available", async () => {
-        await expect(dashboard.latencyP50.or(dashboard.monitoringUnavailable)).toBeAttached({ timeout: 15_000 });
-        const p50Attached = await dashboard.latencyP50.count() > 0;
-        if (p50Attached) {
-            await expect(dashboard.latencyP95).toBeAttached();
-            await expect(dashboard.latencyP99).toBeAttached();
-        }
-    });
-
     test("should display audit events card with table columns", async () => {
-        await expect(dashboard.auditTableHeaders.nth(0)).toHaveText("Timestamp");
-        await expect(dashboard.auditTableHeaders.nth(1)).toHaveText("Event Type");
-        await expect(dashboard.auditTableHeaders.nth(2)).toHaveText("User");
-        await expect(dashboard.auditTableHeaders.nth(3)).toHaveText("Description");
+        await expect(dashboard.auditTableHeaders.nth(0)).toHaveText("时间");
+        await expect(dashboard.auditTableHeaders.nth(1)).toHaveText("操作类型");
+        await expect(dashboard.auditTableHeaders.nth(2)).toHaveText("操作角色");
+        await expect(dashboard.auditTableHeaders.nth(3)).toHaveText("说明");
     });
 
     test("should display view full audit trail link", async () => {

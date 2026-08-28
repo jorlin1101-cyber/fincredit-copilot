@@ -83,7 +83,7 @@ export function ChatPanel() {
           </div>
           <div>
             <h2 className="text-sm font-semibold text-foreground">
-              FinCredit Copilot 智能助手
+              {AGENT_NAME || '小融'}
             </h2>
             <p className="text-xs text-muted-foreground">授信流程·材料审核·政策依据</p>
           </div>
@@ -108,18 +108,19 @@ export function ChatPanel() {
               <p className="text-sm font-medium text-foreground">
                 {AGENT_NAME
                   ? `您好，我是${AGENT_NAME}`
-                  : '您好，我是 FinCredit Copilot 智能助手'}
+                  : '您好，我是小融，您的住房贷款助手'}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                我可以为您介绍住房贷款授信流程、材料识别、多 Agent
-                协作和政策依据。请选择示例问题，或直接输入您想了解的内容。
+                我可以为您介绍住房贷款办理流程、申请材料和相关政策。
+                请选择示例问题，或直接输入您想了解的内容。
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-2 pt-2">
               {[
-                '介绍端到端授信辅助流程',
-                '各个 Agent 分别负责什么？',
-                '申请材料如何识别与审核？',
+                '住房贷款一般需要经过哪些流程？',
+                '申请住房贷款需要准备哪些材料？',
+                '商业贷款、公积金贷款和组合贷款有什么区别？',
+                '成都住房贷款相关政策在哪里查询？',
               ].map((suggestion) => (
                 <button
                   key={suggestion}

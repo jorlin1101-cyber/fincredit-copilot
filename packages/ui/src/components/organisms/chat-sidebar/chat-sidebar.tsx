@@ -180,7 +180,7 @@ export function ChatSidebar() {
           </div>
           <div>
             <h2 className="text-sm font-semibold text-foreground">
-              FinCredit Copilot 智能助手
+              {AGENT_NAME || '小融'}
             </h2>
             <div className="flex items-center gap-1.5">
               <span

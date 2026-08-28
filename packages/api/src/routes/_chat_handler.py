@@ -29,6 +29,7 @@ from ..services.audit import write_audit_event
 from ..services.conversation import ConversationService, get_conversation_service
 
 logger = logging.getLogger(__name__)
+CHAT_RESPONSE_TIMEOUT_SECONDS = 60
 
 
 async def authenticate_websocket(
@@ -272,11 +273,11 @@ async def run_agent_stream(
             try:
                 data = json.loads(raw)
             except json.JSONDecodeError:
-                await _send({"type": "error", "content": "Invalid JSON"})
+                await _send({"type": "error", "content": "消息格式无效，请重新发送。"})
                 continue
 
             if data.get("type") != "message" or not data.get("content"):
-                await _send({"type": "error", "content": "Expected {type: message, content: ...}"})
+                await _send({"type": "error", "content": "消息内容为空，请重新输入。"})
                 continue
 
             user_text = data["content"]
@@ -300,7 +301,12 @@ async def run_agent_stream(
             # Race the agent against a disconnect sentinel.
             # If the client disconnects while the agent is streaming,
             # the agent task is cancelled immediately -- freeing the LLM slot.
-            agent_task = asyncio.create_task(_run_agent(user_text, input_messages))
+            agent_task = asyncio.create_task(
+                asyncio.wait_for(
+                    _run_agent(user_text, input_messages),
+                    timeout=CHAT_RESPONSE_TIMEOUT_SECONDS,
+                )
+            )
             disconnect_task = asyncio.create_task(_wait_disconnect())
 
             done, pending = await asyncio.wait(
@@ -330,13 +336,25 @@ async def run_agent_stream(
 
             try:
                 full_response = agent_task.result()
+            except TimeoutError:
+                logger.warning(
+                    "Agent response timed out after %ss for session %s",
+                    CHAT_RESPONSE_TIMEOUT_SECONDS,
+                    session_id,
+                )
+                await _send(
+                    {
+                        "type": "error",
+                        "content": "本次查询用时较长，已停止等待。请稍后重试，或换一种更简短的问法。",
+                    }
+                )
+                continue
             except Exception:
                 logger.exception("Agent invocation failed")
                 await _send(
                     {
                         "type": "error",
-                        "content": "Our chat assistant is temporarily unavailable. "
-                        "Please try again later.",
+                        "content": "小融暂时无法完成本次查询，请稍后重试。",
                     }
                 )
                 continue
@@ -355,6 +373,8 @@ async def run_agent_stream(
             full_response = full_response.replace("**", "")
             full_response = re.sub(r"\[[^\]]*\w+\(.*?\)[^\]]*\]", "", full_response)
             full_response = full_response.strip()
+            if not full_response:
+                full_response = "本次查询暂未生成有效结果，请稍后重试。"
 
             # Without checkpointer, manually track history for this session
             if not use_checkpointer and full_response:

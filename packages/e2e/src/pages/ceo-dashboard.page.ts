@@ -1,7 +1,6 @@
 // This project was developed with assistance from AI tools.
 
 import type { Locator, Page } from "@playwright/test";
-import { COMPANY_NAME } from "../helpers/env";
 
 export class CeoDashboardPage {
     readonly page: Page;
@@ -46,20 +45,20 @@ export class CeoDashboardPage {
     constructor(page: Page) {
         this.page = page;
 
-        this.heading = page.getByRole("heading", { name: "Executive Dashboard" });
-        this.subtitle = page.getByText("Portfolio Health & Operations");
+        this.heading = page.getByRole("heading", { name: "管理驾驶舱" });
+        this.subtitle = page.getByText("住房贷款业务运行概览");
 
-        this.pipelineCard = page.getByText("Pipeline Overview");
-        this.pullThroughRate = page.getByText("Pull-Through Rate");
-        this.avgDaysToClose = page.getByText("Avg Days to Close");
-        this.activeApplications = page.getByText("Active Applications");
+        this.pipelineCard = page.getByText("业务申请概览");
+        this.pullThroughRate = page.getByText("申请转化率");
+        this.avgDaysToClose = page.getByText("平均结案时长");
+        this.activeApplications = page.getByText("当前申请数");
 
-        this.denialCard = page.getByText("Denial Analysis");
-        this.overallDenialRate = page.getByText("Overall Denial Rate");
-        this.topDenialReasons = page.getByText("Top Denial Reasons");
+        this.denialCard = page.getByText("未通过申请分析");
+        this.overallDenialRate = page.getByText("总体未通过率");
+        this.topDenialReasons = page.getByText("主要未通过原因");
 
-        this.loPerformanceCard = page.getByText("Loan Officer Performance");
-        this.loTable = page.locator("table").filter({ has: page.getByText("Denial Rate") });
+        this.loPerformanceCard = page.getByText("客户经理业务表现");
+        this.loTable = page.locator("table").filter({ has: page.getByText("未通过率") });
         this.loTableRows = this.loTable.locator("tbody tr");
 
         this.modelHealthCard = page.getByText("AI Model Health");
@@ -68,13 +67,13 @@ export class CeoDashboardPage {
         this.latencyP99 = page.getByText("P99");
         this.monitoringUnavailable = page.getByText("Monitoring Unavailable");
 
-        this.auditCard = page.getByText("Recent Audit Events");
-        this.auditTable = page.locator("table").filter({ has: page.getByText("Event Type") });
+        this.auditCard = page.getByText("最近操作记录");
+        this.auditTable = page.locator("table").filter({ has: page.getByText("操作类型") });
         this.auditTableHeaders = this.auditTable.locator("thead th");
         this.auditTableRows = this.auditTable.locator("tbody tr");
-        this.viewFullAuditTrail = page.getByText("View Full Audit Trail");
+        this.viewFullAuditTrail = page.getByText("查看全部操作记录");
 
-        this.disclaimer = page.getByText(`${COMPANY_NAME} is a fictional company`);
+        this.disclaimer = page.getByText("本平台及其中展示的机构、人员、申请与审批数据均为虚构演示内容");
     }
 
     async goto(): Promise<void> {

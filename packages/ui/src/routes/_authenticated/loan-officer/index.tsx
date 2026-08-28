@@ -151,12 +151,32 @@ function PipelineMetrics({ applications }: { applications: ApplicationResponse[]
 function borrowerName(app: ApplicationResponse): string {
   const primary = app.borrowers?.find((b) => b.is_primary) ?? app.borrowers?.[0];
   if (!primary) return `申请 #${app.id}`;
+  if (/\p{Script=Han}/u.test(`${primary.first_name}${primary.last_name}`)) {
+    return `${primary.last_name}${primary.first_name}`;
+  }
   return `${primary.first_name} ${primary.last_name}`;
 }
 
 function borrowerType(app: ApplicationResponse): string {
-  if ((app.borrowers?.length ?? 0) > 1) return 'Co-borrower';
-  return 'Individual';
+  if ((app.borrowers?.length ?? 0) > 1) return '共同借款';
+  return '个人客户';
+}
+
+const URGENCY_LEVEL_LABELS: Record<string, string> = {
+  critical: '紧急',
+  high: '高',
+  medium: '中',
+  normal: '常规',
+};
+
+function localizeUrgencyFactor(value: string): string {
+  return value
+    .replace(/Rate lock expired/gi, '利率锁定已到期')
+    .replace(/Rate lock expires in/gi, '利率锁定将于')
+    .replace(/days? ago/gi, '天前')
+    .replace(/days?/gi, '天')
+    .replace(/open conditions?/gi, '项待处理审批条件')
+    .replace(/pending documents?/gi, '份待处理材料');
 }
 
 function rateLockLabel(app: ApplicationResponse): React.ReactNode {
@@ -167,7 +187,7 @@ function rateLockLabel(app: ApplicationResponse): React.ReactNode {
       <span className="flex items-center gap-1 text-amber-600">
         <Lock className="h-3 w-3" />
         <span className="truncate max-w-[120px]" title={rateFactor}>
-          {rateFactor}
+          {localizeUrgencyFactor(rateFactor)}
         </span>
       </span>
     );
@@ -178,8 +198,8 @@ function rateLockLabel(app: ApplicationResponse): React.ReactNode {
 function urgencyTooltip(app: ApplicationResponse): string {
   const level = app.urgency?.level ?? 'normal';
   const factors = app.urgency?.factors ?? [];
-  if (factors.length === 0) return level;
-  return `${level}: ${factors.join('; ')}`;
+  if (factors.length === 0) return URGENCY_LEVEL_LABELS[level] ?? '常规';
+  return `${URGENCY_LEVEL_LABELS[level] ?? '常规'}：${factors.map(localizeUrgencyFactor).join('；')}`;
 }
 
 // -- Filter stages for dropdown -----------------------------------------------

@@ -34,7 +34,7 @@ export class LandingPage {
     this.page = page;
     this.heroHeading = page.getByRole("heading", { level: 1 });
     this.getPreQualifiedLink = page.getByRole("link", {
-      name: "进入角色演示",
+      name: "登录服务平台",
     });
     this.exploreProductsButton = page.getByRole("button", {
       name: "咨询智能助手",
@@ -54,7 +54,7 @@ export class LandingPage {
       .filter({ hasText: "暂时无法完成测算" });
     this.dtiWarning = page.getByRole("alert").first();
     this.askAssistantButton = page.getByRole("button", {
-      name: /咨询多 Agent 授信助手/,
+      name: /咨询小融/,
     });
 
     this.chatFab = page.locator('button[aria-label="打开智能助手"]');
@@ -64,7 +64,7 @@ export class LandingPage {
       'input[type="text"][placeholder="请输入您的问题…"]',
     );
     this.chatSuggestions = page.getByRole("button", {
-      name: /介绍端到端授信辅助流程/,
+      name: /住房贷款一般需要经过哪些流程/,
     });
   }
 

@@ -5,4 +5,4 @@ const _rtc = (window as unknown as Record<string, unknown>).__RUNTIME_CONFIG__ a
 export const COMPANY_NAME =
   _rtc?.COMPANY_NAME || import.meta.env.VITE_COMPANY_NAME || '融安住房金融';
 export const AGENT_NAME: string | undefined =
-  _rtc?.AGENT_NAME || import.meta.env.VITE_AGENT_NAME || 'FinCredit Copilot';
+  _rtc?.AGENT_NAME || import.meta.env.VITE_AGENT_NAME || '小融';

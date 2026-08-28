@@ -42,7 +42,7 @@ from ..services.prequalification import evaluate_prequalification
 from ..services.products import PRODUCTS
 from ..services.rate_lock import get_rate_lock_status
 from ..services.status import get_application_status
-from .shared import format_enum_label, user_context_from_state
+from .shared import user_context_from_state
 
 _COMMUNICATION_TYPES = {
     "document_request",
@@ -52,28 +52,76 @@ _COMMUNICATION_TYPES = {
 }
 
 _LOAN_TYPE_LABELS: dict[str, str] = {
-    "conventional_30": "Conventional 30-Year Fixed",
-    "conventional_15": "Conventional 15-Year Fixed",
-    "fha": "FHA Loan",
-    "va": "VA Loan",
-    "jumbo": "Jumbo Loan",
-    "usda": "USDA Loan",
-    "arm": "5/1 Adjustable Rate Mortgage",
+    "conventional_30": "30年期个人住房贷款",
+    "conventional_15": "15年期个人住房贷款",
+    "fha": "首套住房贷款（兼容类型）",
+    "va": "优待客群住房贷款（兼容类型）",
+    "jumbo": "大额住房贷款",
+    "usda": "县域住房贷款（兼容类型）",
+    "arm": "利率调整型住房贷款",
 }
 
 _SEVERITY_LABELS: dict[str, str] = {
-    "prior_to_approval": "Prior to Approval",
-    "prior_to_docs": "Prior to Docs",
-    "prior_to_closing": "Prior to Closing",
-    "prior_to_funding": "Prior to Funding",
+    "prior_to_approval": "审批前完成",
+    "prior_to_docs": "合同文件出具前完成",
+    "prior_to_closing": "放款签约前完成",
+    "prior_to_funding": "放款前完成",
 }
 
 _COMM_TYPE_LABELS: dict[str, str] = {
-    "document_request": "Document Request",
-    "condition_explanation": "Condition Explanation",
-    "status_update": "Status Update",
-    "resubmission_notice": "Resubmission Notice",
+    "document_request": "补件通知",
+    "condition_explanation": "审批条件说明",
+    "status_update": "进度更新",
+    "resubmission_notice": "重新提交材料通知",
 }
+
+_STAGE_LABELS: dict[str, str] = {
+    "inquiry": "咨询",
+    "prequalification": "预审",
+    "application": "申请中",
+    "processing": "材料处理中",
+    "underwriting": "授信审批",
+    "conditional_approval": "有条件通过",
+    "clear_to_close": "具备放款条件",
+    "closed": "已结案",
+    "denied": "未通过",
+    "withdrawn": "已撤回",
+}
+
+_DOCUMENT_LABELS: dict[str, str] = {
+    "id_card": "居民身份证",
+    "income_certificate": "收入证明",
+    "w2": "工资与税务证明（兼容材料）",
+    "pay_stub": "近期工资单",
+    "tax_return": "个人所得税纳税记录",
+    "bank_statement": "银行流水",
+    "drivers_license": "身份证明（兼容材料）",
+    "passport": "护照",
+    "property_appraisal": "房产评估报告",
+    "homeowners_insurance": "房屋保险凭证",
+    "title_insurance": "不动产权属证明",
+    "flood_insurance": "相关保险凭证",
+    "purchase_agreement": "购房合同",
+    "gift_letter": "赠与资金说明",
+    "other": "其他材料",
+}
+
+_DOCUMENT_STATUS_LABELS: dict[str, str] = {
+    "uploaded": "已上传",
+    "processing": "识别处理中",
+    "processing_complete": "识别完成",
+    "processing_failed": "识别失败",
+    "pending_review": "待复核",
+    "accepted": "已通过",
+    "flagged_for_resubmission": "需重新提交",
+    "rejected": "已驳回",
+}
+
+
+def _person_name(first_name: str, last_name: str) -> str:
+    if any("\u4e00" <= char <= "\u9fff" for char in f"{first_name}{last_name}"):
+        return f"{last_name}{first_name}"
+    return f"{first_name} {last_name}"
 
 
 def _user_context_from_state(state: dict):
@@ -106,24 +154,25 @@ async def lo_pipeline_summary(
         apps = result.unique().scalars().all()
 
     if not apps:
-        return "You have no applications in your pipeline."
+        return "您的客户经理工作台当前没有贷款申请。"
 
     # Group by stage
     by_stage: dict[str, list] = {}
     for app in apps:
-        stage_label = format_enum_label(app.stage.value) if app.stage else "Unknown"
+        stage_value = app.stage.value if app.stage else "inquiry"
+        stage_label = _STAGE_LABELS.get(stage_value, stage_value)
         by_stage.setdefault(stage_label, []).append(app)
 
-    lines = [f"Pipeline Summary: {len(apps)} total application(s)", ""]
+    lines = [f"客户经理工作台共有 {len(apps)} 笔申请。", ""]
     for stage_label, stage_apps in by_stage.items():
         lines.append(f"{stage_label} ({len(stage_apps)}):")
         for app in stage_apps:
             borrower_name = ""
             for ab in app.application_borrowers or []:
                 if ab.is_primary and ab.borrower:
-                    borrower_name = f"{ab.borrower.first_name} {ab.borrower.last_name}"
+                    borrower_name = _person_name(ab.borrower.first_name, ab.borrower.last_name)
                     break
-            amount_str = f"${app.loan_amount:,.0f}" if app.loan_amount else "TBD"
+            amount_str = f"¥{app.loan_amount:,.0f}" if app.loan_amount else "金额待定"
             loan_label = _LOAN_TYPE_LABELS.get(app.loan_type.value if app.loan_type else "", "")
             parts = [f"  #{app.id}"]
             if borrower_name:
@@ -151,43 +200,43 @@ async def lo_application_detail(
     async with SessionLocal() as session:
         app = await get_application(session, user, application_id)
         if app is None:
-            return "Application not found or you don't have access to it."
+            return "未找到该申请，或您没有查看权限。"
 
         status = await get_application_status(session, user, application_id)
 
     stage = app.stage.value if app.stage else "inquiry"
     lines = [
-        f"Application #{application_id} Summary:",
-        f"Stage: {format_enum_label(stage)}",
+        f"申请 #{application_id} 当前情况：",
+        f"办理阶段：{_STAGE_LABELS.get(stage, stage)}",
     ]
 
     if app.loan_type:
-        lines.append(f"Loan type: {app.loan_type.value}")
+        lines.append(f"贷款类型：{_LOAN_TYPE_LABELS.get(app.loan_type.value, app.loan_type.value)}")
     if app.property_address:
-        lines.append(f"Property: {app.property_address}")
+        lines.append(f"房产地址：{app.property_address}")
     if app.loan_amount:
-        lines.append(f"Loan amount: ${app.loan_amount:,.2f}")
+        lines.append(f"贷款金额：¥{app.loan_amount:,.2f}")
     if app.property_value:
-        lines.append(f"Property value: ${app.property_value:,.2f}")
+        lines.append(f"房产价值：¥{app.property_value:,.2f}")
 
     # Borrower info
     for ab in app.application_borrowers or []:
         if ab.borrower:
             b = ab.borrower
-            role_label = "Primary borrower" if ab.is_primary else "Co-borrower"
-            lines.append(f"{role_label}: {b.first_name} {b.last_name} ({b.email})")
+            role_label = "主借款人" if ab.is_primary else "共同借款人"
+            lines.append(f"{role_label}：{_person_name(b.first_name, b.last_name)}（{b.email}）")
 
     # Status summary
     if status:
         lines.append("")
         lines.append(
-            f"Documents: {status.provided_doc_count}/{status.required_doc_count} "
-            f"({'complete' if status.is_document_complete else 'incomplete'})"
+            f"申请材料：已提供 {status.provided_doc_count}/{status.required_doc_count} 项，"
+            f"{'材料齐全' if status.is_document_complete else '仍需补充'}"
         )
         if status.open_condition_count > 0:
-            lines.append(f"Open conditions: {status.open_condition_count}")
+            lines.append(f"待处理审批条件：{status.open_condition_count} 项")
         if status.pending_actions:
-            lines.append("Pending actions:")
+            lines.append("下一步事项：")
             for action in status.pending_actions:
                 lines.append(f"  - {action.description}")
 
@@ -209,21 +258,24 @@ async def lo_document_review(
         documents, total = await list_documents(session, user, application_id, limit=50)
 
     if total == 0:
-        return f"No documents found for application {application_id}."
+        return f"申请 #{application_id} 暂无已上传材料。"
 
-    lines = [f"Documents for application {application_id} ({total} total):"]
+    lines = [f"申请 #{application_id} 共有 {total} 份材料："]
     for doc in documents:
         doc_type = doc.doc_type.value if hasattr(doc.doc_type, "value") else str(doc.doc_type)
         status_val = doc.status.value if hasattr(doc.status, "value") else str(doc.status)
-        line = f"- [{doc.id}] {doc_type}: {status_val}"
+        line = (
+            f"{doc.id}. {_DOCUMENT_LABELS.get(doc_type, doc_type)}："
+            f"{_DOCUMENT_STATUS_LABELS.get(status_val, status_val)}"
+        )
 
         if doc.quality_flags:
             flags = parse_quality_flags(doc.quality_flags)
             if flags:
-                line += f" (issues: {', '.join(flags)})"
+                line += f"（质量提示：{'、'.join(flags)}）"
 
         if doc.created_at:
-            line += f" (uploaded: {doc.created_at.strftime('%Y-%m-%d')})"
+            line += f"（上传日期：{doc.created_at.strftime('%Y年%m月%d日')}）"
         lines.append(line)
 
     return "\n".join(lines)
@@ -246,33 +298,33 @@ async def lo_document_quality(
         doc = await get_document(session, user, document_id)
 
     if doc is None:
-        return "Document not found or you don't have access to it."
+        return "未找到该材料，或您没有查看权限。"
 
     if doc.application_id != application_id:
-        return "Document does not belong to this application."
+        return "该材料不属于当前申请。"
 
     doc_type = doc.doc_type.value if hasattr(doc.doc_type, "value") else str(doc.doc_type)
     status_val = doc.status.value if hasattr(doc.status, "value") else str(doc.status)
 
     lines = [
-        f"Document #{document_id} Detail:",
-        f"Type: {doc_type}",
-        f"Status: {status_val}",
+        f"材料 #{document_id} 详情：",
+        f"材料类型：{_DOCUMENT_LABELS.get(doc_type, doc_type)}",
+        f"处理状态：{_DOCUMENT_STATUS_LABELS.get(status_val, status_val)}",
     ]
 
     if doc.quality_flags:
         flags = parse_quality_flags(doc.quality_flags)
         if flags:
-            lines.append("Quality issues:")
+            lines.append("质量提示：")
             for flag in flags:
                 lines.append(f"  - {flag}")
         else:
-            lines.append("Quality: No issues detected")
+            lines.append("材料质量：未发现明显问题")
     else:
-        lines.append("Quality: No issues detected")
+        lines.append("材料质量：未发现明显问题")
 
     if doc.created_at:
-        lines.append(f"Uploaded: {doc.created_at.strftime('%Y-%m-%d %H:%M')}")
+        lines.append(f"上传时间：{doc.created_at.strftime('%Y年%m月%d日 %H:%M')}")
 
     return "\n".join(lines)
 
@@ -292,21 +344,21 @@ async def lo_completeness_check(
         result = await check_completeness(session, user, application_id)
 
     if result is None:
-        return "Application not found or you don't have access to it."
+        return "未找到该申请，或您没有查看权限。"
 
     lines = [
-        f"Document completeness for application {application_id}:",
-        f"Status: {'Complete' if result.is_complete else 'Incomplete'} "
-        f"({result.provided_count}/{result.required_count} documents provided)",
+        f"申请 #{application_id} 材料完整性：",
+        f"结论：{'材料齐全' if result.is_complete else '仍需补充'}，"
+        f"已提供 {result.provided_count}/{result.required_count} 项必需材料。",
         "",
     ]
     for req in result.requirements:
-        status = "Provided" if req.is_provided else "MISSING"
-        line = f"- {req.label}: {status}"
+        status = "已提供" if req.is_provided else "缺失"
+        line = f"{req.label}：{status}"
         if req.status:
-            line += f" ({req.status.value})"
+            line += f"（{_DOCUMENT_STATUS_LABELS.get(req.status.value, req.status.value)}）"
         if req.quality_flags:
-            line += f" [issues: {', '.join(req.quality_flags)}]"
+            line += f"（质量提示：{'、'.join(req.quality_flags)}）"
         lines.append(line)
 
     return "\n".join(lines)
@@ -342,10 +394,10 @@ async def lo_mark_resubmission(
                 reason=reason,
             )
         except ValueError as e:
-            return str(e)
+            return f"无法更新材料状态：{e}"
 
         if doc is None:
-            return "Document not found, not in this application, or you don't have access."
+            return "未找到该材料、材料不属于当前申请，或您没有操作权限。"
 
         await write_audit_event(
             session,
@@ -361,8 +413,8 @@ async def lo_mark_resubmission(
         await session.commit()
 
     return (
-        f"Document #{document_id} has been flagged for resubmission. "
-        f"Reason: {reason}. The borrower will be notified."
+        f"材料 #{document_id} 已标记为需要重新提交。原因：{reason}。"
+        "系统已记录该补件事项，等待客户重新上传。"
     )
 
 
@@ -384,22 +436,21 @@ async def lo_underwriting_readiness(
         result = await check_underwriting_readiness(session, user, application_id)
 
     if result is None:
-        return "Application not found or you don't have access to it."
+        return "未找到该申请，或您没有查看权限。"
 
     if result["is_ready"]:
         return (
-            f"Application {application_id} is READY for underwriting submission. "
-            "All documents are complete, processed, and have no quality issues. "
-            "Would you like to submit it?"
+            f"申请 #{application_id} 已具备提交授信审批的条件。"
+            "必需材料已齐全并完成处理，未发现阻断性质量问题。是否确认提交？"
         )
 
     lines = [
-        f"Application {application_id} is NOT ready for underwriting. Blockers:",
+        f"申请 #{application_id} 暂不具备提交授信审批的条件，原因如下：",
     ]
     for blocker in result["blockers"]:
         lines.append(f"  - {blocker}")
     lines.append("")
-    lines.append("Resolve these issues before submitting to underwriting.")
+    lines.append("请先处理以上事项，再提交授信审批。")
 
     return "\n".join(lines)
 
@@ -430,10 +481,10 @@ async def lo_submit_to_underwriting(
         # Gate: check readiness
         readiness = await check_underwriting_readiness(session, user, application_id)
         if readiness is None:
-            return "Application not found or you don't have access to it."
+            return "未找到该申请，或您没有查看权限。"
 
         if not readiness["is_ready"]:
-            lines = ["Cannot submit -- application is not ready:"]
+            lines = ["暂时无法提交授信审批，仍有以下事项需要处理："]
             for b in readiness["blockers"]:
                 lines.append(f"  - {b}")
             return "\n".join(lines)
@@ -441,7 +492,7 @@ async def lo_submit_to_underwriting(
         # Step 1: APPLICATION -> PROCESSING
         app = await transition_stage(session, user, application_id, ApplicationStage.PROCESSING)
         if app is None:
-            return "Failed to transition to processing stage."
+            return "提交失败：无法将申请转入材料处理阶段。"
 
         await write_audit_event(
             session,
@@ -459,7 +510,7 @@ async def lo_submit_to_underwriting(
         # Step 2: PROCESSING -> UNDERWRITING
         app = await transition_stage(session, user, application_id, ApplicationStage.UNDERWRITING)
         if app is None:
-            return "Failed to transition to underwriting stage."
+            return "提交失败：无法将申请转入授信审批阶段。"
 
         await write_audit_event(
             session,
@@ -476,9 +527,8 @@ async def lo_submit_to_underwriting(
         await session.commit()
 
     return (
-        f"Application {application_id} has been submitted to underwriting. "
-        "Stage: UNDERWRITING. The underwriting team will review and may "
-        "issue conditions."
+        f"申请 #{application_id} 已提交授信审批。当前阶段：授信审批。"
+        "审批人员将复核申请，并在需要时提出补充条件。"
     )
 
 
@@ -501,13 +551,13 @@ async def lo_draft_communication(
     """
     if communication_type not in _COMMUNICATION_TYPES:
         valid = ", ".join(sorted(_COMMUNICATION_TYPES))
-        return f"Invalid communication type '{communication_type}'. Must be one of: {valid}"
+        return f"不支持的沟通类型“{communication_type}”。可用类型：{valid}"
 
     user = _user_context_from_state(state)
     async with SessionLocal() as session:
         app = await get_application(session, user, application_id)
         if app is None:
-            return "Application not found or you don't have access to it."
+            return "未找到该申请，或您没有查看权限。"
 
         completeness = await check_completeness(session, user, application_id)
         conditions = await get_conditions(session, user, application_id, open_only=True)
@@ -516,53 +566,53 @@ async def lo_draft_communication(
     # --- Header ---
     type_label = _COMM_TYPE_LABELS.get(communication_type, communication_type)
     lines = [
-        f"Communication context for application #{application_id}",
-        f"Type: {type_label}",
+        f"申请 #{application_id} 沟通信息",
+        f"沟通类型：{type_label}",
         "",
     ]
 
     # --- Borrower ---
-    lines.append("BORROWER:")
+    lines.append("客户信息：")
     for ab in app.application_borrowers or []:
         if ab.borrower:
             b = ab.borrower
-            role_label = "Primary" if ab.is_primary else "Co-borrower"
-            lines.append(f"  {role_label}: {b.first_name} {b.last_name} ({b.email})")
+            role_label = "主借款人" if ab.is_primary else "共同借款人"
+            lines.append(f"  {role_label}：{_person_name(b.first_name, b.last_name)}（{b.email}）")
 
     # --- Loan details ---
     lines.append("")
-    lines.append("LOAN DETAILS:")
+    lines.append("贷款信息：")
     if app.property_address:
-        lines.append(f"  Property: {app.property_address}")
+        lines.append(f"  房产地址：{app.property_address}")
     if app.loan_type:
         lt_val = app.loan_type.value if hasattr(app.loan_type, "value") else str(app.loan_type)
         lt_label = _LOAN_TYPE_LABELS.get(lt_val, lt_val)
-        lines.append(f"  Loan type: {lt_label}")
+        lines.append(f"  贷款类型：{lt_label}")
     if app.loan_amount:
-        lines.append(f"  Loan amount: ${app.loan_amount:,.2f}")
+        lines.append(f"  贷款金额：¥{app.loan_amount:,.2f}")
     stage = app.stage.value if app.stage else "inquiry"
-    lines.append(f"  Stage: {format_enum_label(stage)}")
+    lines.append(f"  办理阶段：{_STAGE_LABELS.get(stage, stage)}")
 
     # --- Documents ---
     if completeness:
         provided = completeness.provided_count
         required = completeness.required_count
         lines.append("")
-        lines.append(f"DOCUMENTS ({provided}/{required} provided):")
+        lines.append(f"申请材料（已提供 {provided}/{required} 项）：")
         for req in completeness.requirements:
             if req.is_provided:
-                status_val = req.status.value if req.status else "provided"
-                line = f"  - {req.label}: Provided ({status_val})"
+                status_val = req.status.value if req.status else "accepted"
+                line = f"  {req.label}：已提供（{_DOCUMENT_STATUS_LABELS.get(status_val, status_val)}）"
                 if req.quality_flags:
-                    line += f" (quality issues: {', '.join(req.quality_flags)})"
+                    line += f"（质量提示：{'、'.join(req.quality_flags)}）"
             else:
-                line = f"  - {req.label}: MISSING"
+                line = f"  {req.label}：缺失"
             lines.append(line)
 
     # --- Conditions ---
     if conditions:
         lines.append("")
-        lines.append(f"OPEN CONDITIONS ({len(conditions)}):")
+        lines.append(f"待处理审批条件（{len(conditions)} 项）：")
         for c in conditions:
             sev = c.get("severity", "")
             sev_label = _SEVERITY_LABELS.get(sev, sev) if sev else ""
@@ -573,34 +623,29 @@ async def lo_draft_communication(
                 lines.append(f"  - {desc}")
     elif conditions is not None:
         lines.append("")
-        lines.append("OPEN CONDITIONS (0):")
-        lines.append("  None")
+        lines.append("待处理审批条件（0 项）：")
+        lines.append("  暂无")
 
     # --- Rate lock ---
     if rate_lock:
         lines.append("")
-        lines.append("RATE LOCK:")
+        lines.append("执行利率：")
         rl_status = rate_lock.get("status", "none")
         if rl_status == "none":
-            lines.append("  No rate lock on file")
+            lines.append("  暂无已确认的执行利率")
         else:
-            lines.append(f"  Status: {rl_status.title()}")
+            lines.append(f"  状态：{rl_status}")
             if rate_lock.get("locked_rate") is not None:
-                lines.append(f"  Rate: {rate_lock['locked_rate']:.3f}%")
+                lines.append(f"  利率：{rate_lock['locked_rate']:.3f}%")
             if rate_lock.get("expiration_date"):
                 days = rate_lock.get("days_remaining", 0)
-                lines.append(
-                    f"  Expires: {rate_lock['expiration_date'][:10]} ({days} days remaining)"
-                )
+                lines.append(f"  有效期至：{rate_lock['expiration_date'][:10]}（剩余 {days} 天）")
             if rate_lock.get("is_urgent"):
-                lines.append("  *** URGENT: Rate lock expiring within 7 days ***")
+                lines.append("  提醒：执行利率将在 7 天内到期，请优先处理。")
 
     # HMDA exclusion reminder
     lines.append("")
-    lines.append(
-        "NOTE: Do not include any demographic information "
-        "(race, ethnicity, sex) in the communication."
-    )
+    lines.append("合规提醒：沟通内容不得包含与贷款办理无关的敏感个人属性信息。")
 
     return "\n".join(lines)
 

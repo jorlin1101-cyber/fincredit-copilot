@@ -24,6 +24,7 @@ from db import (
     DocumentExtraction,
     RateLock,
 )
+from db.enums import DocumentType
 from sqlalchemy import delete, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,6 +42,106 @@ from .fixtures import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _default_demo_extractions(doc_type: DocumentType, financials: dict) -> list[dict]:
+    """Create fictional Chinese extraction rows for status-only demo documents."""
+    monthly_income = financials.get("gross_monthly_income", 0)
+    annual_income = monthly_income * 12
+    assets = financials.get("total_assets", 0)
+
+    if doc_type == DocumentType.INCOME_CERTIFICATE:
+        return [
+            {
+                "field_name": "employer_name",
+                "field_value": "成都示范企业（虚构）",
+                "confidence": 0.96,
+                "source_page": 1,
+            },
+            {
+                "field_name": "annual_income",
+                "field_value": f"¥{annual_income:,.0f}",
+                "confidence": 0.94,
+                "source_page": 1,
+            },
+        ]
+    if doc_type == DocumentType.PAY_STUB:
+        return [
+            {
+                "field_name": "employer_name",
+                "field_value": "成都示范企业（虚构）",
+                "confidence": 0.96,
+                "source_page": 1,
+            },
+            {
+                "field_name": "gross_pay",
+                "field_value": f"¥{monthly_income:,.0f}",
+                "confidence": 0.95,
+                "source_page": 1,
+            },
+            {
+                "field_name": "pay_period",
+                "field_value": "每月",
+                "confidence": 0.98,
+                "source_page": 1,
+            },
+        ]
+    if doc_type == DocumentType.BANK_STATEMENT:
+        return [
+            {
+                "field_name": "institution",
+                "field_value": "中国建设银行成都分行（演示）",
+                "confidence": 0.98,
+                "source_page": 1,
+            },
+            {
+                "field_name": "account_type",
+                "field_value": "个人结算账户",
+                "confidence": 0.97,
+                "source_page": 1,
+            },
+            {
+                "field_name": "ending_balance",
+                "field_value": f"¥{assets:,.0f}",
+                "confidence": 0.93,
+                "source_page": 2,
+            },
+            {
+                "field_name": "statement_period",
+                "field_value": "2026年7月",
+                "confidence": 0.99,
+                "source_page": 1,
+            },
+        ]
+    if doc_type == DocumentType.ID_CARD:
+        return [
+            {
+                "field_name": "full_name",
+                "field_value": "借款人姓名（演示）",
+                "confidence": 0.99,
+                "source_page": 1,
+            },
+            {
+                "field_name": "issuing_state",
+                "field_value": "四川省",
+                "confidence": 0.99,
+                "source_page": 1,
+            },
+            {
+                "field_name": "expiration_date",
+                "field_value": "2030年12月31日",
+                "confidence": 0.97,
+                "source_page": 1,
+            },
+        ]
+    return [
+        {
+            "field_name": "review_result",
+            "field_value": "已完成识别（演示）",
+            "confidence": 0.90,
+            "source_page": 1,
+        }
+    ]
 
 
 async def _check_manifest(session: AsyncSession) -> DemoDataManifest | None:
@@ -186,8 +287,13 @@ async def _seed_applications(
             session.add(doc)
             await session.flush()
 
-            # Seed extraction data for processed documents
-            for ext_def in doc_def.get("extractions", []):
+            # Seed extraction data for processed documents. Historical demo
+            # fixtures may only specify a status, so fill those with a small
+            # Chinese, field-level result for the expandable UI.
+            extraction_defs = doc_def.get("extractions") or _default_demo_extractions(
+                doc_def["doc_type"], fin_data
+            )
+            for ext_def in extraction_defs:
                 extraction = DocumentExtraction(
                     document_id=doc.id,
                     field_name=ext_def["field_name"],

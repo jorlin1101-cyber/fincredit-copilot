@@ -22,43 +22,44 @@ logger = logging.getLogger(__name__)
 
 # Human-readable labels for document types
 DOC_TYPE_LABELS: dict[DocumentType, str] = {
-    DocumentType.W2: "W-2 Form",
-    DocumentType.PAY_STUB: "Recent Pay Stub",
-    DocumentType.TAX_RETURN: "Tax Return",
-    DocumentType.BANK_STATEMENT: "Bank Statement",
-    DocumentType.DRIVERS_LICENSE: "Driver's License",
-    DocumentType.PASSPORT: "Passport",
-    DocumentType.PROPERTY_APPRAISAL: "Property Appraisal",
-    DocumentType.HOMEOWNERS_INSURANCE: "Homeowner's Insurance",
-    DocumentType.TITLE_INSURANCE: "Title Insurance",
-    DocumentType.FLOOD_INSURANCE: "Flood Insurance",
-    DocumentType.PURCHASE_AGREEMENT: "Purchase Agreement",
-    DocumentType.GIFT_LETTER: "Gift Letter",
+    DocumentType.ID_CARD: "居民身份证",
+    DocumentType.INCOME_CERTIFICATE: "收入证明",
+    DocumentType.W2: "工资与税务证明（兼容材料）",
+    DocumentType.PAY_STUB: "近期工资单",
+    DocumentType.TAX_RETURN: "个人所得税纳税记录",
+    DocumentType.BANK_STATEMENT: "银行流水",
+    DocumentType.DRIVERS_LICENSE: "身份证明（兼容材料）",
+    DocumentType.PASSPORT: "护照",
+    DocumentType.PROPERTY_APPRAISAL: "房产评估报告",
+    DocumentType.HOMEOWNERS_INSURANCE: "房屋保险凭证",
+    DocumentType.TITLE_INSURANCE: "不动产权属证明",
+    DocumentType.FLOOD_INSURANCE: "相关保险凭证",
+    DocumentType.PURCHASE_AGREEMENT: "购房合同",
+    DocumentType.GIFT_LETTER: "赠与资金说明",
+    DocumentType.OTHER: "其他材料",
 }
 
 # Common document sets (factored for reuse)
-_ID_DOCS = [DocumentType.DRIVERS_LICENSE, DocumentType.PASSPORT]
-# Standard W-2 employee docs (conventional loans)
+_ID_DOCS = [DocumentType.ID_CARD, DocumentType.PASSPORT]
+# 中国住房贷款演示场景中的基础申请材料。
 _W2_DOCS = [
-    DocumentType.W2,
-    DocumentType.PAY_STUB,
+    DocumentType.ID_CARD,
+    DocumentType.INCOME_CERTIFICATE,
     DocumentType.BANK_STATEMENT,
-    DocumentType.DRIVERS_LICENSE,
 ]
-# W-2 employee + tax returns (jumbo, FHA -- higher income verification)
+# 需要加强收入核验时，增加个人所得税纳税记录。
 _W2_WITH_TAX = [
-    DocumentType.W2,
-    DocumentType.PAY_STUB,
+    DocumentType.ID_CARD,
+    DocumentType.INCOME_CERTIFICATE,
     DocumentType.TAX_RETURN,
     DocumentType.BANK_STATEMENT,
-    DocumentType.DRIVERS_LICENSE,
 ]
 _SELF_EMPLOYED_DOCS = [
+    DocumentType.ID_CARD,
     DocumentType.TAX_RETURN,
     DocumentType.BANK_STATEMENT,
-    DocumentType.DRIVERS_LICENSE,
 ]
-_UNEMPLOYED_DOCS = [DocumentType.BANK_STATEMENT, DocumentType.DRIVERS_LICENSE]
+_UNEMPLOYED_DOCS = [DocumentType.ID_CARD, DocumentType.BANK_STATEMENT]
 
 # Document requirements by loan_type and employment_status.
 # Key structure: DOCUMENT_REQUIREMENTS[loan_type_value][employment_status_value]
@@ -251,15 +252,14 @@ async def check_underwriting_readiness(
     current_stage = app.stage or ApplicationStage.INQUIRY
     if current_stage != ApplicationStage.APPLICATION:
         blockers.append(
-            f"Application is in '{current_stage.value}' stage "
-            f"(must be in 'application' stage to submit)"
+            f"申请当前处于“{current_stage.value}”阶段，须在“申请中”阶段才能提交授信审批"
         )
 
     # 2. All required documents must be provided
     completeness = await check_completeness(session, user, application_id)
     if completeness and not completeness.is_complete:
         missing = [r.label for r in completeness.requirements if not r.is_provided]
-        blockers.append(f"Missing required documents: {', '.join(missing)}")
+        blockers.append(f"缺少必需材料：{'、'.join(missing)}")
 
     # 3. No documents still in processing
     if completeness:
@@ -269,12 +269,12 @@ async def check_underwriting_readiness(
             if r.is_provided and r.status in _UNPROCESSED_STATUSES
         ]
         if unprocessed:
-            blockers.append(f"Documents still processing: {', '.join(unprocessed)}")
+            blockers.append(f"以下材料仍在处理中：{'、'.join(unprocessed)}")
 
     # 4. No critical quality flags
     if completeness:
         flagged = [r.label for r in completeness.requirements if r.is_provided and r.quality_flags]
         if flagged:
-            blockers.append(f"Documents with quality issues: {', '.join(flagged)}")
+            blockers.append(f"以下材料存在质量问题：{'、'.join(flagged)}")
 
     return {"is_ready": len(blockers) == 0, "blockers": blockers}

@@ -153,11 +153,10 @@ function SignIn() {
         <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#1e3a5f] via-[#1e3a5f]/60 to-transparent" />
         <div className="relative z-20 flex flex-col gap-6 p-16">
           <h1 className="max-w-2xl font-display text-5xl font-black leading-tight tracking-tight text-white drop-shadow-md">
-            从材料到审批，一条可解释、可追溯的智能授信链路。
+            住房贷款服务，一站了解、清晰办理。
           </h1>
           <p className="max-w-xl text-lg text-slate-200">
-            多角色 Agent
-            协同处理进件、核验、政策检索与风险建议；最终授信决定始终由有权限的人工审批人员确认。
+            在线查看贷款方案、准备申请材料、跟踪办理进度，并获得清晰的业务指引。
           </p>
         </div>
       </div>

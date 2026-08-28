@@ -96,7 +96,7 @@ services:
       MCP_RISK_SERVER_URL: http://mcp-risk-server:8081/mcp
       PREDICTIVE_MODEL_MCP_URL: "${PREDICTIVE_MODEL_MCP_URL:-}"
       COMPANY_NAME: "${COMPANY_NAME:-融安住房金融（虚构演示机构）}"
-      AGENT_NAME: "${AGENT_NAME:-FinCredit Copilot}"
+      AGENT_NAME: "${AGENT_NAME:-小融}"
     volumes:
       - ./config:/app/config:ro
       - ./packages/api/src:/app/packages/api/src:ro
@@ -121,7 +121,7 @@ services:
       KEYCLOAK_REALM: mortgage-ai
       KEYCLOAK_CLIENT_ID: mortgage-ai-ui
       COMPANY_NAME: "${COMPANY_NAME:-融安住房金融（虚构演示机构）}"
-      AGENT_NAME: "${AGENT_NAME:-FinCredit Copilot}"
+      AGENT_NAME: "${AGENT_NAME:-小融}"
     volumes:
       - ./packages/ui/dist:/usr/share/nginx/html:ro
     depends_on:

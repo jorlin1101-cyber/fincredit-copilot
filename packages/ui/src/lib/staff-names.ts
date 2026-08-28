@@ -18,14 +18,14 @@ export const STAFF_NAMES: Record<string, string> = {
   'd1a2b3c4-e5f6-7890-abcd-ef1234567805': '系统管理员',
   // Borrowers
   'd1a2b3c4-e5f6-7890-abcd-ef1234567806': '李晓雯',
-  'd1a2b3c4-e5f6-7890-abcd-ef1234567811': '张伟',
-  'd1a2b3c4-e5f6-7890-abcd-ef1234567812': '王芳',
-  'd1a2b3c4-e5f6-7890-abcd-ef1234567813': '金瑞',
-  'd1a2b3c4-e5f6-7890-abcd-ef1234567814': '李娜',
-  'd1a2b3c4-e5f6-7890-abcd-ef1234567815': '阮志远',
-  'd1a2b3c4-e5f6-7890-abcd-ef1234567816': '何安然',
-  'd1a2b3c4-e5f6-7890-abcd-ef1234567817': '任浩',
-  'd1a2b3c4-e5f6-7890-abcd-ef1234567818': '张佩文',
+  'd1a2b3c4-e5f6-7890-abcd-ef1234567811': '王志远',
+  'd1a2b3c4-e5f6-7890-abcd-ef1234567812': '陈静怡',
+  'd1a2b3c4-e5f6-7890-abcd-ef1234567813': '刘浩然',
+  'd1a2b3c4-e5f6-7890-abcd-ef1234567814': '赵欣怡',
+  'd1a2b3c4-e5f6-7890-abcd-ef1234567815': '周宇航',
+  'd1a2b3c4-e5f6-7890-abcd-ef1234567816': '孙雨桐',
+  'd1a2b3c4-e5f6-7890-abcd-ef1234567817': '吴子轩',
+  'd1a2b3c4-e5f6-7890-abcd-ef1234567818': '郑思琪',
 };
 
 export function staffName(userId: string | null | undefined): string {

@@ -12,34 +12,21 @@ export function Hero() {
         <div className="flex flex-col-reverse items-center gap-10 lg:flex-row lg:gap-16">
           {/* Text side */}
           <div className="flex flex-1 flex-col gap-6 text-center lg:text-left">
-            <div className="flex flex-wrap justify-center gap-2 lg:justify-start">
-              {['多角色 Agent', '受控 Agentic RAG', '页级证据', '人工审批'].map(
-                (tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full border border-[#1e3a5f]/15 bg-white/80 px-3 py-1 text-xs font-semibold text-[#1e3a5f] shadow-sm dark:bg-slate-900 dark:text-blue-200"
-                  >
-                    {tag}
-                  </span>
-                ),
-              )}
-            </div>
             <h1 className="font-display text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl">
               <span className="text-[#1e3a5f] dark:text-blue-300">
-                FinCredit Copilot
+                让住房贷款办理更清晰、更省心
               </span>
             </h1>
             <p className="max-w-xl text-base leading-7 text-muted-foreground lg:max-w-none">
-              基于多角色 Agent 与受控型 Agentic RAG 的住房贷款授信辅助平台。
-              串联材料提取、交叉核验、全国与成都政策检索、DTI/LTV
-              计算、风险建议和人工审批， 每一步均可追溯至原始证据与 trace_id。
+              融安住房金融为购房客户提供住房贷款咨询、方案测算、材料准备、申请进度查询和政策指引，
+              帮助您看懂流程、少走弯路。
             </p>
             <div className="flex flex-col items-center gap-3 sm:flex-row lg:items-start">
               <Link
                 to={'/sign-in' as never}
                 className="inline-flex items-center gap-2 rounded-md bg-[#cc0000] px-6 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#990000] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cc0000] focus-visible:ring-offset-2"
               >
-                进入角色演示
+                登录服务平台
               </Link>
               <button
                 onClick={() => openChat()}
@@ -77,10 +64,10 @@ export function Hero() {
               </span>
               <div>
                 <p className="text-sm font-semibold text-foreground">
-                  授信建议已生成，等待人工确认
+                  申请进度清晰可查
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  证据完整 · 规则可解释 · 全程可审计
+                  材料、审批与签约节点一目了然
                 </p>
               </div>
             </div>

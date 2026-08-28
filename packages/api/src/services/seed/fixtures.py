@@ -103,7 +103,7 @@ def _w2_extractions(
 def _pay_stub_extractions(
     employer: str,
     gross_pay: str,
-    pay_period: str = "Bi-weekly",
+    pay_period: str = "每月",
     ytd: str | None = None,
 ) -> list[dict]:
     fields = [
@@ -136,8 +136,8 @@ def _pay_stub_extractions(
 def _bank_statement_extractions(
     institution: str,
     balance: str,
-    period: str = "Jan 2026",
-    account_type: str = "Checking",
+    period: str = "2026年1月",
+    account_type: str = "个人结算账户",
 ) -> list[dict]:
     return [
         {
@@ -169,8 +169,8 @@ def _bank_statement_extractions(
 
 def _id_extractions(
     full_name: str,
-    state: str = "Colorado",
-    expiration: str = "2028-09-15",
+    state: str = "四川省",
+    expiration: str = "2028年9月15日",
 ) -> list[dict]:
     return [
         {"field_name": "full_name", "field_value": full_name, "confidence": 0.96, "source_page": 1},
@@ -205,7 +205,7 @@ def _tax_return_extractions(
         {"field_name": "tax_year", "field_value": tax_year, "confidence": 0.99, "source_page": 1},
         {
             "field_name": "filing_status",
-            "field_value": "Single",
+            "field_value": "居民个人申报",
             "confidence": 0.93,
             "source_page": 1,
         },
@@ -221,7 +221,7 @@ BORROWERS: list[dict] = [
         "keycloak_user_id": SARAH_MITCHELL_ID,
         "first_name": "晓雨",
         "last_name": "李",
-        "email": "sarah.mitchell@example.com",
+        "email": "li.xiaoyu@example.com",
         "ssn": "ENC:293-84-1567",
         "dob": datetime(1988, 6, 15, tzinfo=UTC),
     },
@@ -229,71 +229,71 @@ BORROWERS: list[dict] = [
         "keycloak_user_id": JENNIFER_MITCHELL_ID,
         "first_name": "晓雯",
         "last_name": "李",
-        "email": "jennifer.mitchell@example.com",
+        "email": "li.xiaowen@example.com",
         "ssn": "ENC:384-71-2956",
         "dob": datetime(1990, 2, 8, tzinfo=UTC),
     },
     {
         "keycloak_user_id": "d1a2b3c4-e5f6-7890-abcd-ef1234567811",
-        "first_name": "Michael",
-        "last_name": "Johnson",
-        "email": "michael.johnson@example.com",
+        "first_name": "志远",
+        "last_name": "王",
+        "email": "wang.zhiyuan@example.com",
         "ssn": "ENC:481-22-9034",
         "dob": datetime(1975, 11, 3, tzinfo=UTC),
     },
     {
         "keycloak_user_id": "d1a2b3c4-e5f6-7890-abcd-ef1234567812",
-        "first_name": "Emily",
-        "last_name": "Rodriguez",
-        "email": "emily.rodriguez@example.com",
+        "first_name": "静怡",
+        "last_name": "陈",
+        "email": "chen.jingyi@example.com",
         "ssn": "ENC:612-50-3478",
         "dob": datetime(1992, 3, 22, tzinfo=UTC),
     },
     {
         "keycloak_user_id": "d1a2b3c4-e5f6-7890-abcd-ef1234567813",
-        "first_name": "Robert",
-        "last_name": "Kim",
-        "email": "robert.kim@example.com",
+        "first_name": "浩然",
+        "last_name": "刘",
+        "email": "liu.haoran@example.com",
         "ssn": "ENC:754-13-8821",
         "dob": datetime(1983, 9, 8, tzinfo=UTC),
     },
     {
         "keycloak_user_id": "d1a2b3c4-e5f6-7890-abcd-ef1234567814",
-        "first_name": "Lisa",
-        "last_name": "Washington",
-        "email": "lisa.washington@example.com",
+        "first_name": "欣怡",
+        "last_name": "赵",
+        "email": "zhao.xinyi@example.com",
         "ssn": "ENC:328-67-4190",
         "dob": datetime(1990, 1, 27, tzinfo=UTC),
     },
     {
         "keycloak_user_id": "d1a2b3c4-e5f6-7890-abcd-ef1234567815",
-        "first_name": "Thomas",
-        "last_name": "Nguyen",
-        "email": "thomas.nguyen@example.com",
+        "first_name": "宇航",
+        "last_name": "周",
+        "email": "zhou.yuhang@example.com",
         "ssn": "ENC:519-41-7763",
         "dob": datetime(1979, 7, 14, tzinfo=UTC),
     },
     {
         "keycloak_user_id": AMANDA_FOSTER_ID,
-        "first_name": "Amanda",
-        "last_name": "Foster",
-        "email": "amanda.foster@example.com",
+        "first_name": "雨桐",
+        "last_name": "孙",
+        "email": "sun.yutong@example.com",
         "ssn": "ENC:637-28-5104",
         "dob": datetime(1985, 4, 19, tzinfo=UTC),
     },
     {
         "keycloak_user_id": DANIEL_RAMIREZ_ID,
-        "first_name": "Daniel",
-        "last_name": "Ramirez",
-        "email": "daniel.ramirez@example.com",
+        "first_name": "子轩",
+        "last_name": "吴",
+        "email": "wu.zixuan@example.com",
         "ssn": "ENC:842-93-6271",
         "dob": datetime(1991, 8, 2, tzinfo=UTC),
     },
     {
         "keycloak_user_id": PATRICIA_CHANG_ID,
-        "first_name": "Patricia",
-        "last_name": "Chang",
-        "email": "patricia.chang@example.com",
+        "first_name": "思琪",
+        "last_name": "郑",
+        "email": "zheng.siqi@example.com",
         "ssn": "ENC:215-76-3948",
         "dob": datetime(1987, 12, 11, tzinfo=UTC),
     },
@@ -328,7 +328,7 @@ ACTIVE_APPLICATIONS: list[dict] = [
         },
         "documents": [
             {
-                "doc_type": DocumentType.W2,
+                "doc_type": DocumentType.INCOME_CERTIFICATE,
                 "status": DocumentStatus.ACCEPTED,
                 "extractions": _w2_extractions("成都远景科技有限公司", "¥336,000"),
             },
@@ -346,32 +346,32 @@ ACTIVE_APPLICATIONS: list[dict] = [
                 "extractions": [
                     {
                         "field_name": "institution",
-                        "field_value": "First National Bank",
+                        "field_value": "中国建设银行成都分行（演示）",
                         "confidence": 0.98,
                         "source_page": 1,
                     },
                     {
                         "field_name": "account_type",
-                        "field_value": "Checking",
+                        "field_value": "个人结算账户",
                         "confidence": 0.97,
                         "source_page": 1,
                     },
                     {
                         "field_name": "ending_balance",
-                        "field_value": "$47,250.00",
+                        "field_value": "¥472,500.00",
                         "confidence": 0.93,
                         "source_page": 2,
                     },
                     {
                         "field_name": "statement_period",
-                        "field_value": "Aug 2025",
+                        "field_value": "2026年7月",
                         "confidence": 0.99,
                         "source_page": 1,
                     },
                 ],
             },
             {
-                "doc_type": DocumentType.DRIVERS_LICENSE,
+                "doc_type": DocumentType.ID_CARD,
                 "status": DocumentStatus.ACCEPTED,
                 "extractions": _id_extractions("李晓雨", expiration="2029-07-14", state="四川"),
             },
@@ -381,9 +381,9 @@ ACTIVE_APPLICATIONS: list[dict] = [
         "borrower_ref": EMILY_RODRIGUEZ_ID,
         "stage": ApplicationStage.APPLICATION,
         "loan_type": LoanType.FHA,
-        "property_address": "5678 Oak Avenue, Aurora, CO 80012",
-        "loan_amount": Decimal("245000.00"),
-        "property_value": Decimal("275000.00"),
+        "property_address": "成都市锦江区东大街演示公馆2栋1单元（虚构地址）",
+        "loan_amount": Decimal("2450000.00"),
+        "property_value": Decimal("3100000.00"),
         "assigned_to": SARAH_PATEL_ID,
         "created_at": _days_ago(10),
         "updated_at": _days_ago(5),
@@ -396,9 +396,9 @@ ACTIVE_APPLICATIONS: list[dict] = [
         },
         "documents": [
             {
-                "doc_type": DocumentType.W2,
+                "doc_type": DocumentType.INCOME_CERTIFICATE,
                 "status": DocumentStatus.UPLOADED,
-                "extractions": _w2_extractions("Riverside Healthcare", "$74,400"),
+                "extractions": _w2_extractions("成都安康医疗服务有限公司（演示）", "¥168,000"),
             },
             {
                 "doc_type": DocumentType.BANK_STATEMENT,
@@ -407,34 +407,34 @@ ACTIVE_APPLICATIONS: list[dict] = [
                 "extractions": [
                     {
                         "field_name": "institution",
-                        "field_value": "Bank of the West",
+                        "field_value": "中国工商银行成都分行（演示）",
                         "confidence": 0.95,
                         "source_page": 1,
                     },
                     {
                         "field_name": "account_type",
-                        "field_value": "Checking",
+                        "field_value": "个人结算账户",
                         "confidence": 0.92,
                         "source_page": 1,
                     },
                     {
                         "field_name": "ending_balance",
-                        "field_value": "$12,340.00",
+                        "field_value": "¥123,400.00",
                         "confidence": 0.68,
                         "source_page": 1,
                     },
                     {
                         "field_name": "statement_period",
-                        "field_value": "Oct 2025",
+                        "field_value": "2026年6月",
                         "confidence": 0.44,
                         "source_page": 1,
                     },
                 ],
             },
             {
-                "doc_type": DocumentType.DRIVERS_LICENSE,
+                "doc_type": DocumentType.ID_CARD,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _id_extractions("Emily Rodriguez"),
+                "extractions": _id_extractions("陈静怡", state="四川"),
             },
         ],
     },
@@ -442,9 +442,9 @@ ACTIVE_APPLICATIONS: list[dict] = [
         "borrower_ref": SARAH_MITCHELL_ID,
         "stage": ApplicationStage.APPLICATION,
         "loan_type": LoanType.CONVENTIONAL_15,
-        "property_address": "910 Pine Lane, Lakewood, CO 80226",
-        "loan_amount": Decimal("200000.00"),
-        "property_value": Decimal("260000.00"),
+        "property_address": "成都市武侯区人民南路演示花园3栋2单元（虚构地址）",
+        "loan_amount": Decimal("2000000.00"),
+        "property_value": Decimal("2850000.00"),
         "assigned_to": SARAH_PATEL_ID,
         "created_at": _days_ago(7),
         "updated_at": _days_ago(3),
@@ -463,7 +463,7 @@ ACTIVE_APPLICATIONS: list[dict] = [
                 "extractions": [
                     {
                         "field_name": "employer_name",
-                        "field_value": "TechCorp Inc.",
+                        "field_value": "成都智创科技有限公司（演示）",
                         "confidence": 0.72,
                         "source_page": 1,
                     },
@@ -475,7 +475,7 @@ ACTIVE_APPLICATIONS: list[dict] = [
                     },
                     {
                         "field_name": "pay_period",
-                        "field_value": "Bi-weekly",
+                        "field_value": "月度",
                         "confidence": 0.85,
                         "source_page": 1,
                     },
@@ -487,9 +487,9 @@ ACTIVE_APPLICATIONS: list[dict] = [
         "borrower_ref": AMANDA_FOSTER_ID,
         "stage": ApplicationStage.APPLICATION,
         "loan_type": LoanType.ARM,
-        "property_address": "2100 Cherry Creek Drive, Denver, CO 80209",
-        "loan_amount": Decimal("360000.00"),
-        "property_value": Decimal("420000.00"),
+        "property_address": "成都市青羊区光华大道演示新城6栋1单元（虚构地址）",
+        "loan_amount": Decimal("3600000.00"),
+        "property_value": Decimal("4500000.00"),
         "assigned_to": MARCUS_WILLIAMS_ID,
         "created_at": _days_ago(5),
         "updated_at": _days_ago(2),
@@ -502,17 +502,17 @@ ACTIVE_APPLICATIONS: list[dict] = [
         },
         "documents": [
             {
-                "doc_type": DocumentType.W2,
+                "doc_type": DocumentType.INCOME_CERTIFICATE,
                 "status": DocumentStatus.UPLOADED,
                 "extractions": _w2_extractions(
-                    "Foster Design Studio", "$110,400", ein="84-9876543"
+                    "成都雨桐设计有限公司（演示）", "¥240,000", ein="演示编号"
                 ),
             },
             {
                 "doc_type": DocumentType.PAY_STUB,
                 "status": DocumentStatus.UPLOADED,
                 "extractions": _pay_stub_extractions(
-                    "Foster Design Studio", "$4,246.15", ytd="$8,492.31"
+                    "成都雨桐设计有限公司（演示）", "¥20,000", ytd="¥160,000"
                 ),
             },
             {
@@ -522,13 +522,13 @@ ACTIVE_APPLICATIONS: list[dict] = [
                 "extractions": [
                     {
                         "field_name": "filer_name",
-                        "field_value": "Amanda Foster",
+                        "field_value": "孙雨桐",
                         "confidence": 0.94,
                         "source_page": 1,
                     },
                     {
                         "field_name": "adjusted_gross_income",
-                        "field_value": "$108,200",
+                        "field_value": "¥238,000",
                         "confidence": 0.89,
                         "source_page": 2,
                     },
@@ -540,13 +540,13 @@ ACTIVE_APPLICATIONS: list[dict] = [
                     },
                     {
                         "field_name": "filing_status",
-                        "field_value": "Single",
+                        "field_value": "居民个人申报",
                         "confidence": 0.91,
                         "source_page": 1,
                     },
                     {
                         "field_name": "signature_present",
-                        "field_value": "No",
+                        "field_value": "否",
                         "confidence": 0.97,
                         "source_page": 4,
                     },
@@ -559,9 +559,9 @@ ACTIVE_APPLICATIONS: list[dict] = [
         "borrower_ref": ROBERT_KIM_ID,
         "stage": ApplicationStage.UNDERWRITING,
         "loan_type": LoanType.CONVENTIONAL_30,
-        "property_address": "2345 Birch Court, Boulder, CO 80301",
-        "loan_amount": Decimal("475000.00"),
-        "property_value": Decimal("550000.00"),
+        "property_address": "成都市成华区建设路演示家园9栋2单元（虚构地址）",
+        "loan_amount": Decimal("4750000.00"),
+        "property_value": Decimal("5800000.00"),
         "assigned_to": MARCUS_WILLIAMS_ID,
         "created_at": _days_ago(28),
         "updated_at": _days_ago(6),
@@ -574,40 +574,40 @@ ACTIVE_APPLICATIONS: list[dict] = [
         },
         "documents": [
             {
-                "doc_type": DocumentType.W2,
+                "doc_type": DocumentType.INCOME_CERTIFICATE,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _w2_extractions("Mountain View Engineering", "$62,400"),
+                "extractions": _w2_extractions("成都华景工程技术有限公司（演示）", "¥62,400"),
             },
             {
                 "doc_type": DocumentType.PAY_STUB,
                 "status": DocumentStatus.ACCEPTED,
                 "extractions": _pay_stub_extractions(
-                    "Mountain View Engineering", "$2,400.00", ytd="$4,800.00"
+                    "成都华景工程技术有限公司（演示）", "¥5,200.00", ytd="¥31,200.00"
                 ),
             },
             {
                 "doc_type": DocumentType.BANK_STATEMENT,
                 "status": DocumentStatus.ACCEPTED,
                 "extractions": _bank_statement_extractions(
-                    "Wells Fargo", "$92,400.00", account_type="Savings"
+                    "成都银行建设路支行（演示）", "¥92,400.00", account_type="个人储蓄账户"
                 ),
             },
             {
-                "doc_type": DocumentType.DRIVERS_LICENSE,
+                "doc_type": DocumentType.ID_CARD,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _id_extractions("Robert Kim", expiration="2029-03-20"),
+                "extractions": _id_extractions("刘浩然", expiration="2029年3月20日"),
             },
         ],
         "conditions": [
             {
-                "description": "Verify employment with current employer",
+                "description": "核验借款人当前工作及收入情况",
                 "severity": ConditionSeverity.PRIOR_TO_APPROVAL,
                 "status": ConditionStatus.OPEN,
                 "issued_by": MARIA_CHEN_ID,
                 "due_date": _days_from_now(5),
             },
             {
-                "description": "Provide most recent two months bank statements",
+                "description": "补充最近两个月的银行流水",
                 "severity": ConditionSeverity.PRIOR_TO_APPROVAL,
                 "status": ConditionStatus.RESPONDED,
                 "issued_by": MARIA_CHEN_ID,
@@ -619,9 +619,9 @@ ACTIVE_APPLICATIONS: list[dict] = [
         "borrower_ref": LISA_WASHINGTON_ID,
         "stage": ApplicationStage.UNDERWRITING,
         "loan_type": LoanType.VA,
-        "property_address": "6789 Maple Drive, Fort Collins, CO 80525",
-        "loan_amount": Decimal("380000.00"),
-        "property_value": Decimal("410000.00"),
+        "property_address": "成都市金牛区一品天下大街演示名苑4栋1单元（虚构地址）",
+        "loan_amount": Decimal("3800000.00"),
+        "property_value": Decimal("4600000.00"),
         "assigned_to": JAMES_TORRES_ID,
         "created_at": _days_ago(21),
         "updated_at": _days_ago(4),
@@ -634,19 +634,19 @@ ACTIVE_APPLICATIONS: list[dict] = [
         },
         "documents": [
             {
-                "doc_type": DocumentType.W2,
+                "doc_type": DocumentType.INCOME_CERTIFICATE,
                 "status": DocumentStatus.PENDING_REVIEW,
                 "quality_flags": json.dumps(["low_resolution"]),
                 "extractions": [
                     {
                         "field_name": "employer_name",
-                        "field_value": "US Dept. of Veterans Af...",
+                        "field_value": "成都优抚服务中心（演示）",
                         "confidence": 0.73,
                         "source_page": 1,
                     },
                     {
                         "field_name": "annual_income",
-                        "field_value": "$117,600",
+                        "field_value": "¥117,600",
                         "confidence": 0.88,
                         "source_page": 1,
                     },
@@ -668,7 +668,7 @@ ACTIVE_APPLICATIONS: list[dict] = [
                 "doc_type": DocumentType.PAY_STUB,
                 "status": DocumentStatus.ACCEPTED,
                 "extractions": _pay_stub_extractions(
-                    "US Department of Veterans Affairs", "$4,523.08", ytd="$9,046.15"
+                    "成都优抚服务中心（演示）", "¥9,800.00", ytd="¥58,800.00"
                 ),
             },
             {
@@ -677,53 +677,53 @@ ACTIVE_APPLICATIONS: list[dict] = [
                 "extractions": [
                     {
                         "field_name": "institution",
-                        "field_value": "USAA Federal Savings",
+                        "field_value": "中国邮政储蓄银行成都分行（演示）",
                         "confidence": 0.97,
                         "source_page": 1,
                     },
                     {
                         "field_name": "account_type",
-                        "field_value": "Checking",
+                        "field_value": "个人结算账户",
                         "confidence": 0.96,
                         "source_page": 1,
                     },
                     {
                         "field_name": "ending_balance",
-                        "field_value": "$58,100.00",
+                        "field_value": "¥58,100.00",
                         "confidence": 0.67,
                         "source_page": 3,
                     },
                     {
                         "field_name": "statement_period",
-                        "field_value": "Jan 2026",
+                        "field_value": "2026年1月",
                         "confidence": 0.98,
                         "source_page": 1,
                     },
                 ],
             },
             {
-                "doc_type": DocumentType.DRIVERS_LICENSE,
+                "doc_type": DocumentType.ID_CARD,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _id_extractions("Lisa Washington", expiration="2027-11-30"),
+                "extractions": _id_extractions("赵欣怡", expiration="2027年11月30日"),
             },
         ],
         "conditions": [
             {
-                "description": "Certificate of Eligibility required for VA loan",
+                "description": "补充优待客群资格证明材料",
                 "severity": ConditionSeverity.PRIOR_TO_APPROVAL,
                 "status": ConditionStatus.OPEN,
                 "issued_by": MARIA_CHEN_ID,
                 "due_date": _days_from_now(7),
             },
             {
-                "description": "Property appraisal must meet VA minimum requirements",
+                "description": "房产评估结果须符合贷款方案要求",
                 "severity": ConditionSeverity.PRIOR_TO_DOCS,
                 "status": ConditionStatus.OPEN,
                 "issued_by": MARIA_CHEN_ID,
                 "due_date": _days_from_now(10),
             },
             {
-                "description": "Verify no outstanding federal debts",
+                "description": "核验借款人其他负债及对外担保情况",
                 "severity": ConditionSeverity.PRIOR_TO_APPROVAL,
                 "status": ConditionStatus.CLEARED,
                 "issued_by": MARIA_CHEN_ID,
@@ -735,9 +735,9 @@ ACTIVE_APPLICATIONS: list[dict] = [
         "borrower_ref": DANIEL_RAMIREZ_ID,
         "stage": ApplicationStage.UNDERWRITING,
         "loan_type": LoanType.USDA,
-        "property_address": "4520 Prairie View Road, Greeley, CO 80634",
-        "loan_amount": Decimal("265000.00"),
-        "property_value": Decimal("280000.00"),
+        "property_address": "成都市双流区东升街道演示华庭7栋2单元（虚构地址）",
+        "loan_amount": Decimal("2650000.00"),
+        "property_value": Decimal("3200000.00"),
         "assigned_to": SARAH_PATEL_ID,
         "created_at": _days_ago(18),
         "updated_at": _days_ago(3),
@@ -750,23 +750,25 @@ ACTIVE_APPLICATIONS: list[dict] = [
         },
         "documents": [
             {
-                "doc_type": DocumentType.W2,
+                "doc_type": DocumentType.INCOME_CERTIFICATE,
                 "status": DocumentStatus.ACCEPTED,
                 "extractions": _w2_extractions(
-                    "Greeley Farm Supply Co.", "$85,200", ein="84-5551234"
+                    "成都新禾供应链有限公司（演示）", "¥85,200", ein="91510100DEMO123456"
                 ),
             },
             {
                 "doc_type": DocumentType.PAY_STUB,
                 "status": DocumentStatus.ACCEPTED,
                 "extractions": _pay_stub_extractions(
-                    "Greeley Farm Supply Co.", "$3,276.92", ytd="$6,553.85"
+                    "成都新禾供应链有限公司（演示）", "¥7,100.00", ytd="¥42,600.00"
                 ),
             },
             {
                 "doc_type": DocumentType.BANK_STATEMENT,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _bank_statement_extractions("Colorado Credit Union", "$18,450.00"),
+                "extractions": _bank_statement_extractions(
+                    "中国农业银行成都分行（演示）", "¥35,000.00"
+                ),
             },
             {
                 "doc_type": DocumentType.TAX_RETURN,
@@ -775,13 +777,13 @@ ACTIVE_APPLICATIONS: list[dict] = [
                 "extractions": [
                     {
                         "field_name": "filer_name",
-                        "field_value": "Daniel Ramirez",
+                        "field_value": "吴子轩",
                         "confidence": 0.82,
                         "source_page": 1,
                     },
                     {
                         "field_name": "adjusted_gross_income",
-                        "field_value": "$82,100",
+                        "field_value": "¥82,100",
                         "confidence": 0.61,
                         "source_page": 2,
                     },
@@ -800,21 +802,21 @@ ACTIVE_APPLICATIONS: list[dict] = [
                 ],
             },
             {
-                "doc_type": DocumentType.DRIVERS_LICENSE,
+                "doc_type": DocumentType.ID_CARD,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _id_extractions("Daniel Ramirez", expiration="2028-06-10"),
+                "extractions": _id_extractions("吴子轩", expiration="2028年6月10日"),
             },
         ],
         "conditions": [
             {
-                "description": "USDA property eligibility verification required",
+                "description": "核验县域住房贷款房产资格",
                 "severity": ConditionSeverity.PRIOR_TO_APPROVAL,
                 "status": ConditionStatus.OPEN,
                 "issued_by": MARIA_CHEN_ID,
                 "due_date": _days_from_now(4),
             },
             {
-                "description": "Income must not exceed 115% of area median for USDA eligibility",
+                "description": "核验家庭收入与贷款方案准入要求",
                 "severity": ConditionSeverity.PRIOR_TO_APPROVAL,
                 "status": ConditionStatus.RESPONDED,
                 "issued_by": MARIA_CHEN_ID,
@@ -827,9 +829,9 @@ ACTIVE_APPLICATIONS: list[dict] = [
         "co_borrower_refs": [EMILY_RODRIGUEZ_ID],
         "stage": ApplicationStage.CONDITIONAL_APPROVAL,
         "loan_type": LoanType.JUMBO,
-        "property_address": "3456 Cedar Boulevard, Cherry Hills Village, CO 80113",
-        "loan_amount": Decimal("650000.00"),
-        "property_value": Decimal("820000.00"),
+        "property_address": "成都市温江区光华大道演示雅居5栋1单元（虚构地址）",
+        "loan_amount": Decimal("6500000.00"),
+        "property_value": Decimal("8200000.00"),
         "assigned_to": SARAH_PATEL_ID,
         "created_at": _days_ago(42),
         "updated_at": _days_ago(7),
@@ -842,47 +844,47 @@ ACTIVE_APPLICATIONS: list[dict] = [
         },
         "documents": [
             {
-                "doc_type": DocumentType.W2,
+                "doc_type": DocumentType.INCOME_CERTIFICATE,
                 "status": DocumentStatus.ACCEPTED,
                 "extractions": _w2_extractions(
-                    "Johnson & Partners LLP", "$216,000", ein="84-7778899"
+                    "成都志远企业管理咨询有限公司（演示）", "¥216,000", ein="91510100DEMO778899"
                 ),
             },
             {
                 "doc_type": DocumentType.PAY_STUB,
                 "status": DocumentStatus.ACCEPTED,
                 "extractions": _pay_stub_extractions(
-                    "Johnson & Partners LLP", "$8,307.69", ytd="$16,615.38"
+                    "成都志远企业管理咨询有限公司（演示）", "¥18,000.00", ytd="¥108,000.00"
                 ),
             },
             {
                 "doc_type": DocumentType.BANK_STATEMENT,
                 "status": DocumentStatus.ACCEPTED,
                 "extractions": _bank_statement_extractions(
-                    "Chase Bank", "$225,000.00", account_type="Investment"
+                    "招商银行成都分行（演示）", "¥450,000.00", account_type="个人理财账户"
                 ),
             },
             {
                 "doc_type": DocumentType.TAX_RETURN,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _tax_return_extractions("Michael Johnson", "$210,500"),
+                "extractions": _tax_return_extractions("王志远", "¥210,500"),
             },
             {
-                "doc_type": DocumentType.DRIVERS_LICENSE,
+                "doc_type": DocumentType.ID_CARD,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _id_extractions("Michael Johnson", expiration="2029-01-15"),
+                "extractions": _id_extractions("王志远", expiration="2029年1月15日"),
             },
         ],
         "conditions": [
             {
-                "description": "Final title insurance commitment required",
+                "description": "补充最终不动产权属核验材料",
                 "severity": ConditionSeverity.PRIOR_TO_CLOSING,
                 "status": ConditionStatus.OPEN,
                 "issued_by": MARIA_CHEN_ID,
                 "due_date": _days_from_now(12),
             },
             {
-                "description": "Hazard insurance binder with mortgagee clause",
+                "description": "补充含抵押权人信息的房屋保险凭证",
                 "severity": ConditionSeverity.PRIOR_TO_CLOSING,
                 "status": ConditionStatus.CLEARED,
                 "issued_by": MARIA_CHEN_ID,
@@ -908,9 +910,9 @@ ACTIVE_APPLICATIONS: list[dict] = [
         "borrower_ref": THOMAS_NGUYEN_ID,
         "stage": ApplicationStage.CONDITIONAL_APPROVAL,
         "loan_type": LoanType.CONVENTIONAL_30,
-        "property_address": "7890 Spruce Way, Centennial, CO 80112",
-        "loan_amount": Decimal("350000.00"),
-        "property_value": Decimal("425000.00"),
+        "property_address": "成都市龙泉驿区驿都大道演示新居8栋2单元（虚构地址）",
+        "loan_amount": Decimal("3500000.00"),
+        "property_value": Decimal("4250000.00"),
         "assigned_to": MARCUS_WILLIAMS_ID,
         "created_at": _days_ago(35),
         "updated_at": _days_ago(5),
@@ -923,38 +925,40 @@ ACTIVE_APPLICATIONS: list[dict] = [
         },
         "documents": [
             {
-                "doc_type": DocumentType.W2,
+                "doc_type": DocumentType.INCOME_CERTIFICATE,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _w2_extractions("Centennial Software", "$126,000"),
+                "extractions": _w2_extractions("成都百城软件科技有限公司（演示）", "¥126,000"),
             },
             {
                 "doc_type": DocumentType.PAY_STUB,
                 "status": DocumentStatus.ACCEPTED,
                 "extractions": _pay_stub_extractions(
-                    "Centennial Software", "$4,846.15", ytd="$9,692.31"
+                    "成都百城软件科技有限公司（演示）", "¥10,500.00", ytd="¥63,000.00"
                 ),
             },
             {
                 "doc_type": DocumentType.BANK_STATEMENT,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _bank_statement_extractions("Alpine Bank", "$82,300.00"),
+                "extractions": _bank_statement_extractions(
+                    "成都银行龙泉驿支行（演示）", "¥160,000.00"
+                ),
             },
             {
-                "doc_type": DocumentType.DRIVERS_LICENSE,
+                "doc_type": DocumentType.ID_CARD,
                 "status": DocumentStatus.ACCEPTED,
-                "extractions": _id_extractions("Thomas Nguyen", expiration="2028-04-22"),
+                "extractions": _id_extractions("周宇航", expiration="2028年4月22日"),
             },
         ],
         "conditions": [
             {
-                "description": "Updated pay stub within 30 days of closing",
+                "description": "补充签约前30日内的最新收入证明",
                 "severity": ConditionSeverity.PRIOR_TO_DOCS,
                 "status": ConditionStatus.RESPONDED,
                 "issued_by": MARIA_CHEN_ID,
                 "due_date": _days_from_now(8),
             },
             {
-                "description": "Flood zone determination certificate",
+                "description": "补充房屋相关风险区域核验材料",
                 "severity": ConditionSeverity.PRIOR_TO_CLOSING,
                 "status": ConditionStatus.CLEARED,
                 "issued_by": MARIA_CHEN_ID,
@@ -995,7 +999,7 @@ ACTIVE_APPLICATIONS: list[dict] = [
         },
         "documents": [
             {
-                "doc_type": DocumentType.W2,
+                "doc_type": DocumentType.INCOME_CERTIFICATE,
                 "status": DocumentStatus.ACCEPTED,
                 "extractions": _w2_extractions("成都远景科技有限公司", "¥336,000"),
             },
@@ -1017,7 +1021,7 @@ ACTIVE_APPLICATIONS: list[dict] = [
                 "extractions": _tax_return_extractions("李晓雨", "¥336,000"),
             },
             {
-                "doc_type": DocumentType.DRIVERS_LICENSE,
+                "doc_type": DocumentType.ID_CARD,
                 "status": DocumentStatus.ACCEPTED,
                 "extractions": _id_extractions("李晓雨", expiration="2030-02-28", state="四川"),
             },
@@ -1105,34 +1109,34 @@ ACTIVE_APPLICATIONS: list[dict] = [
 # ---------------------------------------------------------------------------
 
 _HISTORICAL_ADDRESSES = [
-    "100 Main Street, Denver, CO 80202",
-    "225 Market Ave, Denver, CO 80205",
-    "340 Broadway, Boulder, CO 80302",
-    "455 Pearl Street, Boulder, CO 80302",
-    "570 College Ave, Fort Collins, CO 80524",
-    "685 Mountain View Dr, Colorado Springs, CO 80903",
-    "790 Tejon Street, Colorado Springs, CO 80903",
-    "815 Nevada Ave, Colorado Springs, CO 80903",
-    "930 Platte River Dr, Littleton, CO 80120",
-    "1045 Wadsworth Blvd, Lakewood, CO 80214",
-    "1160 Federal Blvd, Denver, CO 80204",
-    "1275 Colfax Ave, Denver, CO 80218",
-    "1390 Lincoln St, Denver, CO 80203",
-    "1505 Grant St, Denver, CO 80203",
-    "1620 Sherman St, Denver, CO 80203",
-    "1735 Logan St, Denver, CO 80203",
-    "1850 Washington St, Denver, CO 80203",
-    "1965 Clarkson St, Denver, CO 80218",
-    "2080 Downing St, Denver, CO 80205",
-    "2195 York St, Denver, CO 80205",
-    "2310 Race St, Denver, CO 80205",
-    "2425 Vine St, Denver, CO 80205",
-    "2540 Gaylord St, Denver, CO 80205",
-    "2655 Gilpin St, Denver, CO 80218",
-    "2770 Williams St, Denver, CO 80205",
-    "2885 High St, Denver, CO 80205",
-    "3000 Cook St, Denver, CO 80205",
-    "3115 Steele St, Denver, CO 80205",
+    "成都市高新区天府一街演示公馆1栋（虚构地址）",
+    "成都市高新区天府二街演示公馆2栋（虚构地址）",
+    "成都市锦江区东大街演示花园3栋（虚构地址）",
+    "成都市锦江区红星路演示花园4栋（虚构地址）",
+    "成都市武侯区人民南路演示雅居5栋（虚构地址）",
+    "成都市武侯区武侯大道演示雅居6栋（虚构地址）",
+    "成都市青羊区光华大道演示新城7栋（虚构地址）",
+    "成都市青羊区日月大道演示新城8栋（虚构地址）",
+    "成都市成华区建设路演示家园9栋（虚构地址）",
+    "成都市成华区二仙桥路演示家园10栋（虚构地址）",
+    "成都市金牛区蜀汉路演示名苑11栋（虚构地址）",
+    "成都市金牛区金府路演示名苑12栋（虚构地址）",
+    "成都市双流区东升街道演示华庭13栋（虚构地址）",
+    "成都市双流区航空港街道演示华庭14栋（虚构地址）",
+    "成都市温江区光华大道演示雅苑15栋（虚构地址）",
+    "成都市温江区柳城街道演示雅苑16栋（虚构地址）",
+    "成都市龙泉驿区驿都大道演示新居17栋（虚构地址）",
+    "成都市龙泉驿区大面街道演示新居18栋（虚构地址）",
+    "成都市郫都区犀浦街道演示家园19栋（虚构地址）",
+    "成都市郫都区红光街道演示家园20栋（虚构地址）",
+    "成都市新都区新都街道演示华府21栋（虚构地址）",
+    "成都市新都区大丰街道演示华府22栋（虚构地址）",
+    "成都市天府新区华阳街道演示公馆23栋（虚构地址）",
+    "成都市天府新区正兴街道演示公馆24栋（虚构地址）",
+    "成都市青白江区大弯街道演示名邸25栋（虚构地址）",
+    "成都市新津区五津街道演示名邸26栋（虚构地址）",
+    "成都市都江堰市幸福街道演示家园27栋（虚构地址）",
+    "成都市彭州市天彭街道演示家园28栋（虚构地址）",
 ]
 
 # Borrower refs cycle through the fictional borrowers for historical loans
@@ -1170,8 +1174,8 @@ for i in range(16):
         LoanType.ARM,
     ]
     _created = _days_ago(180 - (i * 10))
-    _loan_amount = Decimal(str(200000 + i * 25000))
-    _property_value = _loan_amount + Decimal(str(50000 + i * 5000))
+    _loan_amount = Decimal(str(2000000 + i * 250000))
+    _property_value = _loan_amount + Decimal(str(500000 + i * 50000))
     _credit_scores = [
         720,
         695,
@@ -1210,10 +1214,10 @@ for i in range(16):
                 "dti_ratio": round(0.25 + (i % 8) * 0.02, 3),
             },
             "documents": [
-                {"doc_type": DocumentType.W2, "status": DocumentStatus.ACCEPTED},
+                {"doc_type": DocumentType.INCOME_CERTIFICATE, "status": DocumentStatus.ACCEPTED},
                 {"doc_type": DocumentType.PAY_STUB, "status": DocumentStatus.ACCEPTED},
                 {"doc_type": DocumentType.BANK_STATEMENT, "status": DocumentStatus.ACCEPTED},
-                {"doc_type": DocumentType.DRIVERS_LICENSE, "status": DocumentStatus.ACCEPTED},
+                {"doc_type": DocumentType.ID_CARD, "status": DocumentStatus.ACCEPTED},
             ],
             "decisions": [
                 {
@@ -1291,8 +1295,8 @@ for i in range(12):
     _lo_ref = _HISTORICAL_LO_REFS[i % len(_HISTORICAL_LO_REFS)]
     _idx = 16 + i
     _created = _days_ago(_DENIAL_DAYS_AGO[i])
-    _loan_amount = Decimal(str(250000 + i * 30000))
-    _property_value = _loan_amount + Decimal(str(30000 + i * 5000))
+    _loan_amount = Decimal(str(2500000 + i * 300000))
+    _property_value = _loan_amount + Decimal(str(300000 + i * 50000))
 
     HISTORICAL_LOANS.append(
         {
@@ -1313,9 +1317,9 @@ for i in range(12):
                 "dti_ratio": round(0.42 + i * 0.015, 3),
             },
             "documents": [
-                {"doc_type": DocumentType.W2, "status": DocumentStatus.ACCEPTED},
+                {"doc_type": DocumentType.INCOME_CERTIFICATE, "status": DocumentStatus.ACCEPTED},
                 {"doc_type": DocumentType.PAY_STUB, "status": DocumentStatus.ACCEPTED},
-                {"doc_type": DocumentType.DRIVERS_LICENSE, "status": DocumentStatus.ACCEPTED},
+                {"doc_type": DocumentType.ID_CARD, "status": DocumentStatus.ACCEPTED},
             ],
             "decisions": [
                 {

@@ -1,13 +1,13 @@
 // This project was developed with assistance from AI tools.
 
-const currencyFmt = new Intl.NumberFormat('en-US', {
+const currencyFmt = new Intl.NumberFormat('zh-CN', {
   style: 'currency',
-  currency: 'USD',
+  currency: 'CNY',
   maximumFractionDigits: 0,
 });
-const currencyPreciseFmt = new Intl.NumberFormat('en-US', {
+const currencyPreciseFmt = new Intl.NumberFormat('zh-CN', {
   style: 'currency',
-  currency: 'USD',
+  currency: 'CNY',
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
@@ -21,17 +21,18 @@ const percentFmt = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 2,
 });
-const dateFmt = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
+const dateFmt = new Intl.DateTimeFormat('zh-CN', {
   year: 'numeric',
+  month: 'long',
+  day: 'numeric',
 });
-const dateTimeFmt = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
+const dateTimeFmt = new Intl.DateTimeFormat('zh-CN', {
   year: 'numeric',
-  hour: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  hour: '2-digit',
   minute: '2-digit',
+  hour12: false,
 });
 const zhDateFmt = new Intl.DateTimeFormat('zh-CN', {
   year: 'numeric',
@@ -76,8 +77,7 @@ export function formatDateZh(value: string | null | undefined): string {
 
 export function formatDays(value: number | null | undefined): string {
   if (value == null) return '--';
-  if (value === 1) return '1 day';
-  return `${Math.round(value)} days`;
+  return `${Math.round(value)}天`;
 }
 
 export function formatDaysZh(value: number | null | undefined): string {

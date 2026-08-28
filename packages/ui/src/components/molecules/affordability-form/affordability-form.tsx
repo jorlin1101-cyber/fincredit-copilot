@@ -261,7 +261,7 @@ export function AffordabilityForm() {
                   }
                   className="mt-4 w-full cursor-pointer text-center text-sm text-[#1e3a5f] underline decoration-[#1e3a5f]/30 underline-offset-2 transition-colors hover:text-[#2b5a8f] hover:decoration-[#2b5a8f]/50 dark:text-blue-300 dark:decoration-blue-300/30 dark:hover:text-blue-200"
                 >
-                  已有意向住房？咨询多 Agent 授信助手
+                  已有意向住房？咨询小融
                 </button>
               </form>
             </div>

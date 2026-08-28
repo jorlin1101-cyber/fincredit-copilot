@@ -139,7 +139,25 @@ function QueueMetrics({ applications }: { applications: ApplicationResponse[] })
 function borrowerName(app: ApplicationResponse): string {
   const primary = app.borrowers?.find((b) => b.is_primary) ?? app.borrowers?.[0];
   if (!primary) return `申请 #${app.id}`;
+  if (/\p{Script=Han}/u.test(`${primary.first_name}${primary.last_name}`)) {
+    return `${primary.last_name}${primary.first_name}`;
+  }
   return `${primary.first_name} ${primary.last_name}`;
+}
+
+function effectiveUrgency(app: ApplicationResponse): UrgencyLevel {
+  const days = app.urgency?.days_in_stage ?? 0;
+  if (days >= 7) return 'critical';
+  if (days >= 5) return 'high';
+  if (days >= 4) return 'medium';
+  return (app.urgency?.level as UrgencyLevel | undefined) ?? 'normal';
+}
+
+function localizeRateFactor(factor: string): string {
+  return factor
+    .replace(/rate lock/gi, '利率锁定')
+    .replace(/expires? in (\d+) days?/gi, '$1天后到期')
+    .replace(/expired (\d+) days? ago/gi, '已到期$1天');
 }
 
 function rateLockLabel(app: ApplicationResponse): React.ReactNode {
@@ -150,7 +168,7 @@ function rateLockLabel(app: ApplicationResponse): React.ReactNode {
       <span className="inline-flex items-center gap-1 rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
         <Lock className="h-3 w-3" />
         <span className="truncate max-w-[100px]" title={rateFactor}>
-          {rateFactor}
+          {localizeRateFactor(rateFactor)}
         </span>
       </span>
     );
@@ -196,8 +214,8 @@ function compareApps(
       break;
     case 'urgency':
       cmp =
-        (URGENCY_ORDER[a.urgency?.level ?? 'normal'] ?? 3) -
-        (URGENCY_ORDER[b.urgency?.level ?? 'normal'] ?? 3);
+        (URGENCY_ORDER[effectiveUrgency(a)] ?? 3) -
+        (URGENCY_ORDER[effectiveUrgency(b)] ?? 3);
       break;
   }
   return dir === 'asc' ? cmp : -cmp;
@@ -263,7 +281,7 @@ function UnderwriterQueue() {
       });
     }
     if (filterUrgency) {
-      result = result.filter((app) => app.urgency?.level === filterUrgency);
+      result = result.filter((app) => effectiveUrgency(app) === filterUrgency);
     }
     return [...result].sort((a, b) => compareApps(a, b, sortKey, sortDir));
   }, [applications, searchQuery, filterUrgency, sortKey, sortDir]);
@@ -275,7 +293,7 @@ function UnderwriterQueue() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">授信审批工作台</h1>
         <p className="text-sm text-muted-foreground">
-          查看待审申请、证据核验结果和 Agent 风险建议
+          查看待审申请、证据核验结果、风险提示与人工审批进度
         </p>
       </div>
 
@@ -404,7 +422,7 @@ function UnderwriterQueue() {
 
 function QueueRow({ app }: { app: ApplicationResponse }) {
   const navigate = useNavigate();
-  const urgencyLevel = (app.urgency?.level ?? 'normal') as string;
+  const urgencyLevel = effectiveUrgency(app);
   const name = borrowerName(app);
 
   const goToDetail = () =>
