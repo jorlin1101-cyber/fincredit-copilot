@@ -37,7 +37,7 @@ docker compose up -d --build
 docker compose --profile auth --profile observability up -d --build
 ```
 
-更多内容见 [演示指南](docs/demo-guide.md)、[二次开发架构](docs/fincredit-architecture.md)、[评估说明](docs/evaluation-report.md) 与 [上游归属](UPSTREAM.md)。
+更多内容见 [二次开发架构](docs/fincredit-architecture.md)、[评估说明](docs/evaluation-report.md) 与 [上游归属](UPSTREAM.md)。
 
 ---
 

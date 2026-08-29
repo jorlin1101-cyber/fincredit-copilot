@@ -32,7 +32,7 @@ flowchart LR
         F12 --> F13[trace_id + 哈希链 + MLflow]
     end
 
-    U -. Apache-2.0 二次开发 .-> F
+    U5 -->|Apache-2.0 二次开发| F1
 ```
 
 ## 运行时主链路
