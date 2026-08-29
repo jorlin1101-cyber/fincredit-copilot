@@ -117,7 +117,62 @@ export const EXTRACTION_FIELD_LABELS: Record<string, string> = {
   coverage_amount: '保险金额',
   effective_date: '生效日期',
   expiration_date: '到期日期',
+  wages: '收入金额',
+  pay_period_end: '计薪截止日期',
 };
+
+const EXTRACTION_VALUE_LABELS: Record<string, string> = {
+  'US Department of Veterans Affairs': '成都优抚服务中心（演示）',
+  'US Dept. of Veterans Affairs': '成都优抚服务中心（演示）',
+  'USAA Federal Savings': '中国邮政储蓄银行成都分行（演示）',
+  'USAA Federal Savings Bank': '中国邮政储蓄银行成都分行（演示）',
+  Colorado: '四川省',
+  Checking: '个人结算账户',
+  Savings: '个人储蓄账户',
+  'Bi-weekly': '每两周',
+  Monthly: '每月',
+  Yes: '是',
+  No: '否',
+};
+
+/** Convert legacy upstream demo values to the Chinese public-demo vocabulary. */
+export function formatExtractionValue(
+  fieldName: string,
+  value: string | null | undefined,
+): string {
+  if (!value) return '--';
+  const exact = EXTRACTION_VALUE_LABELS[value];
+  if (exact) return exact;
+
+  if (/^\$[\d,.]+$/.test(value)) return value.replace('$', '¥');
+
+  const isoDate = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (isoDate) {
+    return `${isoDate[1]}年${Number(isoDate[2])}月${Number(isoDate[3])}日`;
+  }
+
+  const monthYear = /^([A-Za-z]{3}) (\d{4})$/.exec(value);
+  if (monthYear && fieldName === 'statement_period') {
+    const monthMap: Record<string, number> = {
+      Jan: 1,
+      Feb: 2,
+      Mar: 3,
+      Apr: 4,
+      May: 5,
+      Jun: 6,
+      Jul: 7,
+      Aug: 8,
+      Sep: 9,
+      Oct: 10,
+      Nov: 11,
+      Dec: 12,
+    };
+    const month = monthMap[monthYear[1]];
+    if (month) return `${monthYear[2]}年${month}月`;
+  }
+
+  return value;
+}
 
 export const STAGE_BADGE: Record<string, string> = {
   inquiry: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',

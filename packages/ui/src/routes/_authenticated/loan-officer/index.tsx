@@ -170,6 +170,7 @@ const URGENCY_LEVEL_LABELS: Record<string, string> = {
 };
 
 function localizeUrgencyFactor(value: string): string {
+  if (/[一-鿿]/u.test(value)) return value;
   return value
     .replace(/Rate lock expired/gi, '利率锁定已到期')
     .replace(/Rate lock expires in/gi, '利率锁定将于')
@@ -181,7 +182,9 @@ function localizeUrgencyFactor(value: string): string {
 
 function rateLockLabel(app: ApplicationResponse): React.ReactNode {
   const factors = app.urgency?.factors ?? [];
-  const rateFactor = factors.find((f) => f.toLowerCase().includes('rate lock'));
+  const rateFactor = factors.find(
+    (f) => f.includes('利率锁定') || f.toLowerCase().includes('rate lock'),
+  );
   if (rateFactor) {
     return (
       <span className="flex items-center gap-1 text-amber-600">

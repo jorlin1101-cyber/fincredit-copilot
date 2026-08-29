@@ -255,7 +255,8 @@ def test_shipped_chinese_policy_corpus_has_valid_provenance():
             validated.append(_validated_metadata(metadata, tier=tier, filename=path.name))
             assert body
 
-    assert len(validated) == 7
-    assert sum(item.jurisdiction == PolicyJurisdiction.NATIONAL for item in validated) == 2
-    assert sum(item.jurisdiction == PolicyJurisdiction.CHENGDU for item in validated) == 3
+    assert len(validated) == 9
+    assert sum(item.jurisdiction == PolicyJurisdiction.NATIONAL for item in validated) == 3
+    assert sum(item.jurisdiction == PolicyJurisdiction.CHENGDU for item in validated) == 4
+    assert sum(item.source_type == PolicySourceType.PUBLIC_REPORT for item in validated) == 1
     assert sum(item.source_type == PolicySourceType.INTERNAL_DEMO for item in validated) == 2

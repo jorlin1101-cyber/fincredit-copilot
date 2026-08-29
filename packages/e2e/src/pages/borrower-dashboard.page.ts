@@ -23,9 +23,6 @@ export class BorrowerDashboardPage {
 
     // Disclosures
     readonly acknowledgeButton: Locator;
-    readonly disclosureModal: Locator;
-    readonly modalCloseButton: Locator;
-    readonly modalAcknowledgeButton: Locator;
 
     constructor(page: Page) {
         this.page = page;
@@ -45,11 +42,6 @@ export class BorrowerDashboardPage {
 
         this.acknowledgeButton = page.getByRole("button", {
             name: "查看并确认",
-        });
-        this.disclosureModal = page.getByRole("dialog");
-        this.modalCloseButton = page.getByRole("dialog").getByLabel("关闭");
-        this.modalAcknowledgeButton = page.getByRole("button", {
-            name: "我已阅读并确认",
         });
     }
 

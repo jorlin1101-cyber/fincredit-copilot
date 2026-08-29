@@ -237,7 +237,7 @@ function DeterministicAssessmentCard({
         <div>
           <div className="mb-1 flex items-center gap-2">
             <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-bold text-[#1e3a5f]">
-              确定性引擎
+              固定规则测算
             </span>
             <span className="text-xs text-muted-foreground">采用固定公式计算</span>
           </div>

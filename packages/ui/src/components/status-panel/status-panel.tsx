@@ -18,12 +18,12 @@ export function StatusPanel({ services }: { services: Service[] }) {
   if (services.length === 0) {
     return (
       <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Services</h2>
-        <p className="text-sm text-muted-foreground">No services configured</p>
+        <h2 className="text-2xl font-semibold tracking-tight">服务状态</h2>
+        <p className="text-sm text-muted-foreground">暂未配置服务</p>
         <div className="text-center py-8">
           <CircleHelp className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           <p className="text-muted-foreground">
-            Add packages like API or Database to see services here.
+            配置应用服务后，可在此查看运行状态。
           </p>
         </div>
       </div>
@@ -33,9 +33,9 @@ export function StatusPanel({ services }: { services: Service[] }) {
   return (
     <div>
       <div className="mb-4">
-        <h2 className="text-2xl font-semibold tracking-tight">Services</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">服务状态</h2>
         <p className="text-sm text-muted-foreground">
-          Explore each package to get started
+          查看各项服务的运行情况
         </p>
       </div>
       <ServiceList />

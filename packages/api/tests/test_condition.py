@@ -491,8 +491,8 @@ async def test_tool_list_conditions_with_open(mock_service, mock_session_cls):
     result = await list_conditions.ainvoke({"application_id": 100, "state": _state()})
 
     assert "Verify employment" in result
-    assert "condition #1" in result
-    assert "1 condition(s)" in result
+    assert "条件 #1" in result
+    assert "1 项条件" in result
 
 
 @patch("src.agents.borrower_tools.SessionLocal")
@@ -506,7 +506,7 @@ async def test_tool_list_conditions_none_pending(mock_service, mock_session_cls)
 
     result = await list_conditions.ainvoke({"application_id": 100, "state": _state()})
 
-    assert "no pending conditions" in result
+    assert "没有待处理的审批条件" in result
 
 
 @patch("src.agents.borrower_tools.SessionLocal")
@@ -520,7 +520,7 @@ async def test_tool_list_conditions_not_found(mock_service, mock_session_cls):
 
     result = await list_conditions.ainvoke({"application_id": 999, "state": _state()})
 
-    assert "not found" in result
+    assert "未找到" in result
 
 
 # ---------------------------------------------------------------------------
@@ -551,9 +551,9 @@ async def test_tool_respond_success(mock_service, mock_session_cls):
         }
     )
 
-    assert "Recorded" in result
-    assert "condition #5" in result
-    assert "underwriter will review" in result
+    assert "已记录" in result
+    assert "条件 #5" in result
+    assert "审批人员将进行复核" in result
 
 
 @patch("src.agents.borrower_tools.SessionLocal")
@@ -574,7 +574,7 @@ async def test_tool_respond_not_found(mock_service, mock_session_cls):
         }
     )
 
-    assert "not found" in result
+    assert "未找到" in result
 
 
 # ---------------------------------------------------------------------------
@@ -615,8 +615,8 @@ async def test_tool_check_satisfaction_with_clean_doc(mock_service, mock_session
     )
 
     assert "emp_letter.pdf" in result
-    assert "employer_name" in result
-    assert "look good" in result
+    assert "工作单位" in result
+    assert "未发现明显质量问题" in result
 
 
 @patch("src.agents.borrower_tools.SessionLocal")
@@ -649,8 +649,8 @@ async def test_tool_check_satisfaction_with_quality_issues(mock_service, mock_se
         {"application_id": 100, "condition_id": 3, "state": _state()}
     )
 
-    assert "quality issues" in result
-    assert "unsigned" in result
+    assert "存在质量问题" in result
+    assert "缺少签字" in result
 
 
 @patch("src.agents.borrower_tools.SessionLocal")
@@ -674,8 +674,8 @@ async def test_tool_check_satisfaction_no_documents(mock_service, mock_session_c
         {"application_id": 100, "condition_id": 5, "state": _state()}
     )
 
-    assert "No documents" in result
-    assert "text response" in result
+    assert "尚未关联材料" in result
+    assert "文字说明" in result
 
 
 @patch("src.agents.borrower_tools.SessionLocal")
@@ -691,7 +691,7 @@ async def test_tool_check_satisfaction_not_found(mock_service, mock_session_cls)
         {"application_id": 999, "condition_id": 1, "state": _state()}
     )
 
-    assert "not found" in result
+    assert "未找到" in result
 
 
 # ---------------------------------------------------------------------------
@@ -774,7 +774,7 @@ async def test_issue_condition_wrong_stage(mock_get_app, mock_audit):
     )
     assert result is not None
     assert "error" in result
-    assert "underwriting" in result["error"].lower() or "conditional" in result["error"].lower()
+    assert "授信审批" in result["error"] or "附条件通过" in result["error"]
 
 
 @pytest.mark.asyncio
@@ -917,7 +917,7 @@ async def test_review_condition_wrong_status(mock_fetch, mock_audit):
     result = await review_condition(session, _uw_user(), 100, 1)
     assert result is not None
     assert "error" in result
-    assert "RESPONDED" in result["error"]
+    assert "已响应" in result["error"]
 
 
 @pytest.mark.asyncio
@@ -1053,7 +1053,7 @@ async def test_waive_condition_blocked_prior_to_approval(mock_fetch, mock_audit)
     result = await waive_condition(session, _uw_user(), 100, 1, "Not needed")
     assert result is not None
     assert "error" in result
-    assert "PRIOR_TO_CLOSING" in result["error"]
+    assert "签约前完成" in result["error"]
 
 
 @pytest.mark.asyncio
@@ -1108,7 +1108,7 @@ async def test_waive_condition_blocked_terminal(mock_fetch, mock_audit):
     result = await waive_condition(session, _uw_user(), 100, 1, "Not needed")
     assert result is not None
     assert "error" in result
-    assert "terminal" in result["error"].lower()
+    assert "终态" in result["error"]
 
 
 @pytest.mark.asyncio
@@ -1166,7 +1166,7 @@ async def test_return_condition_wrong_status(mock_fetch, mock_audit):
     result = await return_condition(session, _uw_user(), 100, 1, "Incomplete docs")
     assert result is not None
     assert "error" in result
-    assert "UNDER_REVIEW" in result["error"]
+    assert "复核中" in result["error"]
 
 
 @pytest.mark.asyncio
@@ -1216,7 +1216,7 @@ async def test_return_condition_appends_note(mock_fetch, mock_audit):
     session.refresh = fake_refresh
 
     await return_condition(session, _uw_user(), 100, 1, "Need signed copy")
-    assert "[Return #1]" in cond.response_text
+    assert "[第 1 次退回]" in cond.response_text
     assert "Need signed copy" in cond.response_text
     assert "Original response" in cond.response_text
 

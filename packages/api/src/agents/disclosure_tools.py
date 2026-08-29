@@ -1,9 +1,5 @@
 # This project was developed with assistance from AI tools.
-"""LE and CD document generation helpers for underwriting decisions.
-
-Pure functions for generating Loan Estimate and Closing Disclosure documents.
-Called by decision_tools.py tool implementations.
-"""
+"""China-scenario housing-loan confirmation text helpers."""
 
 from datetime import UTC, datetime
 
@@ -15,11 +11,28 @@ from ..services.calculator import compute_monthly_payment
 from ..services.rate_lock import get_rate_lock_status
 from .shared import format_enum_label
 
+_LPR_SOURCE = "https://www.chinamoney.com.cn/chinese/rdgz/20260820/3399885.html"
+_LOAN_TYPE_LABELS = {
+    "conventional_30": "30年期商业性个人住房贷款",
+    "conventional_15": "15年期商业性个人住房贷款",
+    "fha": "住房公积金个人住房贷款",
+    "va": "商业贷款与公积金组合贷款",
+    "jumbo": "大额商业性个人住房贷款",
+    "usda": "县域住房贷款（演示产品）",
+    "arm": "LPR浮动利率个人住房贷款",
+}
+
+
+def _person_name(first_name: str, last_name: str) -> str:
+    if any("\u4e00" <= char <= "\u9fff" for char in f"{first_name}{last_name}"):
+        return f"{last_name}{first_name}"
+    return f"{first_name} {last_name}"
+
 
 async def get_primary_borrower_name(session: AsyncSession, application_id: int) -> str:
     """Fetch the primary borrower's name for an application.
 
-    Returns "Borrower" if not found.
+    Returns a Chinese fallback when no borrower is found.
     """
     ab_stmt = select(ApplicationBorrower).where(
         ApplicationBorrower.application_id == application_id,
@@ -32,71 +45,46 @@ async def get_primary_borrower_name(session: AsyncSession, application_id: int) 
         b_result = await session.execute(b_stmt)
         borrower = b_result.scalar_one_or_none()
         if borrower:
-            return f"{borrower.first_name} {borrower.last_name}"
-    return "Borrower"
+            return _person_name(borrower.first_name, borrower.last_name)
+    return "借款人"
 
 
 async def generate_le_text(session, user, app, application_id: int) -> str:
-    """Generate Loan Estimate document text.
-
-    Args:
-        session: Database session
-        user: UserContext
-        app: Application model instance
-        application_id: Application ID
-
-    Returns:
-        Formatted LE document text
-    """
+    """Generate a Chinese demo personal-housing-loan terms confirmation."""
     borrower_name = await get_primary_borrower_name(session, application_id)
     rate_lock = await get_rate_lock_status(session, user, application_id)
 
-    # Compute simulated values
     loan_amount = float(app.loan_amount) if app.loan_amount else 0
     property_value = float(app.property_value) if app.property_value else 0
-    rate = 6.875  # default simulated rate
+    rate = 3.5
+    rate_basis = "2026年8月20日五年期以上LPR测算参考"
     if rate_lock and rate_lock.get("locked_rate"):
         rate = float(rate_lock["locked_rate"])
+        rate_basis = "申请记录中的已锁定执行利率"
 
     loan_type = app.loan_type.value if app.loan_type else "conventional_30"
     term_years = 15 if loan_type == "conventional_15" else 30
     num_payments = term_years * 12
-
     monthly_payment = compute_monthly_payment(loan_amount, rate, num_payments)
-
-    # Simulated closing costs
-    origination_fee = loan_amount * 0.01
-    appraisal = 550.0
-    title_insurance = loan_amount * 0.003
-    recording_fees = 150.0
-    total_closing = origination_fee + appraisal + title_insurance + recording_fees
-
-    today = datetime.now(UTC).strftime("%B %d, %Y")
+    today = datetime.now(UTC).astimezone().strftime("%Y年%m月%d日")
     lines = [
-        "LOAN ESTIMATE (SIMULATED)",
-        "=========================",
-        f"Date Issued: {today}",
-        f"Borrower: {borrower_name}",
-        f"Application: #{application_id}",
-        f"Property: {app.property_address or 'N/A'}",
+        "个人住房贷款要素确认书（演示）",
+        "==============================",
+        f"生成日期：{today}",
+        f"借款人：{borrower_name}",
+        f"申请编号：#{application_id}",
+        f"房产地址：{app.property_address or '待补充'}",
         "",
-        "LOAN TERMS:",
-        f"  Loan Amount: ${loan_amount:,.2f}",
-        f"  Interest Rate: {rate:.3f}%",
-        f"  Loan Type: {format_enum_label(loan_type)}",
-        f"  Term: {term_years} years ({num_payments} payments)",
-        f"  Monthly P&I: ${monthly_payment:,.2f}",
+        "贷款要素：",
+        f"  贷款金额：¥{loan_amount:,.2f}",
+        f"  测算利率：{rate:.3f}%（{rate_basis}）",
+        f"  贷款类型：{_LOAN_TYPE_LABELS.get(loan_type, format_enum_label(loan_type))}",
+        f"  贷款期限：{term_years} 年（共 {num_payments} 期）",
+        f"  等额本息月供测算：¥{monthly_payment:,.2f}",
         "",
-        "PROJECTED PAYMENTS:",
-        f"  Principal & Interest: ${monthly_payment:,.2f}/month",
-        "  Estimated taxes & insurance: Varies by location",
-        "",
-        "ESTIMATED CLOSING COSTS:",
-        f"  Origination fee (1%): ${origination_fee:,.2f}",
-        f"  Appraisal: ${appraisal:,.2f}",
-        f"  Title insurance: ${title_insurance:,.2f}",
-        f"  Recording fees: ${recording_fees:,.2f}",
-        f"  Total estimated: ${total_closing:,.2f}",
+        "费用核对：",
+        "  评估、抵押登记、保险及其他费用：待受理机构或第三方出具正式报价后确认",
+        "  本项目不使用无来源的固定收费比例生成费用结论。",
     ]
 
     if property_value > 0:
@@ -105,20 +93,19 @@ async def generate_le_text(session, user, app, application_id: int) -> str:
         lines.extend(
             [
                 "",
-                "CASH TO CLOSE:",
-                f"  Property Value: ${property_value:,.2f}",
-                f"  Down Payment: ${down_payment:,.2f}",
-                f"  Estimated Closing Costs: ${total_closing:,.2f}",
-                f"  Total Cash to Close: ${down_payment + total_closing:,.2f}",
-                f"  LTV: {ltv:.1f}%",
+                "首付款核对：",
+                f"  房产价值：¥{property_value:,.2f}",
+                f"  首付款金额：¥{down_payment:,.2f}",
+                f"  贷款成数：{ltv:.1f}%",
             ]
         )
 
     lines.extend(
         [
             "",
-            "DISCLAIMER: This Loan Estimate is simulated for demonstration",
-            "purposes and does not constitute an actual TRID Loan Estimate.",
+            f"利率参考来源：全国银行间同业拆借中心受权公布LPR公告（{_LPR_SOURCE}）。",
+            "提示：本文件仅用于虚构项目演示，不构成贷款合同、收费承诺或授信决定；",
+            "实际执行利率、还款计划和费用以有权机构正式合同、价目公示及有效凭证为准。",
         ]
     )
 
@@ -126,67 +113,44 @@ async def generate_le_text(session, user, app, application_id: int) -> str:
 
 
 async def generate_cd_text(session, user, app, application_id: int) -> str:
-    """Generate Closing Disclosure document text.
-
-    Args:
-        session: Database session
-        user: UserContext
-        app: Application model instance
-        application_id: Application ID
-
-    Returns:
-        Formatted CD document text
-    """
+    """Generate a Chinese demo signing-elements confirmation text."""
     borrower_name = await get_primary_borrower_name(session, application_id)
     rate_lock = await get_rate_lock_status(session, user, application_id)
 
-    # Compute values
     loan_amount = float(app.loan_amount) if app.loan_amount else 0
     property_value = float(app.property_value) if app.property_value else 0
-    rate = 6.875
+    rate = 3.5
+    rate_basis = "2026年8月20日五年期以上LPR测算参考"
     if rate_lock and rate_lock.get("locked_rate"):
         rate = float(rate_lock["locked_rate"])
+        rate_basis = "申请记录中的已锁定执行利率"
 
     loan_type = app.loan_type.value if app.loan_type else "conventional_30"
     term_years = 15 if loan_type == "conventional_15" else 30
     num_payments = term_years * 12
-
     monthly_payment = compute_monthly_payment(loan_amount, rate, num_payments)
-
-    # Final closing costs (slightly different from LE for realism)
-    origination_fee = loan_amount * 0.01
-    appraisal = 550.0
-    title_insurance = loan_amount * 0.003
-    recording_fees = 175.0
-    transfer_tax = property_value * 0.001 if property_value else 0
-    total_closing = origination_fee + appraisal + title_insurance + recording_fees + transfer_tax
-
-    today = datetime.now(UTC).strftime("%B %d, %Y")
-    closing_date = app.closing_date.strftime("%B %d, %Y") if app.closing_date else today
+    today = datetime.now(UTC).astimezone().strftime("%Y年%m月%d日")
+    closing_date = app.closing_date.strftime("%Y年%m月%d日") if app.closing_date else "待确认"
 
     lines = [
-        "CLOSING DISCLOSURE (SIMULATED)",
-        "==============================",
-        f"Date Issued: {today}",
-        f"Closing Date: {closing_date}",
-        f"Borrower: {borrower_name}",
-        f"Application: #{application_id}",
-        f"Property: {app.property_address or 'N/A'}",
+        "个人住房贷款签约要素确认书（演示）",
+        "==================================",
+        f"生成日期：{today}",
+        f"拟签约日期：{closing_date}",
+        f"借款人：{borrower_name}",
+        f"申请编号：#{application_id}",
+        f"房产地址：{app.property_address or '待补充'}",
         "",
-        "LOAN TERMS:",
-        f"  Loan Amount: ${loan_amount:,.2f}",
-        f"  Interest Rate: {rate:.3f}%",
-        f"  Loan Type: {format_enum_label(loan_type)}",
-        f"  Term: {term_years} years ({num_payments} payments)",
-        f"  Monthly P&I: ${monthly_payment:,.2f}",
+        "拟签约贷款要素：",
+        f"  贷款金额：¥{loan_amount:,.2f}",
+        f"  测算利率：{rate:.3f}%（{rate_basis}）",
+        f"  贷款类型：{_LOAN_TYPE_LABELS.get(loan_type, format_enum_label(loan_type))}",
+        f"  贷款期限：{term_years} 年（共 {num_payments} 期）",
+        f"  等额本息月供测算：¥{monthly_payment:,.2f}",
         "",
-        "CLOSING COST DETAILS:",
-        f"  Origination fee (1%): ${origination_fee:,.2f}",
-        f"  Appraisal: ${appraisal:,.2f}",
-        f"  Title insurance: ${title_insurance:,.2f}",
-        f"  Recording fees: ${recording_fees:,.2f}",
-        f"  Transfer tax: ${transfer_tax:,.2f}",
-        f"  Total closing costs: ${total_closing:,.2f}",
+        "签约前费用核对：",
+        "  贷款相关收费、评估费、抵押登记费及第三方费用：以正式合同、价目公示",
+        "  和有效票据逐项核对；演示系统不代替收费确认。",
     ]
 
     if property_value > 0:
@@ -194,19 +158,18 @@ async def generate_cd_text(session, user, app, application_id: int) -> str:
         lines.extend(
             [
                 "",
-                "CASH TO CLOSE:",
-                f"  Purchase Price: ${property_value:,.2f}",
-                f"  Down Payment: ${down_payment:,.2f}",
-                f"  Total Closing Costs: ${total_closing:,.2f}",
-                f"  Total Cash to Close: ${down_payment + total_closing:,.2f}",
+                "交易金额核对：",
+                f"  房产价值：¥{property_value:,.2f}",
+                f"  首付款金额：¥{down_payment:,.2f}",
             ]
         )
 
     lines.extend(
         [
             "",
-            "DISCLAIMER: This Closing Disclosure is simulated for demonstration",
-            "purposes and does not constitute an actual TRID Closing Disclosure.",
+            f"利率参考来源：全国银行间同业拆借中心受权公布LPR公告（{_LPR_SOURCE}）。",
+            "提示：本文件仅用于虚构项目演示，不构成贷款合同、收费承诺或授信决定；",
+            "正式签约前必须由借款人与有权机构逐项核对合同、还款计划、费用和风险提示。",
         ]
     )
 

@@ -30,25 +30,25 @@ test.describe("Loan Officer Application Detail", () => {
 
     test("should show Profile tab with borrower info", async ({ page }) => {
         await detail.profileTab.click();
-        await expect(page.getByText("Borrower Info")).toBeVisible();
-        await expect(page.getByText("Property Info")).toBeVisible();
+        await expect(page.getByText("借款人信息")).toBeVisible();
+        await expect(page.getByText("房产信息")).toBeVisible();
     });
 
     test("should show Financial Summary tab with loan overview", async ({ page }) => {
         await detail.financialTab.click();
-        await expect(page.getByText("Loan Overview")).toBeVisible();
+        await expect(page.getByText("贷款概览")).toBeVisible();
     });
 
     test("should show Documents tab with completeness info", async ({ page }) => {
         await detail.documentsTab.click();
-        await expect(page.getByText("Document Completeness")).toBeVisible();
+        await expect(page.getByText("材料完整性")).toBeVisible();
     });
 
     test("should show Conditions tab", async ({ page }) => {
         await detail.conditionsTab.click();
         // Either conditions table or empty state
-        const conditions = page.getByText("Condition").first();
-        const emptyState = page.getByText("No underwriting conditions");
+        const conditions = page.getByText("审批条件").first();
+        const emptyState = page.getByText("当前没有待处理的审批条件。");
         const conditionsVisible = await conditions.isVisible();
         const emptyVisible = await emptyState.isVisible();
         expect(conditionsVisible || emptyVisible).toBeTruthy();
@@ -91,12 +91,21 @@ test.describe("Loan Officer Application Detail", () => {
         await detail.requestDocsButton.click();
 
         const detail_ = await prefillPromise;
-        expect(detail_.message).toContain("missing documents");
+        expect(detail_.message).toContain("缺少哪些材料");
         expect(detail_.autoSend).toBe(true);
     });
 
     // W-10: Added 5s rejection timeout to the chat-prefill promise.
     test("should send chat message when clicking Submit to Underwriting", async ({ page }) => {
+        // Select an application-stage record so this action is genuinely available.
+        await page.goto("/loan-officer");
+        const pipeline = new LOPipelinePage(page);
+        await pipeline.stageFilter.selectOption({ label: "申请中" });
+        await expect(pipeline.tableRows.first()).toBeVisible({ timeout: 10_000 });
+        await pipeline.tableRows.first().click();
+        await page.waitForURL(/\/loan-officer\/\d+/);
+        await expect(detail.submitToUWButton).toBeEnabled();
+
         const prefillPromise = page.evaluate(() => {
             return new Promise<{ message: string; autoSend: boolean }>((resolve, reject) => {
                 const timeout = setTimeout(
@@ -117,7 +126,7 @@ test.describe("Loan Officer Application Detail", () => {
         await detail.submitToUWButton.click();
 
         const detail_ = await prefillPromise;
-        expect(detail_.message).toContain("underwriting");
+        expect(detail_.message).toContain("提交授信审批");
         expect(detail_.autoSend).toBe(true);
     });
 
@@ -134,8 +143,8 @@ test.describe("Loan Officer Application Detail", () => {
         await expect(docRows.first()).toBeVisible({ timeout: 10_000 });
 
         await docRows.first().click();
-        // Expanded row should appear below (extraction details or "No extraction data")
-        const expandedContent = page.getByText(/extraction|No extraction data/i);
+        // The expanded row contains localized extraction fields or a localized empty state.
+        const expandedContent = page.locator("table tbody tr").filter({ has: page.locator("td[colspan]") });
         await expect(expandedContent.first()).toBeVisible({ timeout: 5_000 });
     });
 

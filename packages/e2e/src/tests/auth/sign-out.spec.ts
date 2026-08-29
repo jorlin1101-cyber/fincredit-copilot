@@ -12,9 +12,9 @@ test.describe("Sign Out", () => {
         await signIn.signInAs(signIn.borrowerButton, getPassword());
         await page.waitForURL("**/borrower**");
 
-        // The header renders a direct "Sign out" button (aria-label) on desktop viewports.
+        // The header renders a direct "退出" button (aria-label) on desktop viewports.
         // This is deterministic -- if it is not visible the test must fail clearly.
-        const signOutButton = page.getByRole("button", { name: "Sign out" });
+        const signOutButton = page.getByRole("button", { name: "退出" });
         await expect(signOutButton).toBeVisible({ timeout: 5_000 });
         await signOutButton.click();
 
@@ -42,6 +42,6 @@ test.describe("Sign Out", () => {
 
         // Header should show the user's name and role badge
         await expect(page.getByText("李晓雨")).toBeVisible();
-        await expect(page.getByText("Borrower").first()).toBeVisible();
+        await expect(page.getByText("借款人").first()).toBeVisible();
     });
 });

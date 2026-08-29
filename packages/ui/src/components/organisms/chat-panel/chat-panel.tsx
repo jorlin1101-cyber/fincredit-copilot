@@ -9,14 +9,13 @@ import { cn } from '@/lib/utils';
 import { AGENT_NAME } from '@/lib/company';
 
 export function ChatPanel() {
-  const { isOpen, closeChat, initialMessage, clearInitialMessage } = useChatContext();
-  const { messages, isStreaming, isConnected, sendMessage, connect } = useChat({
+  const { isOpen, closeChat } = useChatContext();
+  const { messages, isStreaming, sendMessage, connect } = useChat({
     path: '/api/chat',
   });
   const [input, setInput] = useState('');
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const initialMessageSentRef = useRef(false);
 
   // Connect on open
   useEffect(() => {
@@ -25,22 +24,6 @@ export function ChatPanel() {
       setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [isOpen, connect]);
-
-  // Send initial message once connected
-  useEffect(() => {
-    if (isOpen && isConnected && initialMessage && !initialMessageSentRef.current) {
-      initialMessageSentRef.current = true;
-      sendMessage(initialMessage);
-      clearInitialMessage();
-    }
-  }, [isOpen, isConnected, initialMessage, sendMessage, clearInitialMessage]);
-
-  // Reset the sent flag when initial message changes
-  useEffect(() => {
-    if (initialMessage) {
-      initialMessageSentRef.current = false;
-    }
-  }, [initialMessage]);
 
   // Auto-scroll to bottom on new messages
   useLayoutEffect(() => {

@@ -117,7 +117,7 @@ async def test_render_decision_wrong_stage(mock_get_app, mock_ai, mock_cond, moc
     result = await render_decision(session, _uw_user(), 100, "approve", "Good profile")
     assert result is not None
     assert "error" in result
-    assert "underwriting" in result["error"].lower()
+    assert "授信审批" in result["error"]
 
 
 @pytest.mark.asyncio
@@ -255,7 +255,7 @@ async def test_render_decision_approve_from_conditional_outstanding(
     result = await render_decision(session, _uw_user(), 100, "approve", "Trying to approve")
     assert result is not None
     assert "error" in result
-    assert "outstanding conditions" in result["error"].lower()
+    assert "未完成的审批条件" in result["error"]
 
 
 @pytest.mark.asyncio
@@ -318,7 +318,7 @@ async def test_render_decision_deny_without_reasons(mock_get_app, mock_ai, mock_
     result = await render_decision(session, _uw_user(), 100, "deny", "Bad profile")
     assert result is not None
     assert "error" in result
-    assert "denial_reason" in result["error"].lower()
+    assert "至少一项" in result["error"]
 
 
 @pytest.mark.asyncio
@@ -413,7 +413,7 @@ async def test_render_decision_suspend_from_conditional_error(mock_get_app, mock
     result = await render_decision(session, _uw_user(), 100, "suspend", "Need more info")
     assert result is not None
     assert "error" in result
-    assert "UNDERWRITING" in result["error"]
+    assert "授信审批" in result["error"]
 
 
 @pytest.mark.asyncio
@@ -522,7 +522,7 @@ async def test_render_decision_invalid_decision_type(mock_get_app, mock_ai, mock
     result = await render_decision(session, _uw_user(), 100, "maybe", "Unsure")
     assert result is not None
     assert "error" in result
-    assert "Invalid decision" in result["error"]
+    assert "无法识别决定类型" in result["error"]
 
 
 # ---------------------------------------------------------------------------

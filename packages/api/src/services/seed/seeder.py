@@ -375,9 +375,9 @@ async def _seed_recent_audit_events(
             "user_role": "loan_officer",
             "application_id": active_apps[0].id,
             "event_data": {
-                "from_stage": "application",
-                "to_stage": "underwriting",
-                "reason": "All documentation received, submitting for review",
+                "from_stage": "申请中",
+                "to_stage": "授信审批",
+                "reason": "申请材料已收齐，提交授信审批",
             },
         },
         {
@@ -386,8 +386,8 @@ async def _seed_recent_audit_events(
             "user_role": "underwriter",
             "application_id": active_apps[2].id,
             "event_data": {
-                "checks": ["ecoa", "atr_qm", "trid"],
-                "result": "pass",
+                "checks": ["申请材料", "还款能力", "全国及成都住房信贷政策"],
+                "result": "通过",
                 "flags": 0,
             },
         },
@@ -397,7 +397,7 @@ async def _seed_recent_audit_events(
             "user_role": "loan_officer",
             "application_id": active_apps[1].id,
             "event_data": {
-                "bureau": "equifax",
+                "bureau": "征信机构（模拟）",
                 "score": 742,
                 "result": "approved",
             },
@@ -409,7 +409,7 @@ async def _seed_recent_audit_events(
             "application_id": active_apps[3].id,
             "event_data": {
                 "condition_type": "prior_to_close",
-                "title": "Updated pay stubs required",
+                "title": "须补充最新工资单",
             },
         },
         {
@@ -419,7 +419,7 @@ async def _seed_recent_audit_events(
             "application_id": active_apps[4].id,
             "event_data": {
                 "decision_type": "conditionally_approved",
-                "rationale": "Strong financials, pending final documentation",
+                "rationale": "财务情况较稳定，待补充最终材料",
             },
         },
         {
@@ -438,7 +438,7 @@ async def _seed_recent_audit_events(
             "application_id": active_apps[5].id,
             "event_data": {
                 "channel": "email",
-                "subject": "Application status update",
+                "subject": "住房贷款申请状态更新",
             },
         },
         {
@@ -448,7 +448,7 @@ async def _seed_recent_audit_events(
             "application_id": active_apps[6].id,
             "event_data": {
                 "condition_type": "prior_to_close",
-                "title": "Proof of homeowners insurance",
+                "title": "房屋保险凭证",
             },
         },
     ]

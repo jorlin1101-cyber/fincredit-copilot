@@ -55,10 +55,9 @@ class TestBorrowerCompleteness:
 
     def test_borrower_sees_completeness(self, app, make_client):
         sarah_app = make_app_sarah_1()
-        # Sarah has W2 and pay stub uploaded, missing bank statement + ID
+        # Applicant has income evidence; bank statement and ID are still missing.
         docs = [
-            _make_doc(1, DocumentType.W2),
-            _make_doc(2, DocumentType.PAY_STUB),
+            _make_doc(1, DocumentType.INCOME_CERTIFICATE),
         ]
         session = _make_completeness_session(sarah_app, docs)
         client = make_client(borrower_sarah(), session)
@@ -67,13 +66,13 @@ class TestBorrowerCompleteness:
         assert resp.status_code == 200
         data = resp.json()
         assert data["is_complete"] is False
-        assert data["provided_count"] == 2
-        assert data["required_count"] == 4
+        assert data["provided_count"] == 1
+        assert data["required_count"] == 3
 
         missing = [r for r in data["requirements"] if not r["is_provided"]]
         missing_types = {r["doc_type"] for r in missing}
         assert "bank_statement" in missing_types
-        assert "drivers_license" in missing_types
+        assert "id_card" in missing_types
 
     def test_borrower_cannot_see_other_app(self, app, make_client):
         """Borrower checking another user's app gets 404 (scope returns None)."""
@@ -90,10 +89,9 @@ class TestLoanOfficerCompleteness:
     def test_lo_sees_assigned_app_completeness(self, app, make_client):
         sarah_app = make_app_sarah_1()
         docs = [
-            _make_doc(1, DocumentType.W2),
-            _make_doc(2, DocumentType.PAY_STUB),
+            _make_doc(1, DocumentType.INCOME_CERTIFICATE),
             _make_doc(3, DocumentType.BANK_STATEMENT),
-            _make_doc(4, DocumentType.DRIVERS_LICENSE),
+            _make_doc(4, DocumentType.ID_CARD),
         ]
         session = _make_completeness_session(sarah_app, docs)
         client = make_client(loan_officer(), session)
@@ -102,7 +100,7 @@ class TestLoanOfficerCompleteness:
         assert resp.status_code == 200
         data = resp.json()
         assert data["is_complete"] is True
-        assert data["provided_count"] == 4
+        assert data["provided_count"] == 3
 
 
 class TestCeoCompleteness:
@@ -110,7 +108,7 @@ class TestCeoCompleteness:
 
     def test_ceo_sees_completeness(self, app, make_client):
         sarah_app = make_app_sarah_1()
-        docs = [_make_doc(1, DocumentType.W2)]
+        docs = [_make_doc(1, DocumentType.INCOME_CERTIFICATE)]
         session = _make_completeness_session(sarah_app, docs)
         client = make_client(ceo(), session)
 
@@ -142,10 +140,13 @@ class TestQualityFlagsSurfaced:
         # Set employment status so requirements are deterministic
         sarah_app.application_borrowers[0].borrower.employment_status = EmploymentStatus.W2_EMPLOYEE
         docs = [
-            _make_doc(1, DocumentType.W2, quality_flags=["blurry"]),
-            _make_doc(2, DocumentType.PAY_STUB),
+            _make_doc(
+                1,
+                DocumentType.INCOME_CERTIFICATE,
+                quality_flags=["low_resolution"],
+            ),
             _make_doc(3, DocumentType.BANK_STATEMENT),
-            _make_doc(4, DocumentType.DRIVERS_LICENSE),
+            _make_doc(4, DocumentType.ID_CARD),
         ]
         session = _make_completeness_session(sarah_app, docs)
         client = make_client(loan_officer(), session)
@@ -153,5 +154,7 @@ class TestQualityFlagsSurfaced:
         resp = client.get(f"/api/applications/{sarah_app.id}/completeness")
         assert resp.status_code == 200
         data = resp.json()
-        w2_req = next(r for r in data["requirements"] if r["doc_type"] == "w2")
-        assert "blurry" in w2_req["quality_flags"]
+        income_req = next(
+            r for r in data["requirements"] if r["doc_type"] == "income_certificate"
+        )
+        assert "low_resolution" in income_req["quality_flags"]

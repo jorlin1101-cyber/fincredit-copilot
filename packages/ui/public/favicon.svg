@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="融安住房金融">
+  <rect width="64" height="64" rx="12" fill="#cc0000"/>
+  <path d="M11 31 32 13l21 18v22H38V39H26v14H11Z" fill="#fff"/>
+  <path d="M20 31h24" stroke="#cc0000" stroke-width="4"/>
+</svg>

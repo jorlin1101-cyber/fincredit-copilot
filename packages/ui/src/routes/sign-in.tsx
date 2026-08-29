@@ -67,10 +67,10 @@ const PERSONAS: {
 const KEYCLOAK_DEMO_USERS: Partial<
   Record<UserRole, { email: string; password: string }>
 > = {
-  borrower: { email: 'sarah.mitchell@example.com', password: 'demo' }, // #notsecret
-  loan_officer: { email: 'james.torres@example.com', password: 'demo' }, // #notsecret
-  underwriter: { email: 'maria.chen@example.com', password: 'demo' }, // #notsecret
-  ceo: { email: 'david.park@example.com', password: 'demo' }, // #notsecret
+  borrower: { email: 'li.xiaoyu@example.com', password: 'demo' }, // #notsecret
+  loan_officer: { email: 'wang.chen@example.com', password: 'demo' }, // #notsecret
+  underwriter: { email: 'chen.jing@example.com', password: 'demo' }, // #notsecret
+  ceo: { email: 'zhou.mingyuan@example.com', password: 'demo' }, // #notsecret
 };
 
 const ROLE_REDIRECTS: Record<UserRole, string> = {

@@ -57,10 +57,14 @@ async def test_completeness_tool_formats_missing_docs(mock_check, mock_session_c
         application_id=1,
         is_complete=False,
         requirements=[
-            DocumentRequirement(doc_type=DocumentType.W2, label="W-2 Form", is_provided=True),
+            DocumentRequirement(
+                doc_type=DocumentType.INCOME_CERTIFICATE,
+                label="收入证明",
+                is_provided=True,
+            ),
             DocumentRequirement(
                 doc_type=DocumentType.BANK_STATEMENT,
-                label="Bank Statement",
+                label="银行流水",
                 is_provided=False,
             ),
         ],
@@ -74,11 +78,11 @@ async def test_completeness_tool_formats_missing_docs(mock_check, mock_session_c
 
     result = await document_completeness.ainvoke({"application_id": 1, "state": _state()})
 
-    assert "Incomplete" in result
+    assert "仍需补充" in result
     assert "1/2" in result
-    assert "W-2 Form: Provided" in result
-    assert "Bank Statement: MISSING" in result
-    assert "Next step: Upload Bank Statement" in result
+    assert "收入证明: 已提供" in result
+    assert "银行流水: 未提供" in result
+    assert "下一步：请上传银行流水" in result
 
 
 @patch("src.agents.borrower_tools.SessionLocal")
@@ -91,7 +95,7 @@ async def test_completeness_tool_not_found(mock_check, mock_session_cls):
     mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=False)
 
     result = await document_completeness.ainvoke({"application_id": 999, "state": _state()})
-    assert "not found" in result
+    assert "未找到" in result
 
 
 @patch("src.agents.borrower_tools.SessionLocal")
@@ -102,8 +106,8 @@ async def test_completeness_tool_shows_quality_flags(mock_check, mock_session_cl
         is_complete=True,
         requirements=[
             DocumentRequirement(
-                doc_type=DocumentType.W2,
-                label="W-2 Form",
+                doc_type=DocumentType.INCOME_CERTIFICATE,
+                label="收入证明",
                 is_provided=True,
                 quality_flags=["blurry"],
             ),
@@ -117,8 +121,8 @@ async def test_completeness_tool_shows_quality_flags(mock_check, mock_session_cl
     mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=False)
 
     result = await document_completeness.ainvoke({"application_id": 1, "state": _state()})
-    assert "blurry" in result
-    assert "Complete" in result
+    assert "图像模糊" in result
+    assert "材料齐全" in result
 
 
 # ---------------------------------------------------------------------------
@@ -136,8 +140,8 @@ async def test_processing_status_shows_mixed_statuses(mock_list, mock_session_cl
 
     docs = []
     for dtype, status in [
-        (DocumentType.W2, DocumentStatus.PROCESSING_COMPLETE),
-        (DocumentType.PAY_STUB, DocumentStatus.PROCESSING),
+        (DocumentType.INCOME_CERTIFICATE, DocumentStatus.PROCESSING_COMPLETE),
+        (DocumentType.ID_CARD, DocumentStatus.PROCESSING),
         (DocumentType.BANK_STATEMENT, DocumentStatus.PROCESSING_FAILED),
     ]:
         d = MagicMock()
@@ -153,12 +157,12 @@ async def test_processing_status_shows_mixed_statuses(mock_list, mock_session_cl
 
     result = await document_processing_status.ainvoke({"application_id": 1, "state": _state()})
 
-    assert "3 document(s)" in result
-    assert "Processed successfully" in result
-    assert "Processing..." in result
-    assert "Processing failed" in result
-    assert "1 document(s) still processing" in result
-    assert "1 document(s) failed processing" in result
+    assert "共 3 项" in result
+    assert "识别完成" in result
+    assert "识别处理中" in result
+    assert "识别失败" in result
+    assert "仍有 1 项材料正在识别" in result
+    assert "有 1 项材料识别失败" in result
 
 
 @patch("src.agents.borrower_tools.SessionLocal")
@@ -173,7 +177,7 @@ async def test_processing_status_no_documents(mock_list, mock_session_cls):
 
     result = await document_processing_status.ainvoke({"application_id": 1, "state": _state()})
 
-    assert "No documents have been uploaded" in result
+    assert "尚未上传材料" in result
 
 
 # ---------------------------------------------------------------------------
@@ -188,17 +192,17 @@ async def test_status_tool_formats_response(mock_status, mock_session_cls):
         application_id=1,
         stage="application",
         stage_info=StageInfo(
-            label="Application",
-            description="Your application is in progress.",
-            next_step="Submit required documents.",
-            typical_timeline="Depends on document submission",
+            label="申请中",
+            description="申请正在处理中。",
+            next_step="提交所需材料。",
+            typical_timeline="取决于材料提交进度",
         ),
         is_document_complete=False,
         provided_doc_count=2,
         required_doc_count=4,
         open_condition_count=0,
         pending_actions=[
-            PendingAction(action_type="upload_document", description="Upload Bank Statement"),
+            PendingAction(action_type="upload_document", description="上传银行流水"),
         ],
     )
 
@@ -208,10 +212,10 @@ async def test_status_tool_formats_response(mock_status, mock_session_cls):
 
     result = await application_status.ainvoke({"application_id": 1, "state": _state()})
 
-    assert "Application" in result
+    assert "申请中" in result
     assert "2/4" in result
-    assert "incomplete" in result
-    assert "Upload Bank Statement" in result
+    assert "仍需补充" in result
+    assert "上传银行流水" in result
 
 
 @patch("src.agents.borrower_tools.SessionLocal")
@@ -224,7 +228,7 @@ async def test_status_tool_not_found(mock_status, mock_session_cls):
     mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=False)
 
     result = await application_status.ainvoke({"application_id": 999, "state": _state()})
-    assert "not found" in result
+    assert "未找到" in result
 
 
 @patch("src.agents.borrower_tools.SessionLocal")
@@ -234,10 +238,10 @@ async def test_status_tool_shows_conditions(mock_status, mock_session_cls):
         application_id=1,
         stage="conditional_approval",
         stage_info=StageInfo(
-            label="Conditional Approval",
-            description="Conditionally approved.",
-            next_step="Clear conditions.",
-            typical_timeline="Varies",
+            label="附条件通过",
+            description="申请已附条件通过。",
+            next_step="完成待处理条件。",
+            typical_timeline="取决于材料补充进度",
         ),
         is_document_complete=True,
         provided_doc_count=4,
@@ -246,7 +250,7 @@ async def test_status_tool_shows_conditions(mock_status, mock_session_cls):
         pending_actions=[
             PendingAction(
                 action_type="clear_conditions",
-                description="3 underwriting condition(s) to resolve",
+                description="还有 3 项审批条件待处理",
             ),
         ],
     )
@@ -256,8 +260,8 @@ async def test_status_tool_shows_conditions(mock_status, mock_session_cls):
     mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=False)
 
     result = await application_status.ainvoke({"application_id": 1, "state": _state()})
-    assert "Open conditions: 3" in result
-    assert "3 underwriting condition(s)" in result
+    assert "待处理审批条件：3 项" in result
+    assert "还有 3 项审批条件待处理" in result
 
 
 # ---------------------------------------------------------------------------
@@ -269,8 +273,8 @@ def test_deadlines_pre_application_stage():
     result = regulatory_deadlines.invoke(
         {"application_date": "2026-01-15", "current_stage": "inquiry"}
     )
-    assert "No regulatory deadlines apply yet" in result
-    assert "simulated for demonstration" in result
+    assert "咨询或预审阶段" in result
+    assert "不构成法律、监管或授信意见" in result
 
 
 def test_deadlines_active_application():
@@ -278,32 +282,31 @@ def test_deadlines_active_application():
     result = regulatory_deadlines.invoke(
         {"application_date": past_date, "current_stage": "application"}
     )
-    assert "Reg B" in result
-    assert "TRID" in result
-    assert "simulated for demonstration" in result
+    assert "已进入流程" in result
+    assert "受理机构" in result
+    assert "不构成法律、监管或授信意见" in result
 
 
 def test_deadlines_future_application():
     today = date.today().isoformat()
     result = regulatory_deadlines.invoke({"application_date": today, "current_stage": "processing"})
-    assert "Reg B" in result
-    assert "days remaining" in result
-    assert "TRID" in result
+    assert "已进入流程 0 天" in result
+    assert "审批、面签、抵押登记和放款时限" in result
 
 
 def test_deadlines_invalid_date():
     result = regulatory_deadlines.invoke(
         {"application_date": "not-a-date", "current_stage": "application"}
     )
-    assert "Invalid date format" in result
-    assert "simulated for demonstration" in result
+    assert "日期格式无效" in result
+    assert "不构成法律、监管或授信意见" in result
 
 
 def test_deadlines_prequalification_stage():
     result = regulatory_deadlines.invoke(
         {"application_date": "2026-02-01", "current_stage": "prequalification"}
     )
-    assert "No regulatory deadlines apply yet" in result
+    assert "咨询或预审阶段" in result
 
 
 # ---------------------------------------------------------------------------
@@ -312,11 +315,14 @@ def test_deadlines_prequalification_stage():
 
 
 @patch("src.agents.borrower_tools.SessionLocal")
-@patch("src.agents.borrower_tools.write_audit_event")
+@patch("src.services.disclosure.write_audit_event")
 async def test_acknowledge_disclosure_records_event(mock_write, mock_session_cls):
     mock_write.return_value = AsyncMock()
 
     session = AsyncMock()
+    query_result = MagicMock()
+    query_result.scalars.return_value.all.return_value = []
+    session.execute = AsyncMock(return_value=query_result)
     mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=session)
     mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=False)
 
@@ -329,8 +335,8 @@ async def test_acknowledge_disclosure_records_event(mock_write, mock_session_cls
         }
     )
 
-    assert "Loan Estimate" in result
-    assert "acknowledged" in result
+    assert "个人住房贷款要素确认书" in result
+    assert "已查看并确认" in result
     mock_write.assert_called_once()
     call_kwargs = mock_write.call_args[1]
     assert call_kwargs["event_type"] == "disclosure_acknowledged"
@@ -340,7 +346,7 @@ async def test_acknowledge_disclosure_records_event(mock_write, mock_session_cls
 
 
 @patch("src.agents.borrower_tools.SessionLocal")
-@patch("src.agents.borrower_tools.write_audit_event")
+@patch("src.services.disclosure.write_audit_event")
 async def test_acknowledge_disclosure_invalid_id(mock_write, mock_session_cls):
     session = AsyncMock()
     mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=session)
@@ -355,17 +361,20 @@ async def test_acknowledge_disclosure_invalid_id(mock_write, mock_session_cls):
         }
     )
 
-    assert "Unknown disclosure" in result
+    assert "未识别的告知文件" in result
     assert "not_real" in result
     mock_write.assert_not_called()
 
 
 @patch("src.agents.borrower_tools.SessionLocal")
-@patch("src.agents.borrower_tools.write_audit_event")
+@patch("src.services.disclosure.write_audit_event")
 async def test_acknowledge_disclosure_hmda_notice(mock_write, mock_session_cls):
     mock_write.return_value = AsyncMock()
 
     session = AsyncMock()
+    query_result = MagicMock()
+    query_result.scalars.return_value.all.return_value = []
+    session.execute = AsyncMock(return_value=query_result)
     mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=session)
     mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=False)
 
@@ -378,7 +387,7 @@ async def test_acknowledge_disclosure_hmda_notice(mock_write, mock_session_cls):
         }
     )
 
-    assert "HMDA Notice" in result
+    assert "个人征信查询与报送授权书" in result
     call_kwargs = mock_write.call_args[1]
     assert call_kwargs["event_data"]["disclosure_id"] == "hmda_notice"
     assert call_kwargs["user_id"] == "sarah-uuid"
@@ -413,9 +422,9 @@ async def test_disclosure_status_all_pending(mock_status, mock_session_cls, mock
     result = await disclosure_status.ainvoke({"application_id": 1, "state": _state()})
 
     assert "0/4" in result
-    assert "Pending:" in result
-    assert "Loan Estimate" in result
-    assert "Privacy Notice" in result
+    assert "待确认：" in result
+    assert "个人住房贷款要素确认书" in result
+    assert "个人金融信息保护告知书" in result
 
 
 @patch("src.agents.borrower_tools.app_service")
@@ -441,9 +450,9 @@ async def test_disclosure_status_all_acknowledged(mock_status, mock_session_cls,
 
     result = await disclosure_status.ainvoke({"application_id": 1, "state": _state()})
 
-    assert "All required disclosures have been acknowledged" in result
-    assert "Acknowledged:" in result
-    assert "Pending:" not in result
+    assert "全部必需告知文件均已查看并确认" in result
+    assert "已确认：" in result
+    assert "待确认：" not in result
 
 
 @patch("src.agents.borrower_tools.app_service")
@@ -465,7 +474,7 @@ async def test_disclosure_status_partial(mock_status, mock_session_cls, mock_app
     result = await disclosure_status.ainvoke({"application_id": 1, "state": _state()})
 
     assert "2/4" in result
-    assert "Acknowledged:" in result
-    assert "Loan Estimate" in result
-    assert "Pending:" in result
-    assert "HMDA Notice" in result
+    assert "已确认：" in result
+    assert "个人住房贷款要素确认书" in result
+    assert "待确认：" in result
+    assert "个人征信查询与报送授权书" in result

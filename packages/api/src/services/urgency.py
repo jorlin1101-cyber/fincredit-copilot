@@ -38,6 +38,16 @@ _PENDING_DOC_STATUSES = {
     DocumentStatus.PENDING_REVIEW,
 }
 
+_STAGE_LABELS = {
+    ApplicationStage.INQUIRY: "咨询",
+    ApplicationStage.PREQUALIFICATION: "预审",
+    ApplicationStage.APPLICATION: "申请中",
+    ApplicationStage.PROCESSING: "材料处理中",
+    ApplicationStage.UNDERWRITING: "授信审批",
+    ApplicationStage.CONDITIONAL_APPROVAL: "附条件通过",
+    ApplicationStage.CLEAR_TO_CLOSE: "具备签约条件",
+}
+
 
 async def compute_urgency(
     session: AsyncSession,
@@ -131,10 +141,10 @@ def _assess_rate_lock(
 
     if days_remaining <= 3:
         levels.append(UrgencyLevel.CRITICAL)
-        factors.append(f"Rate lock expires in {max(days_remaining, 0)} days")
+        factors.append(f"利率锁定将在 {max(days_remaining, 0)} 天后到期")
     elif days_remaining <= 7:
         levels.append(UrgencyLevel.HIGH)
-        factors.append(f"Rate lock expires in {days_remaining} days")
+        factors.append(f"利率锁定将在 {days_remaining} 天后到期")
 
 
 def _assess_stage_timing(
@@ -146,17 +156,17 @@ def _assess_stage_timing(
 ) -> None:
     """Assess urgency from time in current stage."""
     overdue = days_in_stage - expected
-    label = stage.value.replace("_", " ").title()
+    label = _STAGE_LABELS.get(stage, stage.value)
 
     if overdue >= 7:
         levels.append(UrgencyLevel.CRITICAL)
-        factors.append(f"{label} stage overdue by {overdue} days")
+        factors.append(f"{label}阶段已超过内部目标时长 {overdue} 天")
     elif overdue >= 4:
         levels.append(UrgencyLevel.HIGH)
-        factors.append(f"{label} stage overdue by {overdue} days")
+        factors.append(f"{label}阶段已超过内部目标时长 {overdue} 天")
     elif days_in_stage >= int(expected * 0.8):
         levels.append(UrgencyLevel.MEDIUM)
-        factors.append(f"{label} stage at {days_in_stage}/{expected} expected days")
+        factors.append(f"{label}阶段已办理 {days_in_stage} 天，内部目标为 {expected} 天")
 
 
 def _assess_conditions_with_lock(
@@ -173,8 +183,8 @@ def _assess_conditions_with_lock(
     if open_count > 0 and days_remaining <= 5:
         levels.append(UrgencyLevel.CRITICAL)
         factors.append(
-            f"{open_count} open condition(s) with rate lock expiring in "
-            f"{max(days_remaining, 0)} days"
+            f"仍有 {open_count} 项审批条件待处理，利率锁定将在 "
+            f"{max(days_remaining, 0)} 天后到期"
         )
 
 
@@ -190,7 +200,7 @@ def _assess_pending_docs(
 
     if hours_pending >= 48:
         levels.append(UrgencyLevel.HIGH)
-        factors.append(f"Document request pending for {int(hours_pending)} hours")
+        factors.append(f"补充材料请求已等待 {int(hours_pending)} 小时")
 
 
 # ---------------------------------------------------------------------------

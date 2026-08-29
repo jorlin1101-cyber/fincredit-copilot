@@ -179,7 +179,7 @@ async def test_get_application_with_prequal_returns_summary(client_factory, db_s
     pq_data = data["prequalification"]
     assert pq_data is not None
     assert pq_data["product_id"] == "conventional_30"
-    assert pq_data["product_name"] == "30-Year Fixed Conventional"
+    assert pq_data["product_name"] == "30年期商业性个人住房贷款"
     assert pq_data["max_loan_amount"] == 350000.0
     assert pq_data["estimated_rate"] == 6.5
     assert pq_data["issued_at"] is not None
@@ -220,6 +220,6 @@ async def test_list_applications_includes_prequal(client_factory, db_session, se
 
     assert app_with_pq["prequalification"] is not None
     assert app_with_pq["prequalification"]["product_id"] == "fha"
-    assert app_with_pq["prequalification"]["product_name"] == "FHA Loan"
+    assert app_with_pq["prequalification"]["product_name"] == "住房公积金个人住房贷款"
     assert app_without_pq["prequalification"] is None
     await client.aclose()

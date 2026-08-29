@@ -17,23 +17,23 @@ from src.services.intake_validation import (
 
 class TestSSN:
     def test_valid_with_dashes(self):
-        ok, _, val = validate_ssn("078-05-1120")
-        assert ok and val == "078-05-1120"
+        ok, _, val = validate_ssn("11010519491231002X")
+        assert ok and val == "11010519491231002X"
 
     def test_valid_digits_only(self):
-        ok, _, val = validate_ssn("078051120")
-        assert ok and val == "078-05-1120"
+        ok, _, val = validate_ssn("11010519491231002x")
+        assert ok and val == "11010519491231002X"
 
     def test_rejects_short(self):
         ok, msg, _ = validate_ssn("12345")
-        assert not ok and "9 digits" in msg
+        assert not ok and "18位" in msg
 
     def test_rejects_all_zeros(self):
-        ok, _, _ = validate_ssn("000000000")
+        ok, _, _ = validate_ssn("000000000000000000")
         assert not ok
 
     def test_rejects_sequential(self):
-        ok, _, _ = validate_ssn("123456789")
+        ok, _, _ = validate_ssn("123456789012345678")
         assert not ok
 
 
@@ -43,7 +43,7 @@ class TestDOB:
         assert ok and val == "1990-06-15"
 
     def test_mm_dd_yyyy(self):
-        ok, _, val = validate_dob("06/15/1990")
+        ok, _, val = validate_dob("1990/06/15")
         assert ok and val == "1990-06-15"
 
     def test_rejects_minor(self):
@@ -84,7 +84,7 @@ class TestIncome:
 
     def test_rejects_absurd(self):
         ok, msg, _ = validate_income("5000000")
-        assert not ok and "unusually high" in msg
+        assert not ok and "金额异常" in msg
 
 
 class TestLoanAmount:
@@ -140,7 +140,7 @@ class TestLoanType:
 
     def test_rejects_unknown(self):
         ok, msg, _ = validate_loan_type("ninja_loan")
-        assert not ok and "Valid" in msg
+        assert not ok and "可用内部代码" in msg
 
 
 class TestEmploymentStatus:

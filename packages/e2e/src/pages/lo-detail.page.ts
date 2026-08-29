@@ -40,28 +40,28 @@ export class LODetailPage {
     constructor(page: Page) {
         this.page = page;
 
-        this.breadcrumb = page.getByRole("navigation").filter({ hasText: "Pipeline" });
-        this.pipelineLink = page.getByRole("link", { name: "Pipeline" });
-        this.requestDocsButton = page.getByRole("button", { name: "Request Documents" });
-        this.submitToUWButton = page.getByRole("button", { name: "Submit to Underwriting" });
+        this.breadcrumb = page.getByRole("navigation").filter({ hasText: "客户经理看板" });
+        this.pipelineLink = page.getByRole("link", { name: "客户经理看板" });
+        this.requestDocsButton = page.getByRole("button", { name: "请求补充材料" });
+        this.submitToUWButton = page.getByRole("button", { name: "提交授信审批" });
 
-        this.profileTab = page.getByRole("button", { name: "Profile" });
-        this.financialTab = page.getByRole("button", { name: "Financial Summary" });
-        this.documentsTab = page.getByRole("button", { name: "Documents", exact: true });
-        this.conditionsTab = page.getByRole("button", { name: "Conditions" });
+        this.profileTab = page.getByRole("button", { name: "客户资料" });
+        this.financialTab = page.getByRole("button", { name: "财务情况" });
+        this.documentsTab = page.getByRole("button", { name: "申请材料", exact: true });
+        this.conditionsTab = page.getByRole("button", { name: "审批条件" });
 
-        this.borrowerInfoCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "Borrower Info" }) }).first();
-        this.propertyInfoCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "Property Info" }) }).first();
-        this.loanDetailsCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "Loan Details" }) }).first();
+        this.borrowerInfoCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "借款人信息" }) }).first();
+        this.propertyInfoCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "房产信息" }) }).first();
+        this.loanDetailsCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "贷款信息" }) }).first();
 
-        this.docCompletenessCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "Document Completeness" }) }).first();
+        this.docCompletenessCard = page.locator("div").filter({ has: page.getByRole("heading", { name: "材料完整性" }) }).first();
 
-        this.conditionsEmptyState = page.getByText("No underwriting conditions");
+        this.conditionsEmptyState = page.getByText("当前没有待处理的审批条件。");
 
-        this.docUploadZone = page.getByText(/Drop files here|click to upload/);
+        this.docUploadZone = page.getByText(/将材料拖到此处|点击选择文件/);
         this.docFileInput = page.locator('input[type="file"]');
 
-        this.notFoundMessage = page.getByText("Application not found");
+        this.notFoundMessage = page.getByText("未找到该申请");
     }
 
     async goto(applicationId: number): Promise<void> {

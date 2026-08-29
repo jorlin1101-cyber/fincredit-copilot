@@ -5,20 +5,16 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 
 interface ChatContextValue {
     isOpen: boolean;
-    initialMessage: string | null;
-    openChat: (message?: string) => void;
+    openChat: () => void;
     closeChat: () => void;
-    clearInitialMessage: () => void;
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
     const [isOpen, setIsOpen] = useState(false);
-    const [initialMessage, setInitialMessage] = useState<string | null>(null);
 
-    const openChat = useCallback((message?: string) => {
-        if (message) setInitialMessage(message);
+    const openChat = useCallback(() => {
         setIsOpen(true);
     }, []);
 
@@ -26,12 +22,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         setIsOpen(false);
     }, []);
 
-    const clearInitialMessage = useCallback(() => {
-        setInitialMessage(null);
-    }, []);
-
     return (
-        <ChatContext.Provider value={{ isOpen, initialMessage, openChat, closeChat, clearInitialMessage }}>
+        <ChatContext.Provider value={{ isOpen, openChat, closeChat }}>
             {children}
         </ChatContext.Provider>
     );

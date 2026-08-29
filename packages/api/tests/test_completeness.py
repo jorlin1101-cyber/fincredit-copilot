@@ -75,7 +75,10 @@ def _make_application(
 
 
 def _make_document(
-    doc_id=1, doc_type=DocumentType.W2, status=DocumentStatus.UPLOADED, quality_flags=None
+    doc_id=1,
+    doc_type=DocumentType.INCOME_CERTIFICATE,
+    status=DocumentStatus.UPLOADED,
+    quality_flags=None,
 ):
     """Build a mock Document."""
     doc = MagicMock()
@@ -93,44 +96,40 @@ def _make_document(
 
 
 def test_get_required_doc_types_default():
-    """Default fallback returns W2 employee requirements."""
+    """Default fallback returns China-scenario core requirements."""
     result = _get_required_doc_types(None, None)
-    assert DocumentType.W2 in result
-    assert DocumentType.PAY_STUB in result
+    assert DocumentType.INCOME_CERTIFICATE in result
     assert DocumentType.BANK_STATEMENT in result
-    assert DocumentType.DRIVERS_LICENSE in result
+    assert DocumentType.ID_CARD in result
 
 
 def test_get_required_doc_types_self_employed():
-    """Self-employed borrowers need tax returns instead of W2/pay stubs."""
+    """Self-employed borrowers need tax records instead of income certificates."""
     result = _get_required_doc_types(None, EmploymentStatus.SELF_EMPLOYED.value)
     assert DocumentType.TAX_RETURN in result
-    assert DocumentType.W2 not in result
-    assert DocumentType.PAY_STUB not in result
+    assert DocumentType.INCOME_CERTIFICATE not in result
 
 
 def test_get_required_doc_types_unemployed():
     """Unemployed borrowers need only bank statement and ID."""
     result = _get_required_doc_types(None, EmploymentStatus.UNEMPLOYED.value)
     assert DocumentType.BANK_STATEMENT in result
-    assert DocumentType.DRIVERS_LICENSE in result
-    assert DocumentType.W2 not in result
-    assert DocumentType.PAY_STUB not in result
+    assert DocumentType.ID_CARD in result
+    assert DocumentType.INCOME_CERTIFICATE not in result
     assert DocumentType.TAX_RETURN not in result
 
 
 def test_get_required_doc_types_fallback_loan_type():
     """Unknown loan type falls back to _default requirements."""
     result = _get_required_doc_types("nonexistent_loan", EmploymentStatus.W2_EMPLOYEE.value)
-    assert DocumentType.W2 in result
-    assert DocumentType.DRIVERS_LICENSE in result
+    assert DocumentType.INCOME_CERTIFICATE in result
+    assert DocumentType.ID_CARD in result
 
 
 def test_get_required_doc_types_fallback_employment_status():
     """Unknown employment status falls back to _default for the loan type."""
     result = _get_required_doc_types("fha", "unknown_status")
-    # Should fall back to fha._default
-    assert DocumentType.TAX_RETURN in result
+    assert DocumentType.INCOME_CERTIFICATE in result
 
 
 # ---------------------------------------------------------------------------
@@ -149,10 +148,9 @@ async def test_check_completeness_all_provided(mock_get_app):
     mock_get_app.return_value = app
 
     docs = [
-        _make_document(doc_id=1, doc_type=DocumentType.W2),
-        _make_document(doc_id=2, doc_type=DocumentType.PAY_STUB),
+        _make_document(doc_id=1, doc_type=DocumentType.INCOME_CERTIFICATE),
         _make_document(doc_id=3, doc_type=DocumentType.BANK_STATEMENT),
-        _make_document(doc_id=4, doc_type=DocumentType.DRIVERS_LICENSE),
+        _make_document(doc_id=4, doc_type=DocumentType.ID_CARD),
     ]
 
     session = AsyncMock()
@@ -165,8 +163,8 @@ async def test_check_completeness_all_provided(mock_get_app):
 
     assert result is not None
     assert result.is_complete is True
-    assert result.provided_count == 4
-    assert result.required_count == 4
+    assert result.provided_count == 3
+    assert result.required_count == 3
 
 
 @patch("src.services.completeness.get_application")
@@ -180,7 +178,7 @@ async def test_check_completeness_missing_docs(mock_get_app):
     mock_get_app.return_value = app
 
     docs = [
-        _make_document(doc_id=1, doc_type=DocumentType.W2),
+        _make_document(doc_id=1, doc_type=DocumentType.INCOME_CERTIFICATE),
     ]
 
     session = AsyncMock()
@@ -194,9 +192,9 @@ async def test_check_completeness_missing_docs(mock_get_app):
     assert result is not None
     assert result.is_complete is False
     assert result.provided_count == 1
-    assert result.required_count == 4
+    assert result.required_count == 3
     missing = [r for r in result.requirements if not r.is_provided]
-    assert len(missing) == 3
+    assert len(missing) == 2
 
 
 @patch("src.services.completeness.get_application")
@@ -223,10 +221,13 @@ async def test_check_completeness_quality_flags_surfaced(mock_get_app):
     mock_get_app.return_value = app
 
     docs = [
-        _make_document(doc_id=1, doc_type=DocumentType.W2, quality_flags=["blurry"]),
-        _make_document(doc_id=2, doc_type=DocumentType.PAY_STUB),
+        _make_document(
+            doc_id=1,
+            doc_type=DocumentType.INCOME_CERTIFICATE,
+            quality_flags=["low_resolution"],
+        ),
         _make_document(doc_id=3, doc_type=DocumentType.BANK_STATEMENT),
-        _make_document(doc_id=4, doc_type=DocumentType.DRIVERS_LICENSE),
+        _make_document(doc_id=4, doc_type=DocumentType.ID_CARD),
     ]
 
     session = AsyncMock()
@@ -237,13 +238,15 @@ async def test_check_completeness_quality_flags_surfaced(mock_get_app):
     user = _make_user(UserRole.ADMIN, data_scope=DataScope(full_pipeline=True))
     result = await check_completeness(session, user, 1)
 
-    w2_req = next(r for r in result.requirements if r.doc_type == DocumentType.W2)
-    assert w2_req.quality_flags == ["blurry"]
+    income_req = next(
+        r for r in result.requirements if r.doc_type == DocumentType.INCOME_CERTIFICATE
+    )
+    assert income_req.quality_flags == ["low_resolution"]
 
 
 @patch("src.services.completeness.get_application")
 async def test_check_completeness_null_employment_falls_back(mock_get_app):
-    """NULL employment_status should fall back to _default (W2 employee reqs)."""
+    """NULL employment status falls back to China-scenario core requirements."""
     from src.services.completeness import check_completeness
 
     app = _make_application(
@@ -260,10 +263,10 @@ async def test_check_completeness_null_employment_falls_back(mock_get_app):
     user = _make_user(UserRole.ADMIN, data_scope=DataScope(full_pipeline=True))
     result = await check_completeness(session, user, 1)
 
-    # Default should require W2, pay stub, bank statement, ID
     required_types = [r.doc_type for r in result.requirements]
-    assert DocumentType.W2 in required_types
-    assert DocumentType.PAY_STUB in required_types
+    assert DocumentType.INCOME_CERTIFICATE in required_types
+    assert DocumentType.BANK_STATEMENT in required_types
+    assert DocumentType.ID_CARD in required_types
 
 
 # ---------------------------------------------------------------------------

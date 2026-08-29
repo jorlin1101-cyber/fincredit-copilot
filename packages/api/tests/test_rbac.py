@@ -9,8 +9,8 @@ from src.middleware.pii import mask_application_pii, mask_dob, mask_ssn
 
 
 def test_mask_ssn_standard_format():
-    """SSN masked to ***-**-NNNN with last 4 visible."""
-    assert mask_ssn("123-45-6789") == "***-**-6789"
+    """Identity number is masked with only the final four characters visible."""
+    assert mask_ssn("110105194912316789") == "**************6789"
 
 
 def test_mask_dob_iso_datetime():
@@ -49,9 +49,9 @@ def test_mask_application_pii_masks_borrowers_list():
     assert masked["borrowers"][0]["first_name"] == "Sarah"
     assert masked["borrowers"][1]["first_name"] == "Jennifer"
     # PII is masked
-    assert masked["borrowers"][0]["ssn"] == "***-**-6789"
+    assert masked["borrowers"][0]["ssn"] == "**************6789"
     assert masked["borrowers"][0]["dob"] == "1990-**-**"
-    assert masked["borrowers"][1]["ssn"] == "***-**-4321"
+    assert masked["borrowers"][1]["ssn"] == "**************4321"
     assert masked["borrowers"][1]["dob"] == "1992-**-**"
     # Original not mutated
     assert app_dict["borrowers"][0]["ssn"] == "123-45-6789"

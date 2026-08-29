@@ -133,7 +133,7 @@ class TestUwQueueView:
 
             result = await uw_queue_view.ainvoke({"state": state})
 
-        assert "Underwriting Queue (2 applications)" in result
+        assert "授信审批队列（共 2 笔）" in result
         assert "Sarah Johnson" in result
         assert "Tom Lee" in result
         # HIGH urgency app should appear before NORMAL
@@ -172,7 +172,7 @@ class TestUwQueueView:
 
             result = await uw_queue_view.ainvoke({"state": state})
 
-        assert "No applications in underwriting queue" in result
+        assert "当前授信审批队列中没有待处理申请" in result
 
     @pytest.mark.asyncio
     async def test_queue_audits_access(self):
@@ -240,14 +240,14 @@ class TestUwApplicationDetail:
 
         mock_doc = MagicMock()
         mock_doc.id = 10
-        mock_doc.doc_type = MagicMock(value="w2_form")
+        mock_doc.doc_type = MagicMock(value="income_certificate")
         mock_doc.status = MagicMock(value="processing_complete")
         mock_doc.quality_flags = None
 
         mock_conditions = [
             {
                 "id": 1,
-                "description": "Verify employment",
+                "description": "核验在职及收入情况",
                 "severity": "prior_to_approval",
                 "status": "open",
             }
@@ -308,20 +308,20 @@ class TestUwApplicationDetail:
 
             result = await uw_application_detail.ainvoke({"application_id": 101, "state": state})
 
-        assert "Application #101" in result
-        assert "BORROWER PROFILE:" in result
+        assert "申请 #101" in result
+        assert "客户资料：" in result
         assert "Sarah Johnson" in result
-        assert "W2 Employee" in result
-        assert "FINANCIAL SUMMARY:" in result
-        assert "$8,000.00" in result
-        assert "DTI ratio:" in result
-        assert "LOAN DETAILS:" in result
-        assert "LTV ratio:" in result
-        assert "DOCUMENTS (1):" in result
-        assert "w2_form" in result
-        assert "CONDITIONS (1):" in result
-        assert "Verify employment" in result
-        assert "RATE LOCK:" in result
+        assert "工薪就业" in result
+        assert "财务情况：" in result
+        assert "¥8,000.00" in result
+        assert "债务收入比：" in result
+        assert "贷款信息：" in result
+        assert "贷款成数：" in result
+        assert "申请材料（1 项）：" in result
+        assert "收入证明" in result
+        assert "审批条件（1 项）：" in result
+        assert "核验在职及收入情况" in result
+        assert "执行利率：" in result
         assert "6.750%" in result
 
     @pytest.mark.asyncio
@@ -343,7 +343,7 @@ class TestUwApplicationDetail:
 
             result = await uw_application_detail.ainvoke({"application_id": 999, "state": state})
 
-        assert "not found" in result.lower()
+        assert "未找到" in result
 
     @pytest.mark.asyncio
     async def test_detail_audits_view(self):
@@ -434,7 +434,7 @@ class TestComputeRiskFactors:
 
         result = compute_risk_factors(app, fins, borrowers)
         assert result.dti["value"] == 31.2
-        assert result.dti["rating"] == "Low"
+        assert result.dti["rating"] == "低"
 
     def test_dti_co_borrower(self):
         """Combined income/debts across two borrowers."""
@@ -449,9 +449,9 @@ class TestComputeRiskFactors:
         ]
 
         result = compute_risk_factors(app, fins, borrowers)
-        # DTI = (1500+2000) / (5000+4000) = 3500/9000 = 38.9% -> Medium
+        # DTI = (1500+2000) / (5000+4000) = 3500/9000 = 38.9% -> 低
         assert result.dti["value"] == pytest.approx(38.9, abs=0.1)
-        assert result.dti["rating"] == "Medium"
+        assert result.dti["rating"] == "低"
 
     def test_credit_uses_lower_score(self):
         """Min of two borrowers' credit scores is used."""
@@ -461,17 +461,17 @@ class TestComputeRiskFactors:
 
         result = compute_risk_factors(app, fins, borrowers)
         assert result.credit["value"] == 640
-        assert result.credit["rating"] == "Medium"
+        assert result.credit["rating"] == "中"
 
     def test_flags_high_dti(self):
-        """DTI > 43% rated High."""
+        """DTI at 50% is the upper edge of the internal medium band."""
         app = _make_app()
         fins = [_make_fin(income=5000, debts=2500)]  # 50%
         borrowers = []
 
         result = compute_risk_factors(app, fins, borrowers)
         assert result.dti["value"] == 50.0
-        assert result.dti["rating"] == "High"
+        assert result.dti["rating"] == "中"
 
     def test_flags_high_ltv(self):
         """LTV > 80% rated High."""
@@ -481,7 +481,7 @@ class TestComputeRiskFactors:
 
         result = compute_risk_factors(app, fins, borrowers)
         assert result.ltv["value"] == pytest.approx(88.9, abs=0.1)
-        assert result.ltv["rating"] == "High"
+        assert result.ltv["rating"] == "高"
 
     def test_flags_low_credit(self):
         """Credit < 620 rated High."""
@@ -491,17 +491,17 @@ class TestComputeRiskFactors:
 
         result = compute_risk_factors(app, fins, borrowers)
         assert result.credit["value"] == 580
-        assert result.credit["rating"] == "High"
+        assert result.credit["rating"] == "高"
 
     def test_compensating_factors(self):
         """Strong credit (>740) + elevated DTI triggers compensating factor."""
         app = _make_app()
-        fins = [_make_fin(income=5000, debts=2500, credit=760)]  # 50% DTI
+        fins = [_make_fin(income=5000, debts=3000, credit=760)]  # 60% DTI
         borrowers = []
 
         result = compute_risk_factors(app, fins, borrowers)
-        assert result.dti["rating"] == "High"
-        assert any("Strong credit" in f for f in result.compensating_factors)
+        assert result.dti["rating"] == "高"
+        assert any("模拟征信评分较高" in f for f in result.compensating_factors)
 
     def test_handles_missing_financials(self):
         """No financials -> warnings, None values."""
@@ -521,7 +521,7 @@ class TestComputeRiskFactors:
 
         result = compute_risk_factors(app, fins, borrowers)
         assert result.dti["value"] == 43.0
-        assert result.dti["rating"] == "Medium"
+        assert result.dti["rating"] == "中"
 
     def test_ltv_boundary_at_80_is_medium(self):
         """LTV exactly 80% is Medium, not High (boundary test)."""
@@ -531,7 +531,7 @@ class TestComputeRiskFactors:
 
         result = compute_risk_factors(app, fins, borrowers)
         assert result.ltv["value"] == 80.0
-        assert result.ltv["rating"] == "Medium"
+        assert result.ltv["rating"] == "中"
 
     def test_income_stability_unemployed_is_high(self):
         """Unemployed borrower -> High stability risk."""
@@ -540,7 +540,7 @@ class TestComputeRiskFactors:
         borrowers = [{"name": "Test", "is_primary": True, "employment_status": "unemployed"}]
 
         result = compute_risk_factors(app, fins, borrowers)
-        assert result.income_stability["rating"] == "High"
+        assert result.income_stability["rating"] == "高"
 
     def test_income_stability_self_employed_is_medium(self):
         """Self-employed borrower -> Medium stability risk."""
@@ -549,7 +549,7 @@ class TestComputeRiskFactors:
         borrowers = [{"name": "Test", "is_primary": True, "employment_status": "self_employed"}]
 
         result = compute_risk_factors(app, fins, borrowers)
-        assert result.income_stability["rating"] == "Medium"
+        assert result.income_stability["rating"] == "中"
 
     def test_low_ltv_offsets_weak_credit(self):
         """Low LTV (<60%) + High credit risk -> compensating factor."""
@@ -558,9 +558,9 @@ class TestComputeRiskFactors:
         borrowers = []
 
         result = compute_risk_factors(app, fins, borrowers)
-        assert result.ltv["rating"] == "Low"
-        assert result.credit["rating"] == "High"
-        assert any("Low LTV" in f for f in result.compensating_factors)
+        assert result.ltv["rating"] == "低"
+        assert result.credit["rating"] == "高"
+        assert any("贷款成数较低" in f for f in result.compensating_factors)
 
     def test_high_reserves_compensating_factor(self):
         """Assets >50% of loan triggers compensating factor."""
@@ -569,7 +569,7 @@ class TestComputeRiskFactors:
         borrowers = []
 
         result = compute_risk_factors(app, fins, borrowers)
-        assert any("High reserves" in f for f in result.compensating_factors)
+        assert any("资产相对贷款金额较充足" in f for f in result.compensating_factors)
 
 
 # ---------------------------------------------------------------------------
@@ -601,18 +601,18 @@ def _mock_session_with_fins(financials_rows):
 _SAVE_PARAMS = {
     "application_id": 1,
     "dti_value": 31.2,
-    "dti_rating": "Low",
+    "dti_rating": "低",
     "ltv_value": 77.8,
-    "ltv_rating": "Medium",
+    "ltv_rating": "中",
     "credit_value": 720,
-    "credit_rating": "Low",
+    "credit_rating": "低",
     "credit_source": "self_reported",
     "income_stability_value": "w2_employee",
-    "income_stability_rating": "Low",
+    "income_stability_rating": "低",
     "asset_sufficiency_value": 34.3,
-    "asset_sufficiency_rating": "Low",
-    "overall_risk": "Medium",
-    "recommendation": "Approve",
+    "asset_sufficiency_rating": "低",
+    "overall_risk": "中",
+    "recommendation": "可提交人工决策",
     "rationale": None,
     "conditions": None,
     "compensating_factors": None,
@@ -651,7 +651,7 @@ class TestUwSaveRiskAssessment:
 
             result = await uw_save_risk_assessment.ainvoke({**_SAVE_PARAMS, "state": state})
 
-        assert "only available for applications in the UNDERWRITING" in result
+        assert "只能在授信审批阶段保存" in result
         mock_audit.assert_awaited_once()
         assert "wrong_stage" in mock_audit.call_args.kwargs["event_data"]["error"]
 
@@ -685,8 +685,8 @@ class TestUwSaveRiskAssessment:
 
             result = await uw_save_risk_assessment.ainvoke({**_SAVE_PARAMS, "state": state})
 
-        assert "saved" in result.lower()
-        assert "Approve" in result
+        assert "风险辅助评估已保存" in result
+        assert "可提交人工决策" in result
         mock_create.assert_awaited_once()
         mock_audit.assert_awaited_once()
         audit_data = mock_audit.call_args.kwargs["event_data"]
@@ -712,7 +712,7 @@ class TestUwSaveRiskAssessment:
 
             result = await uw_save_risk_assessment.ainvoke({**_SAVE_PARAMS, "state": state})
 
-        assert "not found" in result.lower()
+        assert "未找到" in result
 
 
 # ---------------------------------------------------------------------------
@@ -780,8 +780,8 @@ class TestUwPreliminaryRecommendation:
                 {"application_id": 1, "state": state}
             )
 
-        assert "RECOMMENDATION: Approve" in result
-        assert "Conditions" not in result.split("RECOMMENDATION:")[1].split("\n")[0]
+        assert "流程建议：可提交人工决策" in result
+        assert "待核验事项" not in result
 
     @pytest.mark.asyncio
     async def test_recommends_conditions_high_dti(self):
@@ -829,8 +829,8 @@ class TestUwPreliminaryRecommendation:
             ),
             patch("src.agents.underwriter_tools.SessionLocal") as mock_session_cls,
         ):
-            # DTI = 4500/9000 = 50% -> conditions
-            mock_session = _mock_session_with_fins([_make_fin(income=9000, debts=4500, credit=720)])
+            # DTI = 4700/9000 = 52.2% -> internal manual-review condition
+            mock_session = _mock_session_with_fins([_make_fin(income=9000, debts=4700, credit=720)])
             mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=mock_session)
             mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=False)
 
@@ -838,9 +838,9 @@ class TestUwPreliminaryRecommendation:
                 {"application_id": 1, "state": state}
             )
 
-        assert "RECOMMENDATION: Approve with Conditions" in result
-        assert "DTI" in result
-        assert "QM safe harbor" in result
+        assert "流程建议：需重点人工复核" in result
+        assert "债务收入比" in result
+        assert "还款能力说明" in result
 
     @pytest.mark.asyncio
     async def test_recommends_conditions_high_ltv(self):
@@ -898,8 +898,8 @@ class TestUwPreliminaryRecommendation:
                 {"application_id": 1, "state": state}
             )
 
-        assert "Approve with Conditions" in result
-        assert "PMI" in result
+        assert "流程建议：需重点人工复核" in result
+        assert "全国及成都政策" in result
 
     @pytest.mark.asyncio
     async def test_recommends_deny_extreme_dti(self):
@@ -958,7 +958,7 @@ class TestUwPreliminaryRecommendation:
                 {"application_id": 1, "state": state}
             )
 
-        assert "RECOMMENDATION: Deny" in result
+        assert "流程建议：需重点人工复核" in result
         assert "55%" in result
 
     @pytest.mark.asyncio
@@ -1017,8 +1017,8 @@ class TestUwPreliminaryRecommendation:
                 {"application_id": 1, "state": state}
             )
 
-        assert "RECOMMENDATION: Deny" in result
-        assert "580" in result
+        assert "流程建议：需重点人工复核" in result
+        assert "600" in result
 
     @pytest.mark.asyncio
     async def test_recommends_conditions_self_employed(self):
@@ -1076,9 +1076,9 @@ class TestUwPreliminaryRecommendation:
                 {"application_id": 1, "state": state}
             )
 
-        assert "Approve with Conditions" in result
-        assert "Self-employed" in result
-        assert "tax returns" in result
+        assert "流程建议：需重点人工复核" in result
+        assert "自雇借款人" in result
+        assert "纳税记录" in result
 
     @pytest.mark.asyncio
     async def test_recommends_deny_unemployed_no_co_borrower(self):
@@ -1136,8 +1136,8 @@ class TestUwPreliminaryRecommendation:
                 {"application_id": 1, "state": state}
             )
 
-        assert "RECOMMENDATION: Deny" in result
-        assert "unemployed" in result.lower()
+        assert "流程建议：需重点人工复核" in result
+        assert "无稳定就业记录" in result
 
     @pytest.mark.asyncio
     async def test_recommends_suspend_no_documents(self):
@@ -1194,8 +1194,8 @@ class TestUwPreliminaryRecommendation:
                 {"application_id": 1, "state": state}
             )
 
-        assert "RECOMMENDATION: Suspend" in result
-        assert "No documents" in result
+        assert "流程建议：需补充材料" in result
+        assert "尚无申请材料" in result
 
     @pytest.mark.asyncio
     async def test_recommends_suspend_missing_data(self):
@@ -1251,8 +1251,8 @@ class TestUwPreliminaryRecommendation:
                 {"application_id": 1, "state": state}
             )
 
-        assert "RECOMMENDATION: Suspend" in result
-        assert "Missing financial data" in result
+        assert "流程建议：需补充材料" in result
+        assert "缺少财务数据" in result
 
     @pytest.mark.asyncio
     async def test_audits_recommendation(self):
@@ -1311,7 +1311,7 @@ class TestUwPreliminaryRecommendation:
         mock_audit.assert_awaited_once()
         audit_data = mock_audit.call_args.kwargs["event_data"]
         assert audit_data["tool"] == "uw_preliminary_recommendation"
-        assert audit_data["recommendation"] == "Approve"
+        assert audit_data["recommendation"] == "可提交人工决策"
 
 
 # ---------------------------------------------------------------------------
@@ -1333,7 +1333,7 @@ class TestUwPredictLoanApproval:
         ):
             result = await uw_predict_loan_approval.ainvoke({"application_id": 1, "state": state})
 
-        assert "not configured" in result.lower()
+        assert "外部预测模型未配置" in result
 
     @pytest.mark.asyncio
     async def test_maps_fields_and_invokes_tool(self):
@@ -1392,7 +1392,7 @@ class TestUwPredictLoanApproval:
 
             result = await uw_predict_loan_approval.ainvoke({"application_id": 1, "state": state})
 
-        assert "approved" in result.lower()
+        assert "倾向通过" in result
 
         # Verify the invocation args
         call_args = mock_predictive_tool.ainvoke.call_args[0][0]
@@ -1466,7 +1466,7 @@ class TestUwPredictLoanApproval:
         call_args = mock_predictive_tool.ainvoke.call_args[0][0]
         assert call_args["self_employed"] is True
         assert call_args["loan_term"] == 180
-        assert "rejected" in result.lower()
+        assert "倾向未通过" in result
 
     @pytest.mark.asyncio
     async def test_handles_missing_financials(self):
@@ -1518,7 +1518,7 @@ class TestUwPredictLoanApproval:
         assert call_args["income_annum"] == 0
         assert call_args["cibil_score"] == 0
         assert call_args["residential_assets_value"] == 0
-        assert "rejected" in result.lower()
+        assert "倾向未通过" in result
 
     @pytest.mark.asyncio
     async def test_handles_mcp_call_failure(self):
@@ -1566,4 +1566,4 @@ class TestUwPredictLoanApproval:
 
             result = await uw_predict_loan_approval.ainvoke({"application_id": 1, "state": state})
 
-        assert "failed" in result.lower()
+        assert "外部预测模型调用失败" in result

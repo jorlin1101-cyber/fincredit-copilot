@@ -130,6 +130,13 @@ const TOOL_LABELS: Record<string, string> = {
   uw_compliance_check: '合规检查',
 };
 
+const DECISION_LABELS: Record<string, string> = {
+  approved: '同意',
+  conditional_approval: '有条件同意',
+  suspended: '暂缓',
+  denied: '拒绝',
+};
+
 type SortField = 'timestamp' | 'event_type' | 'user_id';
 type SortDir = 'asc' | 'desc';
 
@@ -150,7 +157,8 @@ function formatTimestamp(ts: string): string {
 
 function eventDescription(event: AuditEventItem): string {
   const data = event.event_data;
-  if (!data) return EVENT_TYPE_LABELS[event.event_type] ?? event.event_type;
+  const fallback = EVENT_TYPE_LABELS[event.event_type] ?? '其他业务操作';
+  if (!data) return fallback;
 
   // For tool invocations, show the tool name as the primary detail
   if (event.event_type === 'agent_tool_called') {
@@ -159,18 +167,22 @@ function eventDescription(event: AuditEventItem): string {
       return TOOL_LABELS[toolName] ?? '智能业务服务调用';
   }
 
-  if (typeof data.description === 'string') return data.description;
-  if (typeof data.message === 'string') return data.message;
-  if (typeof data.detail === 'string') return data.detail;
+  if (typeof data.description === 'string')
+    return /\p{Script=Han}/u.test(data.description) ? data.description : fallback;
+  if (typeof data.message === 'string')
+    return /\p{Script=Han}/u.test(data.message) ? data.message : fallback;
+  if (typeof data.detail === 'string')
+    return /\p{Script=Han}/u.test(data.detail) ? data.detail : fallback;
 
   if (event.event_type === 'stage_transition' && data.from_stage && data.to_stage) {
     return `办理阶段由“${STAGE_LABELS[String(data.from_stage)] ?? String(data.from_stage)}”变更为“${STAGE_LABELS[String(data.to_stage)] ?? String(data.to_stage)}”`;
   }
   if (event.event_type === 'decision_made' && data.decision) {
-    return `审批结论：${String(data.decision)}`;
+    const decision = String(data.decision);
+    return `审批结论：${DECISION_LABELS[decision] ?? '已记录'}`;
   }
 
-  return EVENT_TYPE_LABELS[event.event_type] ?? event.event_type;
+  return fallback;
 }
 
 function truncateId(id: string | number | null | undefined): string {
@@ -332,7 +344,7 @@ function AuditTrailPage() {
           <option value="">全部操作类型</option>
           {eventTypes.map((type) => (
             <option key={type} value={type}>
-              {EVENT_TYPE_LABELS[type] ?? type}
+              {EVENT_TYPE_LABELS[type] ?? '其他业务操作'}
             </option>
           ))}
         </select>
@@ -421,7 +433,7 @@ function AuditTrailPage() {
                             badgeClass,
                           )}
                         >
-                          {EVENT_TYPE_LABELS[event.event_type] ?? event.event_type}
+                          {EVENT_TYPE_LABELS[event.event_type] ?? '其他业务操作'}
                         </span>
                       </td>
                       <td className="px-6 py-3 text-foreground">
@@ -437,7 +449,7 @@ function AuditTrailPage() {
                               roleClass,
                             )}
                           >
-                            {ROLE_LABELS[event.user_role] ?? event.user_role}
+                            {ROLE_LABELS[event.user_role] ?? '其他角色'}
                           </span>
                         ) : (
                           '--'

@@ -1,8 +1,7 @@
 # This project was developed with assistance from AI tools.
-"""LangGraph tools for underwriting decision management.
+"""LangGraph tools for China-scenario underwriting decision management.
 
-Wraps decision service functions so the underwriter agent can render
-decisions, draft adverse action notices, and generate LE/CD documents.
+Wraps decision services, decision notifications and signing-element documents.
 
 Design note -- session-per-tool-call:
     Each tool opens its own ``SessionLocal()`` context rather than sharing
@@ -33,6 +32,19 @@ from .shared import format_enum_label, user_context_from_state
 
 logger = logging.getLogger(__name__)
 
+_RECOMMENDATION_LABELS = {
+    "approve": "可提交人工决策",
+    "approve with conditions": "需重点人工复核",
+    "deny": "需重点人工复核",
+    "suspend": "需补充材料",
+}
+
+
+def _recommendation_label(value: str) -> str:
+    """Localize legacy recommendation values stored by earlier demo versions."""
+    text = str(value or "").strip()
+    return _RECOMMENDATION_LABELS.get(text.lower(), text)
+
 
 def _user_context_from_state(state: dict):
     return user_context_from_state(state, default_role="underwriter")
@@ -42,33 +54,33 @@ def _format_proposal(result: dict) -> str:
     """Format a proposal dict into a human-readable preview for the underwriter."""
     dt = format_enum_label(result["decision_type"])
     lines = [
-        "PROPOSED DECISION -- awaiting underwriter confirmation",
-        "=====================================================",
-        f"  Application: #{result['application_id']}",
-        f"  Decision: {dt}",
-        f"  Rationale: {result['rationale']}",
+        "待确认授信决定——等待审批人员确认",
+        "================================",
+        f"  申请：#{result['application_id']}",
+        f"  拟作决定：{dt}",
+        f"  决策依据：{result['rationale']}",
     ]
 
     if result.get("new_stage"):
         stage_label = format_enum_label(result["new_stage"])
         lines.append(
-            f"  Stage transition: {format_enum_label(result['current_stage'])} -> {stage_label}"
+            f"  阶段变化：{format_enum_label(result['current_stage'])} → {stage_label}"
         )
 
     if result.get("outstanding_conditions", 0) > 0:
-        lines.append(f"  Outstanding conditions: {result['outstanding_conditions']}")
+        lines.append(f"  待处理审批条件：{result['outstanding_conditions']} 项")
 
     if result.get("ai_recommendation"):
-        lines.append(f"  AI recommendation: {result['ai_recommendation']}")
+        lines.append(f"  系统辅助建议：{_recommendation_label(result['ai_recommendation'])}")
         if result.get("ai_agreement") is True:
-            lines.append("  AI agreement: Yes (concurrence)")
+            lines.append("  与系统辅助建议一致：是")
         elif result.get("ai_agreement") is False:
-            lines.append("  AI agreement: No (OVERRIDE -- provide override_rationale)")
+            lines.append("  与系统辅助建议一致：否（须填写人工调整理由）")
             if result.get("override_rationale"):
-                lines.append(f"  Override rationale: {result['override_rationale']}")
+                lines.append(f"  人工调整理由：{result['override_rationale']}")
 
     if result.get("denial_reasons"):
-        lines.append("  Denial reasons:")
+        lines.append("  未通过原因：")
         for i, reason in enumerate(result["denial_reasons"], 1):
             lines.append(f"    {i}. {reason}")
 
@@ -77,20 +89,19 @@ def _format_proposal(result: dict) -> str:
         lines.extend(
             [
                 "",
-                f"PROPOSAL ID: {result['proposal_id']}",
+                f"提案标识：{result['proposal_id']}",
                 "",
-                "This decision has NOT been recorded yet.",
-                "Present this proposal to the underwriter and ask them to confirm.",
-                f"To confirm, call this tool again with confirmed=true and proposal_id='{result['proposal_id']}'",
+                "该决定尚未写入业务记录。",
+                "请向审批人员展示以上内容并取得明确确认。",
+                f"确认后须携带提案标识“{result['proposal_id']}”执行确认操作。",
             ]
         )
     else:
         lines.extend(
             [
                 "",
-                "This decision has NOT been recorded yet.",
-                "Present this proposal to the underwriter and ask them to confirm",
-                "before calling this tool again with confirmed=true.",
+                "该决定尚未写入业务记录。",
+                "请先向审批人员展示以上内容并取得明确确认。",
             ]
         )
 
@@ -101,27 +112,27 @@ def _format_confirmed(result: dict, rationale: str) -> str:
     """Format a confirmed decision dict into output text."""
     dt = format_enum_label(result["decision_type"])
     lines = [
-        f"Decision rendered for application #{result['application_id']}:",
-        f"  Decision ID: {result.get('id', 'N/A')}",
-        f"  Type: {dt}",
-        f"  Rationale: {rationale}",
+        f"申请 #{result['application_id']} 的授信决定已记录：",
+        f"  决策编号：{result.get('id', '暂无')}",
+        f"  类型：{dt}",
+        f"  决策依据：{rationale}",
     ]
 
     if result.get("new_stage"):
         stage_label = format_enum_label(result["new_stage"])
-        lines.append(f"  New stage: {stage_label}")
+        lines.append(f"  新阶段：{stage_label}")
 
     if result.get("ai_recommendation"):
-        lines.append(f"  AI recommendation: {result['ai_recommendation']}")
+        lines.append(f"  系统辅助建议：{_recommendation_label(result['ai_recommendation'])}")
         if result.get("ai_agreement") is True:
-            lines.append("  AI agreement: Yes (concurrence)")
+            lines.append("  与系统辅助建议一致：是")
         elif result.get("ai_agreement") is False:
-            lines.append("  AI agreement: No (override)")
+            lines.append("  与系统辅助建议一致：否")
             if result.get("override_rationale"):
-                lines.append(f"  Override rationale: {result['override_rationale']}")
+                lines.append(f"  人工调整理由：{result['override_rationale']}")
 
     if result.get("denial_reasons"):
-        lines.append("  Denial reasons:")
+        lines.append("  未通过原因：")
         for i, reason in enumerate(result["denial_reasons"], 1):
             lines.append(f"    {i}. {reason}")
 
@@ -200,7 +211,7 @@ async def uw_render_decision(
             )
 
             if result is None:
-                return f"Application #{application_id} not found or you don't have access to it."
+                return f"未找到申请 #{application_id}，或您没有查看权限。"
             if "error" in result:
                 return result["error"]
 
@@ -227,38 +238,34 @@ async def uw_render_decision(
         # Phase 2: confirmed -- validate proposal_id and persist
         if proposal_id is None:
             return (
-                "ERROR: proposal_id is required when confirmed=true. "
-                "You must first call this tool with confirmed=false to generate "
-                "a proposal, then call again with confirmed=true and the proposal_id."
+                "确认失败：确认授信决定时必须提供提案标识。请先生成待确认提案，"
+                "取得审批人员明确确认后再执行。"
             )
 
         # Validate proposal_id exists in state
         if state is None or "decision_proposals" not in state:
             return (
-                f"ERROR: No proposals found in agent state. The proposal_id '{proposal_id}' "
-                "is invalid or has expired. Please start over with confirmed=false."
+                f"确认失败：未找到提案标识“{proposal_id}”，该提案可能无效或已过期。"
+                "请重新生成待确认提案。"
             )
 
         proposal = state["decision_proposals"].get(proposal_id)
         if proposal is None:
             return (
-                f"ERROR: proposal_id '{proposal_id}' not found in agent state. "
-                "Please verify the proposal_id or start over with confirmed=false."
+                f"确认失败：未找到提案标识“{proposal_id}”。请核对标识或重新生成提案。"
             )
 
         # Validate proposal matches current parameters
         if proposal["application_id"] != application_id:
             return (
-                f"ERROR: proposal_id '{proposal_id}' is for application "
-                f"#{proposal['application_id']}, but you are trying to confirm "
-                f"for application #{application_id}. These must match."
+                f"确认失败：提案标识“{proposal_id}”属于申请 #{proposal['application_id']}，"
+                f"与当前申请 #{application_id} 不一致。"
             )
 
         if proposal["decision"] != decision_lower:
             return (
-                f"ERROR: proposal_id '{proposal_id}' is for decision "
-                f"'{proposal['decision']}', but you are trying to confirm "
-                f"'{decision_lower}'. These must match."
+                f"确认失败：提案中的决定类型为“{proposal['decision']}”，"
+                f"与当前提交的“{decision_lower}”不一致。"
             )
 
         # Proceed with rendering the decision
@@ -280,7 +287,7 @@ async def uw_render_decision(
             state["decision_proposals"].pop(proposal_id, None)
 
     if result is None:
-        return f"Application #{application_id} not found or you don't have access to it."
+        return f"未找到申请 #{application_id}，或您没有查看权限。"
     if "error" in result:
         return result["error"]
 
@@ -293,11 +300,7 @@ async def uw_draft_adverse_action(
     decision_id: int | None = None,
     state: Annotated[dict, InjectedState] = None,
 ) -> str:
-    """Draft an adverse action notice for a denied application.
-
-    Generates an ECOA/FCRA-compliant adverse action notice based on the
-    denial decision. Includes credit score disclosure if applicable.
-    The notice is stored as an audit event for compliance tracking.
+    """Draft a Chinese demo credit-decision notice for a denied application.
 
     Args:
         application_id: The loan application ID.
@@ -308,7 +311,7 @@ async def uw_draft_adverse_action(
     async with SessionLocal() as session:
         app = await get_application(session, user, application_id)
         if app is None:
-            return f"Application #{application_id} not found or you don't have access to it."
+            return f"未找到申请 #{application_id}，或您没有查看权限。"
 
         if decision_id is not None:
             # Fetch specific decision
@@ -333,13 +336,13 @@ async def uw_draft_adverse_action(
 
         if dec is None:
             if decision_id is not None:
-                return f"Decision #{decision_id} not found on application #{application_id}."
-            return f"No DENIED decision found on application #{application_id}."
+                return f"申请 #{application_id} 中未找到决策 #{decision_id}。"
+            return f"申请 #{application_id} 中未找到“未通过”决策。"
 
         if dec.decision_type != DecisionType.DENIED:
             return (
-                f"Decision #{dec.id} is '{dec.decision_type.value}' -- "
-                f"adverse action notices are only for DENIED decisions."
+                f"决策 #{dec.id} 的类型为“{format_enum_label(dec.decision_type.value)}”；"
+                "只有未通过的申请才能生成授信决定告知书。"
             )
 
         # Get borrower info
@@ -354,33 +357,32 @@ async def uw_draft_adverse_action(
                 denial_reasons = [dec.denial_reasons]
 
         # Build notice
-        today = datetime.now(UTC).strftime("%B %d, %Y")
+        today = datetime.now(UTC).astimezone().strftime("%Y年%m月%d日")
         lines = [
-            "ADVERSE ACTION NOTICE (SIMULATED)",
-            "==================================",
-            f"Date: {today}",
-            f"Borrower: {borrower_name}",
-            f"Application: #{application_id}",
+            "授信决定告知书（演示）",
+            "======================",
+            f"日期：{today}",
+            f"借款人：{borrower_name}",
+            f"申请编号：#{application_id}",
             "",
-            "We regret to inform you that your application for a mortgage loan",
-            "has been denied for the following reason(s):",
+            "经有权审批人员审核，本次住房贷款申请未通过。主要原因为：",
         ]
 
         if denial_reasons:
             for i, reason in enumerate(denial_reasons, 1):
                 lines.append(f"  {i}. {reason}")
         else:
-            lines.append("  (No specific reasons recorded)")
+            lines.append("  暂未记录具体原因，请补充后再向申请人送达。")
 
         # Credit score disclosure
         if dec.credit_score_used is not None:
             lines.extend(
                 [
                     "",
-                    "CREDIT SCORE DISCLOSURE:",
-                    f"  Your credit score: {dec.credit_score_used}",
-                    "  Scores range from 300 to 850.",
-                    f"  Source: {dec.credit_score_source or 'Not specified'}",
+                    "征信评分说明（演示字段）：",
+                    f"  决策时使用的评分：{dec.credit_score_used}",
+                    f"  数据来源：{dec.credit_score_source or '未记录'}",
+                    "  本项目不连接真实征信机构；正式业务须基于合法授权取得的征信信息。",
                 ]
             )
 
@@ -388,7 +390,7 @@ async def uw_draft_adverse_action(
             lines.extend(
                 [
                     "",
-                    "CONTRIBUTING FACTORS:",
+                    "其他影响因素：",
                     f"  {dec.contributing_factors}",
                 ]
             )
@@ -396,16 +398,15 @@ async def uw_draft_adverse_action(
         lines.extend(
             [
                 "",
-                "You have the right to:",
-                "- Request a copy of the appraisal used in the decision",
-                "- Dispute information on your credit report with the credit bureau",
-                "- Request the specific reasons for denial within 60 days",
-                "- Obtain a free copy of your credit report within 60 days",
+                "申请人权益提示：",
+                "- 有权了解与本次授信决定直接相关的主要原因；",
+                "- 对征信信息存在错误、遗漏的，可依法向征信机构或信息提供者提出异议；",
+                "- 对服务或处理结果有异议的，可通过金融机构公布的客服、投诉及争议解决渠道反映；",
                 "",
                 settings.COMPANY_NAME,
                 "",
-                "DISCLAIMER: This content is simulated for demonstration purposes",
-                "and does not constitute an actual adverse action notice.",
+                "参考依据：《征信业管理条例》及金融消费者权益保护相关规定。",
+                "提示：本文件仅用于虚构项目演示，不替代金融机构正式授信决定告知书或法律意见。",
             ]
         )
 
@@ -435,11 +436,7 @@ async def uw_generate_le(
     application_id: int,
     state: Annotated[dict, InjectedState] = None,
 ) -> str:
-    """Generate a simulated Loan Estimate (LE) for an application.
-
-    Creates a simplified Loan Estimate document with key loan terms,
-    projected payments, and estimated closing costs. The LE is stored
-    as an audit event for compliance tracking.
+    """Generate a simulated Chinese housing-loan terms confirmation.
 
     Args:
         application_id: The loan application ID.
@@ -448,7 +445,7 @@ async def uw_generate_le(
     async with SessionLocal() as session:
         app = await get_application(session, user, application_id)
         if app is None:
-            return f"Application #{application_id} not found or you don't have access to it."
+            return f"未找到申请 #{application_id}，或您没有查看权限。"
 
         le_text = await generate_le_text(session, user, app, application_id)
 
@@ -458,7 +455,7 @@ async def uw_generate_le(
         # Extract values for audit (redundant calc but simpler than returning from helper)
         loan_amount = float(app.loan_amount) if app.loan_amount else 0
         rate_lock = await get_rate_lock_status(session, user, application_id)
-        rate = 6.875
+        rate = 3.5
         if rate_lock and rate_lock.get("locked_rate"):
             rate = float(rate_lock["locked_rate"])
         loan_type = app.loan_type.value if app.loan_type else "conventional_30"
@@ -486,11 +483,7 @@ async def uw_generate_cd(
     application_id: int,
     state: Annotated[dict, InjectedState] = None,
 ) -> str:
-    """Generate a simulated Closing Disclosure (CD) for an application.
-
-    Creates a simplified Closing Disclosure with final loan terms,
-    actual closing costs, and cash to close. All conditions must be
-    cleared or waived before a CD can be generated.
+    """Generate a simulated Chinese signing-elements confirmation.
 
     Args:
         application_id: The loan application ID.
@@ -499,15 +492,14 @@ async def uw_generate_cd(
     async with SessionLocal() as session:
         app = await get_application(session, user, application_id)
         if app is None:
-            return f"Application #{application_id} not found or you don't have access to it."
+            return f"未找到申请 #{application_id}，或您没有查看权限。"
 
         # Condition gate: all conditions must be cleared/waived
         outstanding = await get_outstanding_count(session, application_id)
         if outstanding > 0:
             return (
-                f"Cannot generate Closing Disclosure for application #{application_id} "
-                f"-- {outstanding} condition(s) still outstanding. Clear or waive all "
-                f"conditions before generating the CD."
+                f"申请 #{application_id} 仍有 {outstanding} 项审批条件未完成，暂不能生成"
+                "签约要素确认书。请先完成或由有权人员豁免全部条件。"
             )
 
         cd_text = await generate_cd_text(session, user, app, application_id)
@@ -518,7 +510,7 @@ async def uw_generate_cd(
         # Extract values for audit
         loan_amount = float(app.loan_amount) if app.loan_amount else 0
         rate_lock = await get_rate_lock_status(session, user, application_id)
-        rate = 6.875
+        rate = 3.5
         if rate_lock and rate_lock.get("locked_rate"):
             rate = float(rate_lock["locked_rate"])
         loan_type = app.loan_type.value if app.loan_type else "conventional_30"

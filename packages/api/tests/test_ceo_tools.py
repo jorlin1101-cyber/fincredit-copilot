@@ -78,11 +78,11 @@ async def test_pipeline_summary_returns_formatted_output(
 
     result = await ceo_pipeline_summary.ainvoke({"days": 90, "state": _CEO_STATE})
 
-    assert "Pipeline Summary (90-day window)" in result
-    assert "Total active applications: 42" in result
-    assert "Pull-through rate: 40.5%" in result
-    assert "Average days to close: 28.3" in result
-    assert "Application -> Underwriting: 5.2 days" in result
+    assert "业务管线概览（近 90 天）" in result
+    assert "当前申请总数：42" in result
+    assert "申请转化率：40.5%" in result
+    assert "平均结案时长：28.3 天" in result
+    assert "申请中 → 授信审批：5.2 天" in result
     mock_audit.assert_called_once()
 
 
@@ -108,9 +108,9 @@ async def test_pipeline_summary_no_turn_times(mock_audit, mock_get_pipeline, moc
 
     result = await ceo_pipeline_summary.ainvoke({"days": 30, "state": _CEO_STATE})
 
-    assert "Pull-through rate: 0.0%" in result
-    assert "Turn times" not in result
-    assert "Average days to close" not in result
+    assert "申请转化率：0.0%" in result
+    assert "阶段流转时长" not in result
+    assert "平均结案时长" not in result
 
 
 # ---------------------------------------------------------------------------
@@ -146,9 +146,9 @@ async def test_denial_trends_returns_formatted_output(
 
     result = await ceo_denial_trends.ainvoke({"days": 90, "state": _CEO_STATE})
 
-    assert "Overall denial rate: 15.0%" in result
-    assert "High DTI: 2 (66.7%)" in result
-    assert "conventional_30: 12.0%" in result
+    assert "总体未通过率：15.0%" in result
+    assert "High DTI：2（66.7%）" in result
+    assert "30年期商业性个人住房贷款：12.0%" in result
 
 
 @pytest.mark.asyncio
@@ -165,7 +165,7 @@ async def test_denial_trends_invalid_product(mock_audit, mock_get_denial, mock_s
 
     result = await ceo_denial_trends.ainvoke({"product": "invalid", "state": _CEO_STATE})
 
-    assert "Unknown product" in result
+    assert "产品筛选条件无效" in result
 
 
 # ---------------------------------------------------------------------------
@@ -203,9 +203,9 @@ async def test_lo_performance_returns_formatted_output(mock_audit, mock_get_lo, 
     result = await ceo_lo_performance.ainvoke({"days": 90, "state": _CEO_STATE})
 
     assert "James Torres" in result
-    assert "Active pipeline: 8" in result
-    assert "Pull-through rate: 60.0%" in result
-    assert "Denial rate: 8.3%" in result
+    assert "在途申请：8" in result
+    assert "申请转化率：60.0%" in result
+    assert "未通过率：8.3%" in result
 
 
 @pytest.mark.asyncio
@@ -226,7 +226,7 @@ async def test_lo_performance_no_data(mock_audit, mock_get_lo, mock_session_cls)
 
     result = await ceo_lo_performance.ainvoke({"days": 90, "state": _CEO_STATE})
 
-    assert "No loan officer data found" in result
+    assert "暂无客户经理绩效数据" in result
 
 
 # ---------------------------------------------------------------------------
@@ -258,8 +258,8 @@ async def test_application_lookup_by_id(mock_audit, mock_session_cls):
 
     result = await ceo_application_lookup.ainvoke({"application_id": 100, "state": _CEO_STATE})
 
-    assert "Application #100" in result
-    assert "Underwriting" in result
+    assert "申请 #100" in result
+    assert "授信审批" in result
     assert "lo-james" in result
 
 
@@ -278,8 +278,8 @@ async def test_application_lookup_not_found(mock_audit, mock_session_cls):
 
     result = await ceo_application_lookup.ainvoke({"borrower_name": "Nobody", "state": _CEO_STATE})
 
-    assert "No applications found" in result
-    assert "Try searching by application ID" in result
+    assert "未找到与" in result
+    assert "尝试使用申请编号查询" in result
 
 
 @pytest.mark.asyncio
@@ -290,7 +290,7 @@ async def test_application_lookup_no_params(mock_audit, mock_session_cls):
 
     result = await ceo_application_lookup.ainvoke({"state": _CEO_STATE})
 
-    assert "Please provide either" in result
+    assert "请提供借款人姓名或申请编号" in result
 
 
 # ---------------------------------------------------------------------------
@@ -316,8 +316,8 @@ async def test_audit_trail_returns_events(mock_audit, mock_get_events, mock_sess
 
     result = await ceo_audit_trail.ainvoke({"application_id": 100, "state": _CEO_STATE})
 
-    assert "Audit trail for application #100" in result
-    assert "application_created" in result
+    assert "申请 #100 的审计记录" in result
+    assert "申请创建" in result
     assert "lo-james" in result
 
 
@@ -335,7 +335,7 @@ async def test_audit_trail_empty(mock_audit, mock_get_events, mock_session_cls):
 
     result = await ceo_audit_trail.ainvoke({"application_id": 999, "state": _CEO_STATE})
 
-    assert "No audit events found" in result
+    assert "暂无审计事件" in result
 
 
 # ---------------------------------------------------------------------------
@@ -371,11 +371,11 @@ async def test_decision_trace_returns_formatted(mock_audit, mock_get_trace, mock
 
     result = await ceo_decision_trace.ainvoke({"decision_id": 5, "state": _CEO_STATE})
 
-    assert "Decision #5 Trace" in result
-    assert "Application: #100" in result
+    assert "决策 #5 的追溯记录" in result
+    assert "申请：#100" in result
     assert "Strong financials" in result
-    assert "AI agreement: Yes" in result
-    assert "stage_transition: 2 event(s)" in result
+    assert "与系统建议一致：是" in result
+    assert "阶段变更：2 条" in result
 
 
 @pytest.mark.asyncio
@@ -392,7 +392,7 @@ async def test_decision_trace_not_found(mock_audit, mock_get_trace, mock_session
 
     result = await ceo_decision_trace.ainvoke({"decision_id": 999, "state": _CEO_STATE})
 
-    assert "Decision 999 not found" in result
+    assert "未找到决策 #999" in result
 
 
 # ---------------------------------------------------------------------------
@@ -421,9 +421,9 @@ async def test_audit_search_returns_results(mock_audit, mock_search, mock_sessio
         {"days": 7, "event_type": "stage_transition", "state": _CEO_STATE}
     )
 
-    assert "Audit search results (1 events)" in result
-    assert "stage_transition" in result
-    assert "app #100" in result
+    assert "审计检索结果（1 条）" in result
+    assert "阶段变更" in result
+    assert "申请 #100" in result
 
 
 @pytest.mark.asyncio
@@ -440,7 +440,7 @@ async def test_audit_search_no_results(mock_audit, mock_search, mock_session_cls
 
     result = await ceo_audit_search.ainvoke({"days": 1, "state": _CEO_STATE})
 
-    assert "No audit events found" in result
+    assert "没有符合筛选条件的审计事件" in result
 
 
 # ---------------------------------------------------------------------------

@@ -34,25 +34,25 @@ export const DEV_USERS: Record<UserRole, AuthUser> = {
     role: 'borrower',
     user_id: 'd1a2b3c4-e5f6-7890-abcd-ef1234567801',
     name: '李晓雨',
-    email: 'sarah.mitchell@example.com',
+    email: 'li.xiaoyu@example.com',
   },
   loan_officer: {
     role: 'loan_officer',
     user_id: 'd1a2b3c4-e5f6-7890-abcd-ef1234567802',
     name: '王晨',
-    email: 'james.torres@example.com',
+    email: 'wang.chen@example.com',
   },
   underwriter: {
     role: 'underwriter',
     user_id: 'd1a2b3c4-e5f6-7890-abcd-ef1234567803',
     name: '陈静',
-    email: 'maria.chen@example.com',
+    email: 'chen.jing@example.com',
   },
   ceo: {
     role: 'ceo',
     user_id: 'd1a2b3c4-e5f6-7890-abcd-ef1234567804',
     name: '周明远',
-    email: 'david.park@example.com',
+    email: 'zhou.mingyuan@example.com',
   },
 };
 
@@ -386,7 +386,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         });
         const res = await fetch(tokenUrl, { method: 'POST', body });
         if (!res.ok) {
-          throw new Error('Invalid email or password');
+          throw new Error('邮箱或密码错误');
         }
         const data = await res.json();
         const accessToken = data.access_token as string;
@@ -481,7 +481,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Dev mode: lookup DEV_USERS by email
       const match = Object.values(DEV_USERS).find((u) => u.email === email);
       if (!match) {
-        throw new Error('Invalid email or password');
+        throw new Error('邮箱或密码错误');
       }
       signIn(match.role);
     },

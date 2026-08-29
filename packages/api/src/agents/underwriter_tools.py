@@ -53,6 +53,45 @@ _URGENCY_ORDER = {
     UrgencyLevel.NORMAL: 3,
 }
 
+_URGENCY_LABELS = {
+    UrgencyLevel.CRITICAL: "紧急",
+    UrgencyLevel.HIGH: "高",
+    UrgencyLevel.MEDIUM: "中",
+    UrgencyLevel.NORMAL: "常规",
+}
+
+_LOAN_TYPE_LABELS = {
+    "conventional_30": "30年期商业性个人住房贷款",
+    "conventional_15": "15年期商业性个人住房贷款",
+    "fha": "住房公积金个人住房贷款",
+    "va": "商业贷款与公积金组合贷款",
+    "jumbo": "大额商业性个人住房贷款",
+    "usda": "县域住房贷款（演示产品）",
+    "arm": "LPR浮动利率个人住房贷款",
+}
+
+_DOC_TYPE_LABELS = {
+    "id_card": "居民身份证",
+    "income_certificate": "收入证明",
+    "w2": "工资与税务证明（兼容材料）",
+    "pay_stub": "近期工资单",
+    "tax_return": "个人所得税纳税记录",
+    "bank_statement": "银行流水",
+    "drivers_license": "身份证明（兼容材料）",
+    "property_appraisal": "房产评估报告",
+    "homeowners_insurance": "房屋保险凭证",
+    "purchase_agreement": "购房合同",
+    "other": "其他材料",
+}
+
+_RATE_STATUS_LABELS = {"active": "有效", "expired": "已到期", "none": "未锁定"}
+
+
+def _person_name(first_name: str, last_name: str) -> str:
+    if any("\u4e00" <= char <= "\u9fff" for char in f"{first_name}{last_name}"):
+        return f"{last_name}{first_name}"
+    return f"{first_name} {last_name}"
+
 
 def _user_context_from_state(state: dict):
     return user_context_from_state(state, default_role="underwriter")
@@ -83,7 +122,6 @@ async def uw_deterministic_assessment(
 
     lines = [
         f"申请 #{application_id} 确定性授信辅助评估",
-        f"trace_id：{result.trace_id}",
         f"DTI：{result.dti.value if result.dti.value is not None else '无法计算'}%",
         f"LTV：{result.ltv.value if result.ltv.value is not None else '无法计算'}%",
         f"材料完整：{'是' if result.documents.is_complete else '否'}",
@@ -124,7 +162,7 @@ async def uw_queue_view(
                 event_data={"action": "underwriter_queue_view", "result_count": 0},
             )
             await session.commit()
-            return "No applications in underwriting queue."
+            return "当前授信审批队列中没有待处理申请。"
 
         urgency_map = await compute_urgency(session, applications)
 
@@ -135,26 +173,28 @@ async def uw_queue_view(
 
         applications.sort(key=sort_key)
 
-        lines = [f"Underwriting Queue ({total} application{'s' if total != 1 else ''}):", ""]
+        lines = [f"授信审批队列（共 {total} 笔）：", ""]
         for app in applications:
             indicator = urgency_map.get(app.id)
-            urgency_label = indicator.level.name if indicator else "NORMAL"
+            urgency_label = _URGENCY_LABELS.get(indicator.level, "常规") if indicator else "常规"
             days = indicator.days_in_stage if indicator else 0
 
             # Borrower name(s)
             borrower_names = []
             for ab in app.application_borrowers or []:
                 if ab.borrower:
-                    borrower_names.append(f"{ab.borrower.first_name} {ab.borrower.last_name}")
-            names = ", ".join(borrower_names) if borrower_names else "Unknown"
+                    borrower_names.append(
+                        _person_name(ab.borrower.first_name, ab.borrower.last_name)
+                    )
+            names = "、".join(borrower_names) if borrower_names else "姓名待补充"
 
-            loan_amt = f"${app.loan_amount:,.0f}" if app.loan_amount else "N/A"
-            prop = app.property_address or "N/A"
-            lo = app.assigned_to or "Unassigned"
+            loan_amt = f"¥{app.loan_amount:,.0f}" if app.loan_amount else "金额待补充"
+            prop = app.property_address or "房产地址待补充"
+            lo = app.assigned_to or "未分配"
 
             line = (
-                f"- App #{app.id}: {names} | {loan_amt} | {prop} | "
-                f"LO: {lo} | {days}d in queue | Urgency: {urgency_label}"
+                f"- 申请 #{app.id}：{names}｜{loan_amt}｜{prop}｜"
+                f"客户经理：{lo}｜队列时长：{days} 天｜优先级：{urgency_label}"
             )
 
             if indicator and indicator.factors:
@@ -191,29 +231,29 @@ def _format_application_detail(
     """
     stage = app.stage.value if app.stage else "inquiry"
     lines = [
-        f"Application #{application_id} -- Underwriting Detail",
-        f"Stage: {format_enum_label(stage)}",
+        f"申请 #{application_id}——授信审批详情",
+        f"办理阶段：{format_enum_label(stage)}",
         "",
     ]
 
     # Borrower Profile
-    lines.append("BORROWER PROFILE:")
+    lines.append("客户资料：")
     for ab in app.application_borrowers or []:
         if ab.borrower:
             b = ab.borrower
-            role_label = "Primary" if ab.is_primary else "Co-borrower"
-            lines.append(f"  {role_label}: {b.first_name} {b.last_name} ({b.email})")
+            role_label = "主借款人" if ab.is_primary else "共同借款人"
+            lines.append(f"  {role_label}：{_person_name(b.first_name, b.last_name)}（{b.email}）")
             if b.employment_status:
                 emp = (
                     b.employment_status.value
                     if hasattr(b.employment_status, "value")
                     else str(b.employment_status)
                 )
-                lines.append(f"    Employment: {format_enum_label(emp)}")
+                lines.append(f"    就业状态：{format_enum_label(emp)}")
 
     # Financial Summary
     lines.append("")
-    lines.append("FINANCIAL SUMMARY:")
+    lines.append("财务情况：")
     if financials:
         total_income = sum((f.gross_monthly_income or 0) for f in financials)
         total_debts = sum((f.monthly_debts or 0) for f in financials)
@@ -221,80 +261,87 @@ def _format_application_detail(
         credit_scores = [f.credit_score for f in financials if f.credit_score]
         min_credit = min(credit_scores) if credit_scores else None
 
-        lines.append(f"  Gross monthly income: ${total_income:,.2f}")
-        lines.append(f"  Monthly debts: ${total_debts:,.2f}")
+        lines.append(f"  家庭月收入：¥{total_income:,.2f}")
+        lines.append(f"  每月负债：¥{total_debts:,.2f}")
         if total_income > 0:
             dti = float(total_debts) / float(total_income) * 100
-            lines.append(f"  DTI ratio: {dti:.1f}%")
-        lines.append(f"  Total assets: ${total_assets:,.2f}")
+            lines.append(f"  债务收入比：{dti:.1f}%")
+        lines.append(f"  资产合计：¥{total_assets:,.2f}")
         if min_credit is not None:
-            lines.append(f"  Lowest credit score: {min_credit}")
+            lines.append(f"  最低模拟征信评分：{min_credit}")
     else:
-        lines.append("  No financial data on file.")
+        lines.append("  暂无财务数据。")
 
     # Loan Details
     lines.append("")
-    lines.append("LOAN DETAILS:")
+    lines.append("贷款信息：")
     if app.loan_type:
-        lines.append(f"  Loan type: {app.loan_type.value}")
+        lines.append(
+            f"  贷款类型：{_LOAN_TYPE_LABELS.get(app.loan_type.value, app.loan_type.value)}"
+        )
     if app.loan_amount:
-        lines.append(f"  Loan amount: ${app.loan_amount:,.2f}")
+        lines.append(f"  贷款金额：¥{app.loan_amount:,.2f}")
     if app.property_value:
-        lines.append(f"  Property value: ${app.property_value:,.2f}")
+        lines.append(f"  房产价值：¥{app.property_value:,.2f}")
         if app.loan_amount and app.property_value:
             ltv = float(app.loan_amount) / float(app.property_value) * 100
-            lines.append(f"  LTV ratio: {ltv:.1f}%")
+            lines.append(f"  贷款成数：{ltv:.1f}%")
     if app.property_address:
-        lines.append(f"  Property: {app.property_address}")
+        lines.append(f"  房产地址：{app.property_address}")
 
     # Documents
     lines.append("")
     if doc_total > 0:
-        lines.append(f"DOCUMENTS ({doc_total}):")
+        lines.append(f"申请材料（{doc_total} 项）：")
         for doc in documents:
             doc_type = doc.doc_type.value if hasattr(doc.doc_type, "value") else str(doc.doc_type)
             status_val = doc.status.value if hasattr(doc.status, "value") else str(doc.status)
-            line = f"  - [{doc.id}] {doc_type}: {status_val}"
+            line = (
+                f"  - [{doc.id}] {_DOC_TYPE_LABELS.get(doc_type, format_enum_label(doc_type))}："
+                f"{format_enum_label(status_val)}"
+            )
             if doc.quality_flags:
-                line += f" (issues: {doc.quality_flags})"
+                line += f"（质量提示：{doc.quality_flags}）"
             lines.append(line)
     else:
-        lines.append("DOCUMENTS: None on file.")
+        lines.append("申请材料：暂无。")
 
     # Conditions
     lines.append("")
     if conditions:
-        lines.append(f"CONDITIONS ({len(conditions)}):")
+        lines.append(f"审批条件（{len(conditions)} 项）：")
         for c in conditions:
             status_val = c.get("status", "")
             desc = c.get("description", "")
             severity = c.get("severity", "")
-            lines.append(f"  - [{status_val}] {desc} ({severity})")
+            lines.append(
+                f"  - [{format_enum_label(status_val)}] {desc}（{format_enum_label(severity)}）"
+            )
     elif conditions is not None:
-        lines.append("CONDITIONS: None.")
+        lines.append("审批条件：暂无。")
     else:
-        lines.append("CONDITIONS: Unable to load.")
+        lines.append("审批条件：暂时无法加载。")
 
     # Rate Lock
     lines.append("")
     if rate_lock:
         rl_status = rate_lock.get("status", "none")
         if rl_status == "none":
-            lines.append("RATE LOCK: None on file.")
+            lines.append("执行利率：尚未锁定。")
         else:
-            lines.append("RATE LOCK:")
-            lines.append(f"  Status: {rl_status.title()}")
+            lines.append("执行利率：")
+            lines.append(f"  状态：{_RATE_STATUS_LABELS.get(rl_status, rl_status)}")
             if rate_lock.get("locked_rate") is not None:
-                lines.append(f"  Rate: {rate_lock['locked_rate']:.3f}%")
+                lines.append(f"  利率：{rate_lock['locked_rate']:.3f}%")
             if rate_lock.get("expiration_date"):
                 days = rate_lock.get("days_remaining", 0)
                 lines.append(
-                    f"  Expires: {rate_lock['expiration_date'][:10]} ({days} days remaining)"
+                    f"  有效期至：{rate_lock['expiration_date'][:10]}（剩余 {days} 天）"
                 )
             if rate_lock.get("is_urgent"):
-                lines.append("  *** URGENT: Rate lock expiring within 7 days ***")
+                lines.append("  提醒：执行利率将在 7 天内到期，请优先处理。")
     else:
-        lines.append("RATE LOCK: Unable to load.")
+        lines.append("执行利率：暂时无法加载。")
 
     return "\n".join(lines)
 
@@ -316,7 +363,7 @@ async def uw_application_detail(
     async with SessionLocal() as session:
         app = await get_application(session, user, application_id)
         if app is None:
-            return "Application not found or you don't have access to it."
+            return "未找到该申请，或您没有查看权限。"
 
         # Financials -- separate query (session-per-tool isolation pattern)
         financials = await get_financials(session, application_id)
@@ -369,17 +416,17 @@ async def uw_predict_loan_approval(
         application_id: The loan application ID.
     """
     if not is_predictive_model_available():
-        return "Predictive model not configured."
+        return "外部预测模型未配置；请使用确定性计算和人工审批流程。"
 
     predictive_tool = get_predictive_tool()
     if predictive_tool is None:
-        return "Predictive model tool not found."
+        return "外部预测模型工具不可用；请使用确定性计算和人工审批流程。"
 
     user = _user_context_from_state(state)
     async with SessionLocal() as session:
         app = await get_application(session, user, application_id)
         if app is None:
-            return "Application not found or you don't have access to it."
+            return "未找到该申请，或您没有查看权限。"
 
         financials = await get_financials(session, application_id)
 
@@ -440,10 +487,21 @@ async def uw_predict_loan_approval(
     # Invoke the external MCP tool
     try:
         result = await predictive_tool.ainvoke(invoke_args)
-        return str(result)
+        result_text = str(result).strip()
+        normalized = result_text.lower()
+        if "rejected" in normalized or "denied" in normalized:
+            outcome = "倾向未通过"
+        elif "approved" in normalized:
+            outcome = "倾向通过"
+        else:
+            return "外部预测模型返回了无法标准化的结果，请转人工复核。"
+        return (
+            f"外部预测模型辅助结果：{outcome}。该结果仅供风险复核参考，"
+            "不得替代确定性规则检查和有权审批人员的最终决定。"
+        )
     except Exception as e:
         logger.exception("Predictive model call failed for app %s", application_id)
-        return f"Predictive model call failed: {e}"
+        return f"外部预测模型调用失败：{e}。请转人工复核。"
 
 
 @tool
@@ -502,7 +560,7 @@ async def uw_save_risk_assessment(
     async with SessionLocal() as session:
         app = await get_application(session, user, application_id)
         if app is None:
-            return "Application not found or you don't have access to it."
+            return "未找到该申请，或您没有查看权限。"
 
         if app.stage != ApplicationStage.UNDERWRITING:
             stage_val = app.stage.value if app.stage else "unknown"
@@ -519,9 +577,8 @@ async def uw_save_risk_assessment(
             )
             await session.commit()
             return (
-                f"Risk assessment save is only available for applications in the "
-                f"UNDERWRITING stage. Application #{application_id} is in "
-                f"{format_enum_label(stage_val)}."
+                f"风险辅助评估只能在授信审批阶段保存。申请 #{application_id} 当前处于"
+                f"“{format_enum_label(stage_val)}”阶段。"
             )
 
         await create_risk_assessment(
@@ -568,8 +625,7 @@ async def uw_save_risk_assessment(
         await session.commit()
 
     return (
-        f"Risk assessment saved for application #{application_id}. "
-        f"Recommendation: {recommendation}."
+        f"申请 #{application_id} 的风险辅助评估已保存。流程建议：{recommendation}。"
     )
 
 
@@ -587,7 +643,7 @@ async def uw_preliminary_recommendation(
     async with SessionLocal() as session:
         app = await get_application(session, user, application_id)
         if app is None:
-            return "Application not found or you don't have access to it."
+            return "未找到该申请，或您没有查看权限。"
 
         if app.stage != ApplicationStage.UNDERWRITING:
             stage_val = app.stage.value if app.stage else "unknown"
@@ -604,9 +660,8 @@ async def uw_preliminary_recommendation(
             )
             await session.commit()
             return (
-                f"Preliminary recommendation is only available for applications in the "
-                f"UNDERWRITING stage. Application #{application_id} is in "
-                f"{format_enum_label(stage_val)}."
+                f"初步辅助建议只能在授信审批阶段生成。申请 #{application_id} 当前处于"
+                f"“{format_enum_label(stage_val)}”阶段。"
             )
 
         financials = await get_financials(session, application_id)
@@ -662,35 +717,33 @@ async def uw_preliminary_recommendation(
 
     # Format output
     lines = [
-        f"Preliminary Recommendation -- Application #{application_id}",
+        f"申请 #{application_id} 初步辅助建议",
         "",
-        f"RECOMMENDATION: {rec.recommendation}",
+        f"流程建议：{rec.recommendation}",
         "",
     ]
 
     if rec.rationale:
-        lines.append("RATIONALE:")
+        lines.append("建议依据：")
         for r in rec.rationale:
             lines.append(f"  - {r}")
         lines.append("")
 
     if rec.conditions:
-        lines.append("CONDITIONS:")
+        lines.append("待核验事项：")
         for i, c in enumerate(rec.conditions, 1):
             lines.append(f"  {i}. {c}")
         lines.append("")
 
     if risk.compensating_factors:
-        lines.append("COMPENSATING FACTORS:")
+        lines.append("补充参考因素：")
         for cf in risk.compensating_factors:
             lines.append(f"  + {cf}")
         lines.append("")
 
     lines.append(
-        "DISCLAIMER: This is an advisory recommendation only. It does NOT "
-        "constitute an official underwriting decision. Final decisions require "
-        "human underwriter review and approval. All regulatory information is "
-        "simulated for demonstration purposes."
+        "提示：本结果仅为授信辅助建议，不构成正式授信决定。最终结论必须由有权"
+        "审批人员核验材料、适用政策和风险后作出；演示规则不替代金融机构正式制度。"
     )
 
     return "\n".join(lines)

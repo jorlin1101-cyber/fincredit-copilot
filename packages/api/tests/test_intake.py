@@ -115,7 +115,7 @@ async def test_start_application_tool_creates_new():
         response = await start_app_tool.ainvoke({"state": state})
 
     assert "99" in response
-    assert "Created new application" in response
+    assert "已创建申请" in response
     mock_audit.assert_called_once()
     audit_kwargs = mock_audit.call_args
     assert audit_kwargs.kwargs["event_type"] == "application_started"
@@ -155,7 +155,7 @@ async def test_start_application_tool_returns_existing():
         response = await start_app_tool.ainvoke({"state": state})
 
     assert "10" in response
-    assert "already have an active application" in response
+    assert "已有一笔进行中的申请" in response
     mock_audit.assert_not_called()
     mock_session.commit.assert_not_called()
 
@@ -171,7 +171,7 @@ async def test_update_tool_formats_success():
     service_result = {
         "updated": ["gross_monthly_income", "employment_status"],
         "errors": {},
-        "remaining": ["ssn", "date_of_birth"],
+        "remaining": ["id_number", "date_of_birth"],
         "corrections": {},
     }
 
@@ -195,10 +195,10 @@ async def test_update_tool_formats_success():
             }
         )
 
-    assert "gross_monthly_income" in response
-    assert "employment_status" in response
-    assert "Still needed" in response
-    assert "ssn" in response
+    assert "家庭月收入" in response
+    assert "就业状态" in response
+    assert "仍需补充" in response
+    assert "居民身份证号码" in response
 
 
 @pytest.mark.asyncio
@@ -211,8 +211,8 @@ async def test_update_tool_formats_validation_errors():
 
     service_result = {
         "updated": ["email"],
-        "errors": {"ssn": "SSN must be 9 digits (XXX-XX-XXXX)"},
-        "remaining": ["ssn"],
+        "errors": {"id_number": "居民身份证号码应为18位，末位可以是数字或X"},
+        "remaining": ["id_number"],
         "corrections": {},
     }
 
@@ -231,14 +231,14 @@ async def test_update_tool_formats_validation_errors():
         response = await update_application_data.ainvoke(
             {
                 "application_id": 42,
-                "fields": '{"email": "test@example.com", "ssn": "123"}',
+                "fields": '{"email": "test@example.com", "id_number": "123"}',
                 "state": state,
             }
         )
 
-    assert "email" in response
-    assert "Could not save ssn" in response
-    assert "9 digits" in response
+    assert "电子邮箱" in response
+    assert "居民身份证号码保存失败" in response
+    assert "18位" in response
 
 
 @pytest.mark.asyncio
@@ -252,7 +252,7 @@ async def test_update_tool_rejects_bad_json():
         {"application_id": 42, "fields": "not json at all", "state": state}
     )
 
-    assert "Could not parse" in response
+    assert "无法解析填写内容" in response
 
 
 @pytest.mark.asyncio
@@ -286,26 +286,26 @@ async def test_update_tool_all_fields_complete():
             {"application_id": 42, "fields": '{"credit_score": "750"}', "state": state}
         )
 
-    assert "All required fields are complete" in response
+    assert "必填信息已填写完整" in response
 
 
 # -- SSN masking --
 
 
 def test_mask_ssn_full():
-    """should mask all but last 4 digits of a full SSN."""
-    assert mask_ssn("078-05-1120") == "***-**-1120"
+    """The legacy helper masks a China-scenario identity number."""
+    assert mask_ssn("51010019900101001X") == "**************001X"
 
 
 def test_mask_ssn_digits_only():
-    """should handle SSNs without dashes."""
-    assert mask_ssn("078051120") == "***-**-1120"
+    """The legacy helper keeps only the final four characters."""
+    assert mask_ssn("510100199001010012") == "**************0012"
 
 
 def test_mask_ssn_none():
     """should return None for None, masked placeholder for empty."""
     assert mask_ssn(None) is None
-    assert mask_ssn("") == "***-**-****"
+    assert mask_ssn("") == "******************"
 
 
 # -- Field section consistency --
@@ -349,7 +349,7 @@ async def test_get_application_progress_partial():
     borrower.first_name = "John"
     borrower.last_name = "Smith"
     borrower.email = "john@example.com"
-    borrower.ssn = "078-05-1120"
+    borrower.ssn = "51010019900101001X"
     borrower.dob = None
     borrower.employment_status = EmploymentStatus.W2_EMPLOYEE
 
@@ -372,10 +372,10 @@ async def test_get_application_progress_partial():
     assert "loan_type" in progress["remaining"]
 
     # SSN should be masked
-    personal = progress["sections"]["Personal Information"]
-    assert personal["SSN"] == "***-**-1120"
-    assert personal["First Name"] == "John"
-    assert personal["Date of Birth"] is None
+    personal = progress["sections"]["个人资料"]
+    assert personal["居民身份证号码"] == "**************001X"
+    assert personal["名"] == "John"
+    assert personal["出生日期"] is None
 
 
 # -- get_application_summary tool --
@@ -392,7 +392,7 @@ async def test_summary_tool_writes_audit_event():
     progress_result = {
         "application_id": 42,
         "stage": "application",
-        "sections": {"Personal Information": {"First Name": "John"}},
+        "sections": {"个人资料": {"名": "John"}},
         "completed": 14,
         "total": 14,
         "remaining": [],
@@ -422,6 +422,6 @@ async def test_summary_tool_writes_audit_event():
     assert audit_kwargs.kwargs["event_data"]["action"] == "review"
     mock_session.commit.assert_called_once()
     # Verify output formatting
-    assert "Application #42" in response
+    assert "申请 #42" in response
     assert "100%" in response
-    assert "All required fields are complete" in response
+    assert "必填信息已填写完整" in response

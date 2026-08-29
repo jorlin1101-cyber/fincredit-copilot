@@ -65,8 +65,8 @@ export function CameraCapture({ onCapture, disabled }: CameraCaptureProps) {
         } catch (err) {
             const msg =
                 err instanceof DOMException && (err.name === 'NotAllowedError' || err.name === 'NotFoundError')
-                    ? 'Camera not available. Please check your permissions.'
-                    : 'Could not access camera.';
+                    ? '无法使用相机，请检查相机权限。'
+                    : '无法访问相机。';
             setError(msg);
         }
     }, []);
@@ -163,7 +163,7 @@ export function CameraCapture({ onCapture, disabled }: CameraCaptureProps) {
                     className={buttonClass}
                 >
                     <Camera className="h-4 w-4" />
-                    Take a Photo
+                    拍照上传
                 </button>
                 <input
                     ref={nativeInputRef}
@@ -187,7 +187,7 @@ export function CameraCapture({ onCapture, disabled }: CameraCaptureProps) {
                 className={buttonClass}
             >
                 <Camera className="h-4 w-4" />
-                Take a Photo
+                拍照上传
             </button>
             <DialogPortal>
                 <DialogOverlay className="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
@@ -197,12 +197,12 @@ export function CameraCapture({ onCapture, disabled }: CameraCaptureProps) {
                 >
                     <div className="flex items-center justify-between px-4 py-3">
                         <DialogTitle className="text-sm font-medium text-white">
-                            Capture Document
+                            拍摄申请材料
                         </DialogTitle>
                         <DialogClose asChild>
                             <button
                                 className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-                                aria-label="Close"
+                                aria-label="关闭"
                             >
                                 <X className="h-5 w-5" />
                             </button>
@@ -215,7 +215,7 @@ export function CameraCapture({ onCapture, disabled }: CameraCaptureProps) {
                         ) : state === 'captured' && previewUrl ? (
                             <img
                                 src={previewUrl}
-                                alt="Captured document"
+                                alt="已拍摄的申请材料"
                                 className="max-h-full max-w-full object-contain"
                             />
                         ) : (
@@ -236,7 +236,7 @@ export function CameraCapture({ onCapture, disabled }: CameraCaptureProps) {
                             <button
                                 onClick={handleCapture}
                                 className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-white/20 transition-colors hover:bg-white/40"
-                                aria-label="Take photo"
+                                aria-label="拍照"
                             >
                                 <div className="h-12 w-12 rounded-full bg-white" />
                             </button>
@@ -248,14 +248,14 @@ export function CameraCapture({ onCapture, disabled }: CameraCaptureProps) {
                                     className="flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
                                 >
                                     <RefreshCw className="h-4 w-4" />
-                                    Retake
+                                    重新拍摄
                                 </button>
                                 <button
                                     onClick={handleUsePhoto}
                                     className="flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-white/90"
                                 >
                                     <Check className="h-4 w-4" />
-                                    Use Photo
+                                    使用照片
                                 </button>
                             </>
                         )}

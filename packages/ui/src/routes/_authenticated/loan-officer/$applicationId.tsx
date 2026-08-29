@@ -42,6 +42,7 @@ import {
   DOCUMENT_STATUS_LABELS,
   EMPLOYMENT_STATUS_LABELS,
   EXTRACTION_FIELD_LABELS,
+  formatExtractionValue,
   QUALITY_FLAG_LABELS,
   STAGE_BADGE,
 } from '@/lib/labels';
@@ -524,7 +525,9 @@ function ExtractionDetails({
   if (isLoading) return <Skeleton className="h-8 w-full" />;
   if (!data || data.extractions.length === 0) {
     return (
-      <p className="text-xs text-muted-foreground italic">暂无可查看的识别结果。</p>
+      <p className="text-xs text-muted-foreground italic">
+        该材料已完成状态审核，但未保存字段级识别明细。
+      </p>
     );
   }
 
@@ -535,7 +538,9 @@ function ExtractionDetails({
           <span className="text-muted-foreground">
             {EXTRACTION_FIELD_LABELS[ext.field_name] ?? ext.field_name}：
           </span>
-          <span className="font-medium text-foreground">{ext.field_value ?? '--'}</span>
+          <span className="font-medium text-foreground">
+            {formatExtractionValue(ext.field_name, ext.field_value)}
+          </span>
           {ext.confidence != null && (
             <span
               className={cn(

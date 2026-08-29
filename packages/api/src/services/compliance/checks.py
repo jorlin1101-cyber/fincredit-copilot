@@ -6,12 +6,12 @@ Each check returns a ComplianceCheckResult with regulation name,
 status, rationale, and detail items.
 """
 
-import enum
 from dataclasses import dataclass, field
 from datetime import datetime
+from enum import StrEnum
 
 
-class ComplianceStatus(str, enum.Enum):
+class ComplianceStatus(StrEnum):
     """Severity-ordered compliance check status."""
 
     PASS = "PASS"

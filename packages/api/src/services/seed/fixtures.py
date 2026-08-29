@@ -38,7 +38,7 @@ MARIA_CHEN_ID = "d1a2b3c4-e5f6-7890-abcd-ef1234567803"
 DAVID_PARK_ID = "d1a2b3c4-e5f6-7890-abcd-ef1234567804"
 ADMIN_ID = "d1a2b3c4-e5f6-7890-abcd-ef1234567805"
 
-# Co-borrower (spouse of Sarah Mitchell)
+# 共同借款人（李晓雨的配偶）
 JENNIFER_MITCHELL_ID = "d1a2b3c4-e5f6-7890-abcd-ef1234567806"
 
 # Additional loan officers
@@ -222,7 +222,7 @@ BORROWERS: list[dict] = [
         "first_name": "晓雨",
         "last_name": "李",
         "email": "li.xiaoyu@example.com",
-        "ssn": "ENC:293-84-1567",
+        "ssn": "ENC:DEMO-ID-001",
         "dob": datetime(1988, 6, 15, tzinfo=UTC),
     },
     {
@@ -230,7 +230,7 @@ BORROWERS: list[dict] = [
         "first_name": "晓雯",
         "last_name": "李",
         "email": "li.xiaowen@example.com",
-        "ssn": "ENC:384-71-2956",
+        "ssn": "ENC:DEMO-ID-002",
         "dob": datetime(1990, 2, 8, tzinfo=UTC),
     },
     {
@@ -238,7 +238,7 @@ BORROWERS: list[dict] = [
         "first_name": "志远",
         "last_name": "王",
         "email": "wang.zhiyuan@example.com",
-        "ssn": "ENC:481-22-9034",
+        "ssn": "ENC:DEMO-ID-003",
         "dob": datetime(1975, 11, 3, tzinfo=UTC),
     },
     {
@@ -246,7 +246,7 @@ BORROWERS: list[dict] = [
         "first_name": "静怡",
         "last_name": "陈",
         "email": "chen.jingyi@example.com",
-        "ssn": "ENC:612-50-3478",
+        "ssn": "ENC:DEMO-ID-004",
         "dob": datetime(1992, 3, 22, tzinfo=UTC),
     },
     {
@@ -254,7 +254,7 @@ BORROWERS: list[dict] = [
         "first_name": "浩然",
         "last_name": "刘",
         "email": "liu.haoran@example.com",
-        "ssn": "ENC:754-13-8821",
+        "ssn": "ENC:DEMO-ID-005",
         "dob": datetime(1983, 9, 8, tzinfo=UTC),
     },
     {
@@ -262,7 +262,7 @@ BORROWERS: list[dict] = [
         "first_name": "欣怡",
         "last_name": "赵",
         "email": "zhao.xinyi@example.com",
-        "ssn": "ENC:328-67-4190",
+        "ssn": "ENC:DEMO-ID-006",
         "dob": datetime(1990, 1, 27, tzinfo=UTC),
     },
     {
@@ -270,7 +270,7 @@ BORROWERS: list[dict] = [
         "first_name": "宇航",
         "last_name": "周",
         "email": "zhou.yuhang@example.com",
-        "ssn": "ENC:519-41-7763",
+        "ssn": "ENC:DEMO-ID-007",
         "dob": datetime(1979, 7, 14, tzinfo=UTC),
     },
     {
@@ -278,7 +278,7 @@ BORROWERS: list[dict] = [
         "first_name": "雨桐",
         "last_name": "孙",
         "email": "sun.yutong@example.com",
-        "ssn": "ENC:637-28-5104",
+        "ssn": "ENC:DEMO-ID-008",
         "dob": datetime(1985, 4, 19, tzinfo=UTC),
     },
     {
@@ -286,7 +286,7 @@ BORROWERS: list[dict] = [
         "first_name": "子轩",
         "last_name": "吴",
         "email": "wu.zixuan@example.com",
-        "ssn": "ENC:842-93-6271",
+        "ssn": "ENC:DEMO-ID-009",
         "dob": datetime(1991, 8, 2, tzinfo=UTC),
     },
     {
@@ -294,7 +294,7 @@ BORROWERS: list[dict] = [
         "first_name": "思琪",
         "last_name": "郑",
         "email": "zheng.siqi@example.com",
-        "ssn": "ENC:215-76-3948",
+        "ssn": "ENC:DEMO-ID-010",
         "dob": datetime(1987, 12, 11, tzinfo=UTC),
     },
 ]
@@ -894,8 +894,7 @@ ACTIVE_APPLICATIONS: list[dict] = [
         "decisions": [
             {
                 "decision_type": DecisionType.CONDITIONAL_APPROVAL,
-                "rationale": "Strong financials and credit history. Conditions for "
-                "title and insurance must be satisfied before closing.",
+                "rationale": "申请人的还款能力与征信情况符合演示规则；签约前仍需完成房屋权属及保险材料核验。",
                 "decided_by": MARIA_CHEN_ID,
             },
         ],
@@ -968,7 +967,7 @@ ACTIVE_APPLICATIONS: list[dict] = [
         "decisions": [
             {
                 "decision_type": DecisionType.CONDITIONAL_APPROVAL,
-                "rationale": "Acceptable risk profile. Standard conditions apply.",
+                "rationale": "风险状况符合演示准入规则，仍需完成页面所列常规审批条件。",
                 "decided_by": MARIA_CHEN_ID,
             },
         ],
@@ -1222,7 +1221,7 @@ for i in range(16):
             "decisions": [
                 {
                     "decision_type": DecisionType.APPROVED,
-                    "rationale": "Meets all underwriting criteria. Loan approved.",
+                    "rationale": "申请材料与还款能力符合演示授信规则，审批结论为通过。",
                     "decided_by": MARIA_CHEN_ID,
                     "created_at": _created + timedelta(days=30),
                 },
@@ -1238,34 +1237,34 @@ for i in range(16):
 
 # 12 denied historical loans -- spread across 6 months, 3 LOs, all loan types
 _DENIAL_RATIONALES = [
-    "Debt-to-income ratio exceeds 43% threshold. Monthly obligations are disproportionate to income.",
-    "Credit score of 612 falls below minimum program requirement of 620.",
-    "Insufficient documented income to support requested loan amount.",
-    "Property appraisal came in significantly below purchase price. LTV exceeds program limits.",
-    "Employment gap of 8 months within last 2 years raises income stability concerns.",
-    "Debt-to-income ratio at 47% is well above program guidelines.",
-    "Credit score of 598 is below minimum for all available programs.",
-    "Insufficient reserves. Borrower has less than 2 months of mortgage payments in savings.",
-    "Property appraisal value 15% below contract price. Borrower unable to cover gap.",
-    "Undisclosed liabilities discovered during verification. DTI recalculated at 52%.",
-    "Credit score of 605 with recent derogatory marks. Does not meet FHA minimum.",
-    "Insufficient income documentation. Self-employment income cannot be adequately verified.",
+    "负债收入比超过演示准入阈值，现有月度偿债压力与家庭收入不匹配。",
+    "征信评分未达到当前演示贷款方案的准入要求。",
+    "已提供的收入证明不足以支持申请额度。",
+    "房产评估价值低于交易价格，贷款成数超过演示方案上限。",
+    "近两年工作经历存在较长空档，收入稳定性需要进一步核验。",
+    "负债收入比高于当前演示贷款方案的审慎标准。",
+    "征信评分未达到现有演示产品的准入要求。",
+    "家庭可核验流动资金不足，无法覆盖两个月的预计月供。",
+    "房产评估价值低于合同价格，申请人暂无法补足差额。",
+    "核验过程中发现未披露负债，重新计算后的负债收入比为52%。",
+    "征信评分及近期风险记录未达到演示方案准入要求。",
+    "收入证明材料不足，经营性收入暂时无法完成可靠核验。",
 ]
 
 # Structured denial reasons (JSONB) -- short labels for analytics
 _DENIAL_REASON_LABELS: list[list[str]] = [
-    ["High DTI ratio"],
-    ["Credit score below minimum"],
-    ["Insufficient income documentation"],
-    ["Appraisal shortfall"],
-    ["High DTI ratio"],
-    ["Credit score below minimum", "High DTI ratio"],
-    ["Insufficient income documentation"],
-    ["Appraisal shortfall"],
-    ["High DTI ratio"],
-    ["Credit score below minimum"],
-    ["Appraisal shortfall", "High DTI ratio"],
-    ["Credit score below minimum", "Insufficient income documentation"],
+    ["负债收入比偏高"],
+    ["征信评分未达到准入要求"],
+    ["收入证明材料不足"],
+    ["房产评估价值不足"],
+    ["负债收入比偏高"],
+    ["征信评分未达到准入要求", "负债收入比偏高"],
+    ["收入证明材料不足"],
+    ["房产评估价值不足"],
+    ["负债收入比偏高"],
+    ["征信评分未达到准入要求"],
+    ["房产评估价值不足", "负债收入比偏高"],
+    ["征信评分未达到准入要求", "收入证明材料不足"],
 ]
 
 _DENIAL_LOAN_TYPES = [

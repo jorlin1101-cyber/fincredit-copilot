@@ -1,11 +1,13 @@
 # This project was developed with assistance from AI tools.
 """Disclosure acknowledgment service.
 
-Tracks borrower acknowledgment of required lending disclosures
-(Loan Estimate, privacy notice, HMDA notice, equal opportunity notice)
-via the append-only audit trail.  Each acknowledgment is a separate
-audit event with event_type='disclosure_acknowledged'.
+Tracks borrower acknowledgment of the Chinese demo disclosure set via the
+append-only audit trail. Each acknowledgment is a separate audit event with
+event_type='disclosure_acknowledged'. Legacy disclosure IDs are retained only
+so historical demo audit rows continue to resolve.
 """
+
+import inspect
 
 from db import AuditEvent
 from sqlalchemy import select
@@ -168,7 +170,13 @@ async def get_disclosure_status(
         .order_by(AuditEvent.timestamp.asc())
     )
     result = await session.execute(stmt)
-    events = list(result.scalars().all())
+    # SQLAlchemy returns a synchronous ScalarResult here. A few test/dummy
+    # sessions expose an awaitable ``all`` result, so support both without
+    # changing production behaviour.
+    scalar_rows = result.scalars().all()
+    if inspect.isawaitable(scalar_rows):
+        scalar_rows = await scalar_rows
+    events = list(scalar_rows)
 
     acknowledged_ids: set[str] = set()
     for event in events:

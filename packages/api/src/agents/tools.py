@@ -22,12 +22,14 @@ def current_date() -> str:
 
 @tool
 def product_info() -> str:
-    """Retrieve available mortgage product information."""
+    """查询中国住房贷款演示产品和可核验的利率参考来源。"""
     lines = []
     for p in PRODUCTS:
         lines.append(
-            f"- **{p.name}** ({p.id}): {p.description} "
-            f"Min down payment: {p.min_down_payment_pct}%, typical rate: {p.typical_rate}%"
+            f"- **{p.name}**：{p.description} 最低首付款比例参考值为"
+            f"{p.min_down_payment_pct:.0f}%，测算利率为{p.typical_rate:.2f}%。"
+            f"{p.rate_note} 数据日期：{p.data_as_of}。"
+            f"来源：{p.source_name}（{p.source_url}）。"
         )
     return "\n".join(lines)
 

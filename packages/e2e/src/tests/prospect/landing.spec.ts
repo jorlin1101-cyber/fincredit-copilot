@@ -11,8 +11,8 @@ test.describe("Landing Page", () => {
         await landing.goto();
     });
 
-    test("should display hero heading with homeownership text", async () => {
-        await expect(landing.heroHeading).toContainText("homeownership");
+    test("should display the Chinese housing-loan service heading", async () => {
+        await expect(landing.heroHeading).toContainText("住房贷款办理");
     });
 
     test("should have Get Pre-Qualified link navigating to /sign-in", async () => {

@@ -56,12 +56,12 @@ def _make_doc(doc_type: DocumentType):
     return m
 
 
-class TestComplianceCheckEcoa:
-    """ECOA check via tool."""
+class TestComplianceCheckMaterialReview:
+    """China-scenario material review via tool (legacy alias accepted)."""
 
     @pytest.mark.asyncio
     async def test_compliance_check_ecoa_pass(self):
-        """App in UNDERWRITING -> ECOA PASS."""
+        """Missing core materials is surfaced for an underwriting application."""
         mock_app = MagicMock()
         mock_app.stage = ApplicationStage.UNDERWRITING
         mock_app.created_at = None
@@ -96,13 +96,13 @@ class TestComplianceCheckEcoa:
                 {"application_id": 100, "regulation_type": "ECOA", "state": state}
             )
 
-        assert "ECOA:" in result
-        assert "PASS" in result
-        assert "financial factors" in result.lower()
+        assert "申请材料与尽职调查:" in result
+        assert "FAIL" in result
+        assert "核心身份或收入材料缺失" in result
 
 
-class TestComplianceCheckAtrQm:
-    """ATR/QM check via tool."""
+class TestComplianceCheckRepaymentAbility:
+    """China-scenario repayment-ability check via tool."""
 
     @pytest.mark.asyncio
     async def test_compliance_check_atr_qm_pass(self):
@@ -115,7 +115,7 @@ class TestComplianceCheckAtrQm:
         mock_app.closing_date = None
 
         docs = [
-            _make_doc(DocumentType.W2),
+            _make_doc(DocumentType.INCOME_CERTIFICATE),
             _make_doc(DocumentType.BANK_STATEMENT),
         ]
 
@@ -148,7 +148,7 @@ class TestComplianceCheckAtrQm:
                 {"application_id": 100, "regulation_type": "ATR_QM", "state": state}
             )
 
-        assert "ATR/QM:" in result
+        assert "还款能力评估:" in result
         assert "PASS" in result
 
     @pytest.mark.asyncio
@@ -190,16 +190,16 @@ class TestComplianceCheckAtrQm:
                 {"application_id": 100, "regulation_type": "ATR_QM", "state": state}
             )
 
-        assert "ATR/QM:" in result
+        assert "还款能力评估:" in result
         assert "FAIL" in result
 
 
-class TestComplianceCheckTrid:
-    """TRID check via tool."""
+class TestComplianceCheckLocalPolicy:
+    """Nationwide and Chengdu housing-credit policy check via tool."""
 
     @pytest.mark.asyncio
     async def test_compliance_check_trid_warning_no_dates(self):
-        """No LE/CD dates -> TRID WARNING."""
+        """Missing numeric amounts produces a policy warning, not a crash."""
         mock_app = MagicMock()
         mock_app.stage = ApplicationStage.UNDERWRITING
         mock_app.created_at = MagicMock()
@@ -234,7 +234,7 @@ class TestComplianceCheckTrid:
                 {"application_id": 100, "regulation_type": "TRID", "state": state}
             )
 
-        assert "TRID:" in result
+        assert "全国及成都住房信贷政策:" in result
         assert "WARNING" in result
 
 
@@ -251,7 +251,11 @@ class TestComplianceCheckAll:
         mock_app.cd_delivery_date = None
         mock_app.closing_date = None
 
-        docs = [_make_doc(DocumentType.W2), _make_doc(DocumentType.BANK_STATEMENT)]
+        docs = [
+            _make_doc(DocumentType.ID_CARD),
+            _make_doc(DocumentType.INCOME_CERTIFICATE),
+            _make_doc(DocumentType.BANK_STATEMENT),
+        ]
         state = {"user_id": "uw-maria", "user_role": "underwriter"}
 
         with (
@@ -279,11 +283,11 @@ class TestComplianceCheckAll:
                 {"application_id": 100, "regulation_type": "ALL", "state": state}
             )
 
-        assert "ECOA:" in result
-        assert "ATR/QM:" in result
-        assert "TRID:" in result
-        assert "OVERALL STATUS:" in result
-        assert "CAN PROCEED:" in result
+        assert "申请材料与尽职调查:" in result
+        assert "还款能力评估:" in result
+        assert "全国及成都住房信贷政策:" in result
+        assert "综合状态：" in result
+        assert "流程建议：" in result
 
 
 class TestComplianceCheckGuards:
@@ -317,7 +321,7 @@ class TestComplianceCheckGuards:
                 {"application_id": 100, "regulation_type": "ALL", "state": state}
             )
 
-        assert "only available for applications in the UNDERWRITING" in result
+        assert "仅适用于授信审批阶段" in result
 
     @pytest.mark.asyncio
     async def test_compliance_check_app_not_found(self):
@@ -340,7 +344,7 @@ class TestComplianceCheckGuards:
                 {"application_id": 999, "regulation_type": "ALL", "state": state}
             )
 
-        assert "not found" in result.lower()
+        assert "不存在或当前用户无权访问" in result
 
 
 class TestComplianceCheckAudit:
@@ -443,7 +447,10 @@ class TestComplianceCheckDtiAggregation:
         mock_app.cd_delivery_date = None
         mock_app.closing_date = None
 
-        docs = [_make_doc(DocumentType.W2), _make_doc(DocumentType.BANK_STATEMENT)]
+        docs = [
+            _make_doc(DocumentType.INCOME_CERTIFICATE),
+            _make_doc(DocumentType.BANK_STATEMENT),
+        ]
         state = {"user_id": "uw-maria", "user_role": "underwriter"}
 
         with (
@@ -483,7 +490,7 @@ class TestComplianceCheckDtiAggregation:
 
     @pytest.mark.asyncio
     async def test_zero_income_produces_fail_not_crash(self):
-        """Financials with zero income -> DTI=None -> ATR/QM FAIL, no ZeroDivisionError."""
+        """Zero income produces a repayment-evidence failure without crashing."""
         mock_app = MagicMock()
         mock_app.stage = ApplicationStage.UNDERWRITING
         mock_app.created_at = None
@@ -519,7 +526,7 @@ class TestComplianceCheckDtiAggregation:
             )
 
         assert "FAIL" in result
-        assert "cannot be computed" in result.lower()
+        assert "无法计算债务收入比" in result
 
     @pytest.mark.asyncio
     async def test_none_income_and_debts_handled(self):
@@ -578,7 +585,7 @@ class TestComplianceCheckValidation:
             {"application_id": 100, "regulation_type": "HMDA", "state": state}
         )
 
-        assert "invalid" in result.lower()
+        assert "无效" in result
         assert "HMDA" in result
 
     @pytest.mark.asyncio
@@ -618,6 +625,6 @@ class TestComplianceCheckValidation:
                 {"application_id": 100, "regulation_type": "ECOA", "state": state}
             )
 
-        assert "ECOA:" in result
-        assert "OVERALL STATUS:" not in result
-        assert "CAN PROCEED:" not in result
+        assert "申请材料与尽职调查:" in result
+        assert "综合状态：" not in result
+        assert "流程建议：" not in result

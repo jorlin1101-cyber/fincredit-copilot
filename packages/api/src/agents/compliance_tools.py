@@ -1,9 +1,8 @@
 # This project was developed with assistance from AI tools.
-"""LangGraph tools for compliance knowledge base search.
+"""LangGraph tools for the nationwide and Chengdu policy library.
 
-Provides the kb_search tool that agents can use to query the three-tier
-compliance knowledge base (federal regulations, agency guidelines,
-internal policies) with conflict detection and audit logging.
+Provides the kb_search tool that agents can use to query nationwide rules,
+Chengdu local rules, and clearly labelled internal demo policies.
 
 Design note -- session-per-tool-call:
     Each tool opens its own ``SessionLocal()`` context rather than sharing
@@ -90,7 +89,7 @@ async def kb_search(
         if not outcome.sufficient:
             await session.commit()
             return (
-                "受控 Agentic RAG：政策证据不足，系统已停止生成政策结论并转人工复核。\n"
+                "政策库证据不足，系统已停止生成政策结论并转人工复核。\n"
                 f"原因：{outcome.reason}\n"
                 f"检索次数：{outcome.search_attempts}（最多一次查询改写与一次重试）。" + _DISCLAIMER
             )
@@ -116,7 +115,7 @@ async def kb_search(
         await session.commit()
 
     lines = [
-        f"受控 Agentic RAG 政策证据（{len(results)}条，适用日期：{policy_date.isoformat()}）：\n"
+        f"政策库检索结果（{len(results)}条，适用日期：{policy_date.isoformat()}）：\n"
     ]
 
     for i, r in enumerate(results, 1):
@@ -134,7 +133,8 @@ async def kb_search(
                 validity += f"，至 {r.expires_at}"
             lines.append(f"   有效期：{validity}")
         if r.source_url:
-            lines.append(f"   官方来源：{r.source_url}")
+            source_label = "可靠公开来源" if r.source_type == "public_report" else "官方来源"
+            lines.append(f"   {source_label}：{r.source_url}")
         elif r.source_type == "internal_demo":
             lines.append("   来源标识：虚构内部演示规则（非监管政策）")
         lines.append(f"   证据摘要：{r.chunk_text[:500]}")

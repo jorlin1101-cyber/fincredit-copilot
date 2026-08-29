@@ -16,10 +16,10 @@ test.describe("Loan Officer Pipeline", () => {
     });
 
     test("should display four metric cards", async ({ page }) => {
-        await expect(page.getByText("Active Loans")).toBeVisible();
-        await expect(page.getByText("In Underwriting")).toBeVisible();
-        await expect(page.getByText("Critical Urgency")).toBeVisible();
-        await expect(page.getByText("Avg Days in Stage")).toBeVisible();
+        await expect(page.getByText("在途申请")).toBeVisible();
+        await expect(page.getByText("授信审批中")).toBeVisible();
+        await expect(page.getByText("紧急事项")).toBeVisible();
+        await expect(page.getByText("平均阶段时长")).toBeVisible();
     });
 
     test("should display pipeline table with application rows", async () => {
@@ -53,7 +53,7 @@ test.describe("Loan Officer Pipeline", () => {
         const countBefore = await pipeline.tableRows.count();
 
         // Select a specific stage
-        await pipeline.stageFilter.selectOption({ label: "Application" });
+        await pipeline.stageFilter.selectOption({ label: "申请中" });
 
         // Client-side filter may reduce rows; wait for DOM to update
         await page.waitForFunction(
@@ -80,7 +80,7 @@ test.describe("Loan Officer Pipeline", () => {
         const countBefore = await pipeline.tableRows.count();
 
         // Select Critical urgency -- client-side filter
-        await pipeline.urgencyFilter.selectOption({ label: "Critical" });
+        await pipeline.urgencyFilter.selectOption({ label: "紧急" });
 
         // Client-side filter may produce 0 rows with no empty-state message,
         // so wait briefly then check the new count.
@@ -99,7 +99,7 @@ test.describe("Loan Officer Pipeline", () => {
         await expect(pipeline.tableRows.first()).toBeVisible({ timeout: 10_000 });
 
         // Click the "Loan Amount" column header to sort
-        const loanAmountHeader = pipeline.columnHeaders.filter({ hasText: "Loan Amount" });
+        const loanAmountHeader = pipeline.columnHeaders.filter({ hasText: "贷款金额" });
         await loanAmountHeader.click();
 
         // Table should still have rows after sorting

@@ -32,9 +32,9 @@ class Recommendation:
     conditions: list[str]
 
 
-_RISK_LOW = "Low"
-_RISK_MEDIUM = "Medium"
-_RISK_HIGH = "High"
+_RISK_LOW = "低"
+_RISK_MEDIUM = "中"
+_RISK_HIGH = "高"
 
 
 def compute_risk_factors(
@@ -57,32 +57,32 @@ def compute_risk_factors(
     total_debts = sum(float(f.monthly_debts or 0) for f in financials_rows)
     if total_income > 0:
         dti_pct = total_debts / total_income * 100
-        if dti_pct < 36:
+        if dti_pct <= 40:
             dti_rating = _RISK_LOW
-        elif dti_pct <= 43:
+        elif dti_pct <= 50:
             dti_rating = _RISK_MEDIUM
         else:
             dti_rating = _RISK_HIGH
         dti = {"value": round(dti_pct, 1), "rating": dti_rating}
     else:
         dti = {"value": None, "rating": None}
-        warnings.append("Missing income data -- DTI cannot be computed")
+        warnings.append("缺少收入数据，无法计算债务收入比")
 
     # --- LTV ---
     loan_amount = float(app.loan_amount or 0)
     property_value = float(app.property_value or 0)
     if property_value > 0 and loan_amount > 0:
         ltv_pct = loan_amount / property_value * 100
-        if ltv_pct < 60:
+        if ltv_pct <= 70:
             ltv_rating = _RISK_LOW
-        elif ltv_pct <= 80:
+        elif ltv_pct <= 85:
             ltv_rating = _RISK_MEDIUM
         else:
             ltv_rating = _RISK_HIGH
         ltv = {"value": round(ltv_pct, 1), "rating": ltv_rating}
     else:
         ltv = {"value": None, "rating": None}
-        warnings.append("Missing loan amount or property value -- LTV cannot be computed")
+        warnings.append("缺少贷款金额或房产价值，无法计算贷款成数")
 
     # --- Credit score ---
     # Prefer bureau score from hard-pull CreditReport over self-reported
@@ -93,16 +93,16 @@ def compute_risk_factors(
         min_score = min(credit_scores) if credit_scores else None
 
     if min_score is not None:
-        if min_score > 680:
+        if min_score > 700:
             credit_rating = _RISK_LOW
-        elif min_score >= 620:
+        elif min_score >= 600:
             credit_rating = _RISK_MEDIUM
         else:
             credit_rating = _RISK_HIGH
         credit = {"value": min_score, "rating": credit_rating}
     else:
         credit = {"value": None, "rating": None}
-        warnings.append("No credit score on file")
+        warnings.append("尚无可用的模拟征信评分")
 
     # --- Income stability ---
     emp_statuses = []
@@ -125,7 +125,7 @@ def compute_risk_factors(
         income_stability = {"value": ", ".join(emp_statuses), "rating": worst_rating}
     else:
         income_stability = {"value": None, "rating": None}
-        warnings.append("No employment status on file")
+        warnings.append("尚未填写就业状态")
 
     # --- Asset sufficiency ---
     total_assets = sum(float(f.total_assets or 0) for f in financials_rows)
@@ -141,16 +141,16 @@ def compute_risk_factors(
     else:
         asset_sufficiency = {"value": None, "rating": None}
         if total_assets == 0:
-            warnings.append("No asset data on file")
+            warnings.append("尚无可核验的资产数据")
 
     # --- Compensating factors ---
     comp_factors: list[str] = []
     if credit.get("value") and credit["value"] > 740 and dti.get("rating") == _RISK_HIGH:
-        comp_factors.append("Strong credit (>740) offsets elevated DTI")
+        comp_factors.append("模拟征信评分较高，可作为人工复核债务负担时的补充信息")
     if ltv.get("value") and ltv["value"] < 60 and credit.get("rating") == _RISK_HIGH:
-        comp_factors.append("Low LTV (<60%) offsets weak credit")
+        comp_factors.append("贷款成数较低，可作为人工复核信用风险时的补充信息")
     if asset_sufficiency.get("value") and asset_sufficiency["value"] > 50:
-        comp_factors.append("High reserves (>50% of loan amount)")
+        comp_factors.append("已录入资产相对贷款金额较充足，仍须核验资金来源")
 
     return RiskAssessment(
         dti=dti,
@@ -192,15 +192,8 @@ def compute_recommendation(
     has_financials: bool,
     doc_total: int,
 ) -> Recommendation:
-    """Derive a preliminary recommendation from risk factors.
-
-    Pure function -- no DB access.  Decision tree:
-      1. Deny triggers (hard limits)
-      2. Suspend triggers (missing data)
-      3. Conditions triggers (soft limits)
-      4. Approve (no issues)
-    """
-    recommendation = "Approve"
+    """Derive an advisory workflow recommendation with a human decision boundary."""
+    recommendation = "可提交人工决策"
     rationale: list[str] = []
     conditions_list: list[str] = []
 
@@ -208,14 +201,13 @@ def compute_recommendation(
     ltv_val = risk.ltv.get("value")
     credit_val = risk.credit.get("value")
 
-    # --- Deny triggers ---
-    deny_reasons: list[str] = []
+    review_reasons: list[str] = []
     if dti_val is not None and dti_val > 55:
-        deny_reasons.append(f"DTI ratio ({dti_val}%) exceeds maximum threshold of 55%")
-    if credit_val is not None and credit_val < 580:
-        deny_reasons.append(f"Credit score ({credit_val}) below minimum threshold of 580")
-    if ltv_val is not None and ltv_val > 97:
-        deny_reasons.append(f"LTV ratio ({ltv_val}%) exceeds maximum threshold of 97%")
+        review_reasons.append(f"债务收入比为 {dti_val}%，超过项目内部重点复核线 55%")
+    if credit_val is not None and credit_val < 600:
+        review_reasons.append(f"模拟征信评分为 {credit_val}，低于项目内部重点复核线 600")
+    if ltv_val is not None and ltv_val > 85:
+        review_reasons.append(f"贷款成数为 {ltv_val}%，须重点核验首付款比例和适用产品政策")
 
     emp_statuses = [b.get("employment_status") for b in borrowers if b.get("employment_status")]
     has_employed = any(
@@ -223,45 +215,36 @@ def compute_recommendation(
         for e in emp_statuses
     )
     if EmploymentStatus.UNEMPLOYED.value in emp_statuses and not has_employed:
-        deny_reasons.append("Primary borrower unemployed with no employed co-borrower")
+        review_reasons.append("借款人当前无稳定就业记录，须核验其他持续收入和还款来源")
 
-    if deny_reasons:
-        recommendation = "Deny"
-        rationale = deny_reasons
-
-    # --- Suspend triggers (only if not denied) ---
-    elif not has_financials:
-        recommendation = "Suspend"
-        rationale = ["Missing financial data -- cannot complete risk assessment"]
+    if not has_financials:
+        recommendation = "需补充材料"
+        rationale = ["缺少财务数据，无法完成风险辅助评估"]
     elif credit_val is None:
-        recommendation = "Suspend"
-        rationale = ["No credit score on file -- credit pull required"]
+        recommendation = "需补充材料"
+        rationale = ["缺少模拟征信评分，需先完成授权范围内的征信核验"]
     elif doc_total == 0:
-        recommendation = "Suspend"
-        rationale = ["No documents on file -- cannot verify borrower information"]
-
-    # --- Conditions triggers (only if not denied/suspended) ---
+        recommendation = "需补充材料"
+        rationale = ["尚无申请材料，无法核验借款人信息"]
     else:
-        if dti_val is not None and 43 < dti_val <= 55:
+        if dti_val is not None and 50 < dti_val <= 55:
             conditions_list.append(
-                f"DTI ({dti_val}%) exceeds QM safe harbor -- "
-                "document compensating factors or request exception"
+                f"债务收入比为 {dti_val}%，超过项目内部常规复核线，须补充还款能力说明"
             )
-        if ltv_val is not None and ltv_val > 80:
-            conditions_list.append(f"LTV ({ltv_val}%) exceeds 80% -- PMI required")
-        if credit_val is not None and 580 <= credit_val < 620:
+        if ltv_val is not None and ltv_val > 85:
+            conditions_list.append("核验首付款比例、房屋类型和申请日有效的全国及成都政策")
+        if credit_val is not None and 600 <= credit_val < 650:
             conditions_list.append(
-                f"Credit score ({credit_val}) below 620 -- "
-                "additional documentation of creditworthiness required"
+                f"模拟征信评分为 {credit_val}，须结合负债、履约记录和收入材料综合复核"
             )
         if EmploymentStatus.SELF_EMPLOYED.value in emp_statuses:
-            conditions_list.append(
-                "Self-employed borrower -- verify 2 years tax returns and business financials"
-            )
+            conditions_list.append("自雇借款人须核验纳税记录、经营流水和持续经营情况")
 
-        if conditions_list:
-            recommendation = "Approve with Conditions"
-            rationale = [f"{len(conditions_list)} condition(s) must be satisfied"]
+        if review_reasons or conditions_list:
+            recommendation = "需重点人工复核"
+            rationale = review_reasons or [f"共有 {len(conditions_list)} 项事项需要人工确认"]
+        else:
+            rationale = ["关键数据要素已具备，可提交有权审批人员作出最终决定"]
 
     return Recommendation(
         recommendation=recommendation,

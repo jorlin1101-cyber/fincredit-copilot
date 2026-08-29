@@ -55,9 +55,9 @@
       "id": "d1a2b3c4-e5f6-7890-abcd-ef1234567801",
       "username": "sarah.mitchell",
       "enabled": true,
-      "email": "sarah.mitchell@example.com",
-      "firstName": "Sarah",
-      "lastName": "Mitchell",
+      "email": "li.xiaoyu@example.com",
+      "firstName": "晓雨",
+      "lastName": "李",
       "credentials": [
         { "type": "password", "value": "demo", "temporary": false }
       ],
@@ -67,9 +67,9 @@
       "id": "d1a2b3c4-e5f6-7890-abcd-ef1234567802",
       "username": "james.torres",
       "enabled": true,
-      "email": "james.torres@example.com",
-      "firstName": "James",
-      "lastName": "Torres",
+      "email": "wang.chen@example.com",
+      "firstName": "晨",
+      "lastName": "王",
       "credentials": [
         { "type": "password", "value": "demo", "temporary": false }
       ],
@@ -79,9 +79,9 @@
       "id": "d1a2b3c4-e5f6-7890-abcd-ef1234567803",
       "username": "maria.chen",
       "enabled": true,
-      "email": "maria.chen@example.com",
-      "firstName": "Maria",
-      "lastName": "Chen",
+      "email": "chen.jing@example.com",
+      "firstName": "静",
+      "lastName": "陈",
       "credentials": [
         { "type": "password", "value": "demo", "temporary": false }
       ],
@@ -91,9 +91,9 @@
       "id": "d1a2b3c4-e5f6-7890-abcd-ef1234567804",
       "username": "david.park",
       "enabled": true,
-      "email": "david.park@example.com",
-      "firstName": "David",
-      "lastName": "Park",
+      "email": "zhou.mingyuan@example.com",
+      "firstName": "明远",
+      "lastName": "周",
       "credentials": [
         { "type": "password", "value": "demo", "temporary": false }
       ],
@@ -104,8 +104,8 @@
       "username": "admin",
       "enabled": true,
       "email": "admin@example.com",
-      "firstName": "Admin",
-      "lastName": "User",
+      "firstName": "系统",
+      "lastName": "管理员",
       "credentials": [
         { "type": "password", "value": "admin", "temporary": false }
       ],
@@ -115,9 +115,9 @@
       "id": "d1a2b3c4-e5f6-7890-abcd-ef1234567807",
       "username": "sarah.patel",
       "enabled": true,
-      "email": "sarah.patel@example.com",
-      "firstName": "Sarah",
-      "lastName": "Patel",
+      "email": "liu.xin@example.com",
+      "firstName": "欣",
+      "lastName": "刘",
       "credentials": [
         { "type": "password", "value": "demo", "temporary": false }
       ],
@@ -127,9 +127,9 @@
       "id": "d1a2b3c4-e5f6-7890-abcd-ef1234567808",
       "username": "marcus.williams",
       "enabled": true,
-      "email": "marcus.williams@example.com",
-      "firstName": "Marcus",
-      "lastName": "Williams",
+      "email": "zhao.kai@example.com",
+      "firstName": "凯",
+      "lastName": "赵",
       "credentials": [
         { "type": "password", "value": "demo", "temporary": false }
       ],

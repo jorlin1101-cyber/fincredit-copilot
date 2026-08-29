@@ -107,6 +107,7 @@ class PolicySourceType(str, enum.Enum):
     """Provenance category for policy content."""
 
     OFFICIAL = "official"
+    PUBLIC_REPORT = "public_report"
     INTERNAL_DEMO = "internal_demo"
 
 

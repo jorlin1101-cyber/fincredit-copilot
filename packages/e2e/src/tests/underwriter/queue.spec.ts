@@ -30,7 +30,7 @@ test.describe("Underwriter Queue", () => {
     });
 
     test("should display sortable column headers", async () => {
-        const expectedHeaders = ["Borrower", "Loan Amount", "Assigned LO", "Days in Queue", "Rate Lock", "Urgency"];
+        const expectedHeaders = ["借款人", "贷款金额", "客户经理", "队列时长", "利率锁定", "优先级"];
         for (const header of expectedHeaders) {
             await expect(queue.columnHeaders.filter({ hasText: header })).toBeVisible();
         }
@@ -57,7 +57,7 @@ test.describe("Underwriter Queue", () => {
         await expect(queue.tableRows.first()).toBeVisible({ timeout: 10_000 });
         const countBefore = await queue.tableRows.count();
 
-        await queue.urgencyFilter.selectOption({ label: "Critical" });
+        await queue.urgencyFilter.selectOption({ label: "紧急" });
 
         await page.waitForFunction(
             (before) => document.querySelectorAll("tbody tr").length <= before,
@@ -72,7 +72,7 @@ test.describe("Underwriter Queue", () => {
         await expect(queue.tableRows.first()).toBeVisible({ timeout: 10_000 });
 
         // Click the "Loan Amount" column header to sort
-        const loanAmountHeader = queue.columnHeaders.filter({ hasText: "Loan Amount" });
+        const loanAmountHeader = queue.columnHeaders.filter({ hasText: "贷款金额" });
         await loanAmountHeader.click();
 
         // Table should still have rows after sorting

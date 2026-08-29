@@ -17,7 +17,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from ..middleware.pii import mask_ssn
+from ..middleware.pii import mask_id_number
 from ..schemas.auth import UserContext
 from ..services.application import create_application
 from ..services.intake_validation import validate_field
@@ -121,7 +121,9 @@ REQUIRED_FIELDS: dict[str, tuple[str, str, Callable]] = {
     "first_name": ("borrower", "first_name", _identity),
     "last_name": ("borrower", "last_name", _identity),
     "email": ("borrower", "email", _identity),
-    "ssn": ("borrower", "ssn", _identity),
+    # The persisted column keeps its upstream name for migration compatibility;
+    # all user-facing collection uses the China-scenario ``id_number`` field.
+    "id_number": ("borrower", "ssn", _identity),
     "date_of_birth": ("borrower", "dob", _date),
     "employment_status": ("borrower", "employment_status", _employment_status),
     # Financial fields
@@ -193,6 +195,12 @@ async def update_application_fields(
         dict with keys: updated (list of field names), errors (dict of field->msg),
         remaining (list of still-empty field names)
     """
+    # Accept the upstream field name without exposing it back to the user.
+    fields = {
+        ("id_number" if field_name == "ssn" else field_name): value
+        for field_name, value in fields.items()
+    }
+
     # Load application (with scope check)
     stmt = (
         select(Application)
@@ -203,11 +211,11 @@ async def update_application_fields(
     result = await session.execute(stmt)
     app = result.unique().scalar_one_or_none()
     if app is None:
-        return {"updated": [], "errors": {"_": "Application not found"}, "remaining": []}
+        return {"updated": [], "errors": {"_": "未找到该申请"}, "remaining": []}
 
     borrower = await _get_borrower_for_app(session, application_id, user)
     if borrower is None:
-        return {"updated": [], "errors": {"_": "Borrower not found"}, "remaining": []}
+        return {"updated": [], "errors": {"_": "未找到主借款人资料"}, "remaining": []}
 
     financials = await _get_or_create_financials(session, application_id, borrower.id)
 
@@ -217,7 +225,7 @@ async def update_application_fields(
 
     for field_name, raw_value in fields.items():
         if field_name not in REQUIRED_FIELDS:
-            errors[field_name] = f"Unknown field: {field_name}"
+            errors[field_name] = f"无法识别字段：{field_name}"
             continue
 
         is_valid, error_msg, normalized = validate_field(field_name, str(raw_value))
@@ -309,27 +317,27 @@ async def get_remaining_fields(
 
 # Display labels and section groupings for the summary view.
 _FIELD_SECTIONS: dict[str, list[tuple[str, str]]] = {
-    "Personal Information": [
-        ("first_name", "First Name"),
-        ("last_name", "Last Name"),
-        ("email", "Email"),
-        ("ssn", "SSN"),
-        ("date_of_birth", "Date of Birth"),
-        ("employment_status", "Employment Status"),
+    "个人资料": [
+        ("first_name", "名"),
+        ("last_name", "姓"),
+        ("email", "电子邮箱"),
+        ("id_number", "居民身份证号码"),
+        ("date_of_birth", "出生日期"),
+        ("employment_status", "就业状态"),
     ],
-    "Property Information": [
-        ("property_address", "Property Address"),
-        ("property_value", "Property Value"),
+    "房产信息": [
+        ("property_address", "房产地址"),
+        ("property_value", "房产价值"),
     ],
-    "Financial Information": [
-        ("gross_monthly_income", "Monthly Income"),
-        ("monthly_debts", "Monthly Debts"),
-        ("total_assets", "Total Assets"),
-        ("credit_score", "Credit Score"),
+    "财务情况": [
+        ("gross_monthly_income", "家庭月收入"),
+        ("monthly_debts", "每月负债"),
+        ("total_assets", "资产合计"),
+        ("credit_score", "模拟征信评分"),
     ],
-    "Loan Details": [
-        ("loan_type", "Loan Type"),
-        ("loan_amount", "Loan Amount"),
+    "贷款信息": [
+        ("loan_type", "贷款类型"),
+        ("loan_amount", "贷款金额"),
     ],
 }
 
@@ -341,11 +349,11 @@ def _format_value(field_name: str, raw) -> str | None:
     if isinstance(raw, str) and not raw.strip():
         return None
 
-    if field_name == "ssn":
-        return mask_ssn(str(raw))
+    if field_name == "id_number":
+        return mask_id_number(str(raw))
     if field_name == "date_of_birth":
         if hasattr(raw, "strftime"):
-            return raw.strftime("%Y-%m-%d")
+            return raw.strftime("%Y年%m月%d日")
         return str(raw)
     if field_name in (
         "loan_amount",
@@ -354,11 +362,27 @@ def _format_value(field_name: str, raw) -> str | None:
         "monthly_debts",
         "total_assets",
     ):
-        return f"${float(raw):,.2f}"
+        return f"¥{float(raw):,.2f}"
     if field_name == "employment_status" and hasattr(raw, "value"):
-        return raw.value.replace("_", " ").title()
+        labels = {
+            "w2_employee": "工薪就业",
+            "self_employed": "自主经营",
+            "retired": "退休",
+            "unemployed": "待业",
+            "other": "其他",
+        }
+        return labels.get(raw.value, raw.value)
     if field_name == "loan_type" and hasattr(raw, "value"):
-        return raw.value.replace("_", " ").title()
+        labels = {
+            "conventional_30": "30年期商业性个人住房贷款",
+            "conventional_15": "15年期商业性个人住房贷款",
+            "fha": "住房公积金个人住房贷款",
+            "va": "商业贷款与公积金组合贷款",
+            "jumbo": "大额商业性个人住房贷款",
+            "usda": "县域住房贷款（演示产品）",
+            "arm": "LPR浮动利率个人住房贷款",
+        }
+        return labels.get(raw.value, raw.value)
     return str(raw)
 
 

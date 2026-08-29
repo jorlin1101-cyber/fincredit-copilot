@@ -19,7 +19,7 @@ secrets:
   # VISION_MODEL: ""
   # VISION_BASE_URL: ""
   # VISION_API_KEY: ""
-  COMPANY_NAME: ""                     # e.g. "Acme FinTech Company"
+  COMPANY_NAME: ""                     # 例如“融安住房金融（虚构演示机构）”
   AUTH_DISABLED: "true"
   MLFLOW_TRACKING_URI: ""             # e.g. https://mlflow.redhat-ods-applications.svc.cluster.local:8443
   MLFLOW_EXPERIMENT_NAME: ""          # e.g. "mortgage-ai"

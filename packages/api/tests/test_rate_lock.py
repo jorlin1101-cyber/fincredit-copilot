@@ -231,7 +231,7 @@ async def test_tool_active_lock(mock_service, mock_session_cls):
 
     result = await rate_lock_status.ainvoke({"application_id": 1, "state": _state()})
 
-    assert "Active" in result
+    assert "状态：有效" in result
     assert "6.875%" in result
     assert "25" in result
 
@@ -250,7 +250,7 @@ async def test_tool_no_lock(mock_service, mock_session_cls):
 
     result = await rate_lock_status.ainvoke({"application_id": 1, "state": _state()})
 
-    assert "does not have a rate lock" in result
+    assert "没有已锁定的执行利率" in result
 
 
 @patch("src.agents.borrower_tools.SessionLocal")
@@ -272,8 +272,8 @@ async def test_tool_expired_lock(mock_service, mock_session_cls):
 
     result = await rate_lock_status.ainvoke({"application_id": 1, "state": _state()})
 
-    assert "Expired" in result
-    assert "expired" in result.lower()
+    assert "状态：已到期" in result
+    assert "原利率锁定已到期" in result
 
 
 @patch("src.agents.borrower_tools.SessionLocal")
@@ -295,8 +295,8 @@ async def test_tool_urgent_lock(mock_service, mock_session_cls):
 
     result = await rate_lock_status.ainvoke({"application_id": 1, "state": _state()})
 
-    assert "Urgent" in result
-    assert "2 days" in result
+    assert "提示" in result
+    assert "2 天" in result
 
 
 @patch("src.agents.borrower_tools.SessionLocal")
@@ -310,4 +310,4 @@ async def test_tool_not_found(mock_service, mock_session_cls):
 
     result = await rate_lock_status.ainvoke({"application_id": 999, "state": _state()})
 
-    assert "not found" in result
+    assert "未找到" in result

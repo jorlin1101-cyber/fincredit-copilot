@@ -28,6 +28,25 @@ from ..services.audit import write_audit_event
 
 logger = logging.getLogger(__name__)
 
+_STAGE_LABELS = {
+    "underwriting": "授信审批",
+    "conditional_approval": "附条件通过",
+}
+_STATUS_LABELS = {
+    "open": "待处理",
+    "responded": "已响应",
+    "under_review": "复核中",
+    "cleared": "已完成",
+    "waived": "已豁免",
+    "escalated": "已升级",
+}
+_SEVERITY_LABELS = {
+    "prior_to_approval": "审批前完成",
+    "prior_to_docs": "合同文件生成前完成",
+    "prior_to_closing": "签约前完成",
+    "prior_to_funding": "放款前完成",
+}
+
 
 def parse_quality_flags(raw: str | None) -> list[str]:
     """Parse quality_flags stored as JSON array or plain CSV string."""
@@ -340,9 +359,8 @@ async def issue_condition(
         stage_val = app.stage.value if app.stage else "unknown"
         return {
             "error": (
-                f"Conditions can only be issued during underwriting or conditional "
-                f"approval. Application #{application_id} is in "
-                f"{stage_val.replace('_', ' ').title()}."
+                "仅可在“授信审批”或“附条件通过”阶段新增审批条件。"
+                f"申请 #{application_id} 当前阶段为“{_STAGE_LABELS.get(stage_val, stage_val)}”。"
             )
         }
 
@@ -402,8 +420,9 @@ async def review_condition(
     if condition.status != ConditionStatus.RESPONDED:
         return {
             "error": (
-                f"Condition #{condition_id} is '{condition.status.value}' -- "
-                f"only RESPONDED conditions can be moved to review."
+                f"审批条件 #{condition_id} 当前状态为“"
+                f"{_STATUS_LABELS.get(condition.status.value, condition.status.value)}”，"
+                "只有“已响应”的条件可以转入复核。"
             )
         }
 
@@ -449,8 +468,9 @@ async def clear_condition(
     if condition.status not in allowed:
         return {
             "error": (
-                f"Condition #{condition_id} is '{condition.status.value}' -- "
-                f"only RESPONDED or UNDER_REVIEW conditions can be cleared."
+                f"审批条件 #{condition_id} 当前状态为“"
+                f"{_STATUS_LABELS.get(condition.status.value, condition.status.value)}”，"
+                "只有“已响应”或“复核中”的条件可以标记为完成。"
             )
         }
 
@@ -498,16 +518,17 @@ async def waive_condition(
     if condition.status in _TERMINAL_STATUSES:
         return {
             "error": (
-                f"Condition #{condition_id} is already '{condition.status.value}' -- "
-                f"terminal conditions cannot be waived."
+                f"审批条件 #{condition_id} 已处于终态“"
+                f"{_STATUS_LABELS.get(condition.status.value, condition.status.value)}”，不能再豁免。"
             )
         }
 
     if condition.severity not in _WAIVABLE_SEVERITIES:
         return {
             "error": (
-                f"Condition #{condition_id} has severity '{condition.severity.value}' -- "
-                f"only PRIOR_TO_CLOSING and PRIOR_TO_FUNDING conditions can be waived."
+                f"审批条件 #{condition_id} 的完成节点为“"
+                f"{_SEVERITY_LABELS.get(condition.severity.value, condition.severity.value)}”，"
+                "仅“签约前完成”或“放款前完成”的条件可由有权人员豁免。"
             )
         }
 
@@ -562,8 +583,9 @@ async def return_condition(
     if condition.status != ConditionStatus.UNDER_REVIEW:
         return {
             "error": (
-                f"Condition #{condition_id} is '{condition.status.value}' -- "
-                f"only UNDER_REVIEW conditions can be returned."
+                f"审批条件 #{condition_id} 当前状态为“"
+                f"{_STATUS_LABELS.get(condition.status.value, condition.status.value)}”，"
+                "只有“复核中”的条件可以退回补充。"
             )
         }
 
@@ -571,7 +593,7 @@ async def return_condition(
     condition.iteration_count = (condition.iteration_count or 0) + 1
 
     # Append return note to response_text
-    return_note = f"[Return #{condition.iteration_count}]: {note}"
+    return_note = f"[第 {condition.iteration_count} 次退回]：{note}"
     if condition.response_text:
         condition.response_text = f"{condition.response_text}\n{return_note}"
     else:

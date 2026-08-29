@@ -26,8 +26,11 @@ class PolicyMetadata(BaseModel):
 
     @model_validator(mode="after")
     def validate_provenance_and_dates(self) -> "PolicyMetadata":
-        if self.source_type == PolicySourceType.OFFICIAL and not self.source_url:
-            raise ValueError("official policy metadata requires source_url")
+        if self.source_type in {
+            PolicySourceType.OFFICIAL,
+            PolicySourceType.PUBLIC_REPORT,
+        } and not self.source_url:
+            raise ValueError("verifiable policy metadata requires source_url")
         if self.effective_date and self.expires_at and self.expires_at < self.effective_date:
             raise ValueError("expires_at must not be earlier than effective_date")
         if self.published_date and self.retrieved_date < self.published_date:

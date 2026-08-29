@@ -63,8 +63,8 @@ class TestUwIssueCondition:
                 "state": _state(),
             }
         )
-        assert "Condition #42" in result
-        assert "prior_to_docs" in result
+        assert "审批条件 #42" in result
+        assert "合同文件生成前完成" in result
 
     @pytest.mark.asyncio
     @patch("src.agents.condition_tools.issue_condition", new_callable=AsyncMock)
@@ -82,7 +82,7 @@ class TestUwIssueCondition:
                 "state": _state(),
             }
         )
-        assert "not found" in result
+        assert "未找到" in result
 
     @pytest.mark.asyncio
     async def test_invalid_severity(self):
@@ -94,7 +94,7 @@ class TestUwIssueCondition:
                 "state": _state(),
             }
         )
-        assert "Invalid severity" in result
+        assert "无法识别完成节点" in result
 
     @pytest.mark.asyncio
     @patch("src.agents.condition_tools.issue_condition", new_callable=AsyncMock)
@@ -120,7 +120,7 @@ class TestUwIssueCondition:
                 "state": _state(),
             }
         )
-        assert "Condition #43" in result
+        assert "审批条件 #43" in result
         assert "2026-03-15" in result
 
     @pytest.mark.asyncio
@@ -145,7 +145,7 @@ class TestUwIssueCondition:
                 "state": _state(),
             }
         )
-        assert "prior_to_docs" in result
+        assert "合同文件生成前完成" in result
         # Verify the service was called with PRIOR_TO_DOCS
         from db.enums import ConditionSeverity
 
@@ -179,7 +179,7 @@ class TestUwReviewCondition:
                 "state": _state(),
             }
         )
-        assert "under review" in result
+        assert "已转入复核" in result
 
     @pytest.mark.asyncio
     @patch("src.agents.condition_tools.review_condition", new_callable=AsyncMock)
@@ -197,14 +197,14 @@ class TestUwReviewCondition:
                 "state": _state(),
             }
         )
-        assert "not found" in result
+        assert "未找到" in result
 
     @pytest.mark.asyncio
     @patch("src.agents.condition_tools.review_condition", new_callable=AsyncMock)
     @patch("src.agents.condition_tools.SessionLocal")
     async def test_wrong_status(self, mock_session_cls, mock_service):
         mock_service.return_value = {
-            "error": "Condition #5 is 'open' -- only RESPONDED conditions can be moved to review."
+            "error": "审批条件 #5 当前状态为“待处理”，只有“已响应”的条件可以转入复核。"
         }
         session = AsyncMock()
         mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=session)
@@ -217,7 +217,7 @@ class TestUwReviewCondition:
                 "state": _state(),
             }
         )
-        assert "RESPONDED" in result
+        assert "已响应" in result
 
 
 # ---------------------------------------------------------------------------
@@ -259,8 +259,8 @@ class TestUwClearCondition:
                 "state": _state(),
             }
         )
-        assert "Condition #5 cleared" in result
-        assert "Remaining" in result
+        assert "审批条件 #5 已标记为完成" in result
+        assert "当前剩余" in result
 
     @pytest.mark.asyncio
     @patch("src.agents.condition_tools.clear_condition", new_callable=AsyncMock)
@@ -278,14 +278,14 @@ class TestUwClearCondition:
                 "state": _state(),
             }
         )
-        assert "not found" in result
+        assert "未找到" in result
 
     @pytest.mark.asyncio
     @patch("src.agents.condition_tools.clear_condition", new_callable=AsyncMock)
     @patch("src.agents.condition_tools.SessionLocal")
     async def test_wrong_status(self, mock_session_cls, mock_clear):
         mock_clear.return_value = {
-            "error": "Condition #5 is 'open' -- only RESPONDED or UNDER_REVIEW conditions can be cleared."
+            "error": "审批条件 #5 当前状态为“待处理”，只有“已响应”或“复核中”的条件可以标记为完成。"
         }
         session = AsyncMock()
         mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=session)
@@ -298,7 +298,7 @@ class TestUwClearCondition:
                 "state": _state(),
             }
         )
-        assert "RESPONDED" in result
+        assert "已响应" in result
 
 
 # ---------------------------------------------------------------------------
@@ -330,7 +330,7 @@ class TestUwWaiveCondition:
                 "state": _state(),
             }
         )
-        assert "Condition #7 waived" in result
+        assert "审批条件 #7 已由有权人员豁免" in result
         assert "Seller providing title insurance" in result
 
     @pytest.mark.asyncio
@@ -350,17 +350,14 @@ class TestUwWaiveCondition:
                 "state": _state(),
             }
         )
-        assert "not found" in result
+        assert "未找到" in result
 
     @pytest.mark.asyncio
     @patch("src.agents.condition_tools.waive_condition", new_callable=AsyncMock)
     @patch("src.agents.condition_tools.SessionLocal")
     async def test_blocked_severity(self, mock_session_cls, mock_service):
         mock_service.return_value = {
-            "error": (
-                "Condition #5 has severity 'prior_to_approval' -- "
-                "only PRIOR_TO_CLOSING and PRIOR_TO_FUNDING conditions can be waived."
-            )
+            "error": "审批条件 #5 的完成节点为“审批前完成”，仅“签约前完成”或“放款前完成”的条件可由有权人员豁免。"
         }
         session = AsyncMock()
         mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=session)
@@ -374,7 +371,7 @@ class TestUwWaiveCondition:
                 "state": _state(),
             }
         )
-        assert "PRIOR_TO_CLOSING" in result
+        assert "签约前完成" in result
 
     @pytest.mark.asyncio
     @patch("src.agents.condition_tools.waive_condition", new_callable=AsyncMock)
@@ -431,8 +428,8 @@ class TestUwReturnCondition:
                 "state": _state(),
             }
         )
-        assert "returned" in result
-        assert "attempt 2" in result
+        assert "退回补充" in result
+        assert "第 2 次" in result
         assert "Missing page 2" in result
 
     @pytest.mark.asyncio
@@ -452,14 +449,14 @@ class TestUwReturnCondition:
                 "state": _state(),
             }
         )
-        assert "not found" in result
+        assert "未找到" in result
 
     @pytest.mark.asyncio
     @patch("src.agents.condition_tools.return_condition", new_callable=AsyncMock)
     @patch("src.agents.condition_tools.SessionLocal")
     async def test_wrong_status(self, mock_session_cls, mock_service):
         mock_service.return_value = {
-            "error": "Condition #5 is 'open' -- only UNDER_REVIEW conditions can be returned."
+            "error": "审批条件 #5 当前状态为“待处理”，只有“复核中”的条件可以退回补充。"
         }
         session = AsyncMock()
         mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=session)
@@ -473,7 +470,7 @@ class TestUwReturnCondition:
                 "state": _state(),
             }
         )
-        assert "UNDER_REVIEW" in result
+        assert "复核中" in result
 
 
 # ---------------------------------------------------------------------------
@@ -507,10 +504,10 @@ class TestUwConditionSummary:
                 "state": _state(),
             }
         )
-        assert "5 total" in result
-        assert "Open: 2" in result
-        assert "Resolved: 2" in result
-        assert "Unresolved: 3" in result
+        assert "共 5 项" in result
+        assert "待处理：2 项" in result
+        assert "已解决：2 项" in result
+        assert "未解决：3 项" in result
 
     @pytest.mark.asyncio
     @patch("src.agents.condition_tools.get_condition_summary", new_callable=AsyncMock)
@@ -537,7 +534,7 @@ class TestUwConditionSummary:
                 "state": _state(),
             }
         )
-        assert "no conditions" in result
+        assert "没有审批条件" in result
 
     @pytest.mark.asyncio
     @patch("src.agents.condition_tools.get_condition_summary", new_callable=AsyncMock)
@@ -554,4 +551,4 @@ class TestUwConditionSummary:
                 "state": _state(),
             }
         )
-        assert "not found" in result
+        assert "未找到" in result

@@ -165,4 +165,4 @@ def test_borrower_ws_endpoint_rejects_invalid_json(client):
         ws.send_text("not json")
         resp = ws.receive_json()
         assert resp["type"] == "error"
-        assert "Invalid JSON" in resp["content"]
+        assert "消息格式无效" in resp["content"]

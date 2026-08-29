@@ -97,7 +97,7 @@ async def test_rate_lock_expiring_in_2_days_is_critical():
     result = await compute_urgency(session, [app], now=NOW)
 
     assert result[101].level == UrgencyLevel.CRITICAL
-    assert any("Rate lock expires" in f for f in result[101].factors)
+    assert any("利率锁定将在" in f for f in result[101].factors)
 
 
 @pytest.mark.asyncio
@@ -109,7 +109,7 @@ async def test_rate_lock_expiring_in_5_days_is_high():
     result = await compute_urgency(session, [app], now=NOW)
 
     assert result[101].level == UrgencyLevel.HIGH
-    assert any("Rate lock expires" in f for f in result[101].factors)
+    assert any("利率锁定将在" in f for f in result[101].factors)
 
 
 @pytest.mark.asyncio
@@ -150,7 +150,7 @@ async def test_stage_overdue_by_8_days_is_critical():
     result = await compute_urgency(session, [app], now=NOW)
 
     assert result[101].level == UrgencyLevel.CRITICAL
-    assert any("overdue" in f for f in result[101].factors)
+    assert any("超过内部目标时长" in f for f in result[101].factors)
 
 
 @pytest.mark.asyncio
@@ -163,7 +163,7 @@ async def test_stage_overdue_by_5_days_is_high():
     result = await compute_urgency(session, [app], now=NOW)
 
     assert result[101].level == UrgencyLevel.HIGH
-    assert any("overdue" in f for f in result[101].factors)
+    assert any("超过内部目标时长" in f for f in result[101].factors)
 
 
 @pytest.mark.asyncio
@@ -177,7 +177,7 @@ async def test_stage_at_80_percent_is_medium():
     result = await compute_urgency(session, [app], now=NOW)
 
     assert result[101].level == UrgencyLevel.MEDIUM
-    assert any("expected days" in f for f in result[101].factors)
+    assert any("内部目标为" in f for f in result[101].factors)
 
 
 # ---------------------------------------------------------------------------
@@ -229,7 +229,7 @@ async def test_pending_doc_over_48_hours_is_high():
     result = await compute_urgency(session, [app], now=NOW)
 
     assert result[101].level == UrgencyLevel.HIGH
-    assert any("Document request pending" in f for f in result[101].factors)
+    assert any("补充材料请求已等待" in f for f in result[101].factors)
 
 
 @pytest.mark.asyncio
@@ -260,7 +260,7 @@ async def test_open_conditions_with_closing_lock_is_critical():
     result = await compute_urgency(session, [app], now=NOW)
 
     assert result[101].level == UrgencyLevel.CRITICAL
-    assert any("open condition" in f for f in result[101].factors)
+    assert any("审批条件待处理" in f for f in result[101].factors)
 
 
 # ---------------------------------------------------------------------------

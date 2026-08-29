@@ -26,10 +26,12 @@ def client():
 def test_product_info_tool_returns_all_products():
     """product_info tool should return all 7 mortgage products."""
     result = product_info.invoke({})
-    assert "30-Year Fixed Conventional" in result
-    assert "FHA Loan" in result
-    assert "VA Loan" in result
-    assert "Adjustable Rate Mortgage" in result
+    assert "30年期商业性个人住房贷款" in result
+    assert "住房公积金个人住房贷款" in result
+    assert "商业贷款与公积金组合贷款" in result
+    assert "2026-08-20" in result
+    assert "chinamoney.com.cn" in result
+    assert "LPR浮动利率个人住房贷款" in result
     # Should have 7 products (7 bullet points)
     assert result.count("- **") == 7
 
@@ -72,7 +74,7 @@ def test_websocket_rejects_invalid_json(client):
         ws.send_text("not json")
         resp = ws.receive_json()
         assert resp["type"] == "error"
-        assert "Invalid JSON" in resp["content"]
+        assert "消息格式无效" in resp["content"]
 
 
 def test_websocket_rejects_missing_content(client):

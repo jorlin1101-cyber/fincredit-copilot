@@ -22,3 +22,7 @@ class ProductInfo(BaseModel):
     min_down_payment_pct: float
     typical_rate: float
     eligibility: ProductEligibility
+    rate_note: str
+    source_name: str
+    source_url: str
+    data_as_of: str

@@ -134,15 +134,15 @@ def _make_completeness(
     if requirements is None:
         requirements = [
             DocumentRequirement(
-                doc_type=DocumentType.W2,
-                label="W-2 Form",
+                doc_type=DocumentType.INCOME_CERTIFICATE,
+                label="收入证明",
                 is_provided=True,
                 document_id=1,
                 status=DocumentStatus.PROCESSING_COMPLETE,
             ),
             DocumentRequirement(
                 doc_type=DocumentType.BANK_STATEMENT,
-                label="Bank Statement",
+                label="银行流水",
                 is_provided=True,
                 document_id=2,
                 status=DocumentStatus.PROCESSING_COMPLETE,
@@ -227,8 +227,8 @@ class TestCheckUnderwritingReadiness:
 
         assert result["is_ready"] is False
         assert len(result["blockers"]) == 2
-        assert any("Missing" in b for b in result["blockers"])
-        assert any("processing" in b.lower() for b in result["blockers"])
+        assert any("缺少必需材料" in b for b in result["blockers"])
+        assert any("仍在处理中" in b for b in result["blockers"])
 
     @pytest.mark.asyncio
     async def test_wrong_stage_blocks_submission(self):
@@ -253,4 +253,4 @@ class TestCheckUnderwritingReadiness:
             result = await check_underwriting_readiness(session, _LO_USER, 101)
 
         assert result["is_ready"] is False
-        assert any("underwriting" in b for b in result["blockers"])
+        assert any("须在“申请中”阶段" in b for b in result["blockers"])

@@ -59,7 +59,7 @@ async def model_monitoring_latency(
     """Model latency percentiles (p50, p95, p99) with trend and per-model breakdown."""
     summary = await _safe_summary(hours, model)
     if summary.latency is None:
-        raise HTTPException(status_code=503, detail="LangFuse not configured")
+        raise HTTPException(status_code=503, detail="模型监控服务尚未配置")
     return summary.latency
 
 
@@ -75,7 +75,7 @@ async def model_monitoring_tokens(
     """Token usage totals with trend and per-model breakdown."""
     summary = await _safe_summary(hours, model)
     if summary.token_usage is None:
-        raise HTTPException(status_code=503, detail="LangFuse not configured")
+        raise HTTPException(status_code=503, detail="模型监控服务尚未配置")
     return summary.token_usage
 
 
@@ -91,7 +91,7 @@ async def model_monitoring_errors(
     """Error rate metrics with top error types and trend."""
     summary = await _safe_summary(hours, model)
     if summary.errors is None:
-        raise HTTPException(status_code=503, detail="LangFuse not configured")
+        raise HTTPException(status_code=503, detail="模型监控服务尚未配置")
     return summary.errors
 
 
@@ -107,5 +107,5 @@ async def model_monitoring_routing(
     """Model routing distribution across all models."""
     summary = await _safe_summary(hours, model)
     if summary.routing is None:
-        raise HTTPException(status_code=503, detail="LangFuse not configured")
+        raise HTTPException(status_code=503, detail="模型监控服务尚未配置")
     return summary.routing

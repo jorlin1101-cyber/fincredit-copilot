@@ -32,12 +32,12 @@ async def health(request):  # noqa: ARG001
 
 
 # Threshold constants (mirrored from risk_tools.py for tool descriptions)
-_DTI_LOW = 36
-_DTI_MEDIUM = 43
-_LTV_LOW = 60
-_LTV_MEDIUM = 80
-_CREDIT_LOW = 680
-_CREDIT_MEDIUM = 620
+_DTI_LOW = 40
+_DTI_MEDIUM = 50
+_LTV_LOW = 70
+_LTV_MEDIUM = 85
+_CREDIT_LOW = 700
+_CREDIT_MEDIUM = 600
 _ASSET_LOW = 20
 _ASSET_MEDIUM = 10
 
@@ -47,27 +47,27 @@ def calculate_dti(monthly_income: float, monthly_debts: float) -> str:
     """Calculate Debt-to-Income ratio and risk rating.
 
     DTI = monthly_debts / monthly_income * 100.
-    Ratings: <36% Low, 36-43% Medium, >43% High.
+    Internal demo bands: <40% low, 40-50% medium, >50% high.
     """
     if monthly_income <= 0:
         return json.dumps(
             {
                 "value": None,
                 "rating": None,
-                "warning": "Missing or zero income -- DTI cannot be computed",
+                "warning": "缺少有效收入数据，无法计算债务收入比",
             }
         )
 
     dti_pct = round(monthly_debts / monthly_income * 100, 1)
     if dti_pct < _DTI_LOW:
         rating = _RISK_LOW
-        guidance = "Well within conventional guidelines"
+        guidance = "处于项目内部常规复核区间"
     elif dti_pct <= _DTI_MEDIUM:
         rating = _RISK_MEDIUM
-        guidance = "Within QM safe harbor limits"
+        guidance = "处于项目内部关注区间，须结合收入材料综合核验"
     else:
         rating = _RISK_HIGH
-        guidance = "Exceeds QM safe harbor; requires compensating factors or exception"
+        guidance = "超过项目内部重点复核线，须由有权人员重点复核还款能力"
 
     return json.dumps({"value": dti_pct, "rating": rating, "guidance": guidance})
 
@@ -77,14 +77,14 @@ def calculate_ltv(loan_amount: float, property_value: float) -> str:
     """Calculate Loan-to-Value ratio and risk rating.
 
     LTV = loan_amount / property_value * 100.
-    Ratings: <60% Low, 60-80% Medium, >80% High.
+    Internal demo bands: <70% low, 70-85% medium, >85% high.
     """
     if property_value <= 0 or loan_amount <= 0:
         return json.dumps(
             {
                 "value": None,
                 "rating": None,
-                "warning": "Missing loan amount or property value -- LTV cannot be computed",
+                "warning": "缺少贷款金额或房产价值，无法计算贷款成数",
             }
         )
 
@@ -97,8 +97,8 @@ def calculate_ltv(loan_amount: float, property_value: float) -> str:
         rating = _RISK_HIGH
 
     result = {"value": ltv_pct, "rating": rating}
-    if ltv_pct > 80:
-        result["note"] = "PMI likely required"
+    if ltv_pct > 85:
+        result["note"] = "须核验首付款比例、房屋类型以及申请日有效的全国与成都政策"
     return json.dumps(result)
 
 
@@ -106,7 +106,7 @@ def calculate_ltv(loan_amount: float, property_value: float) -> str:
 def evaluate_credit_risk(credit_score: int, source: str = "self_reported") -> str:
     """Evaluate credit risk from a credit score.
 
-    Ratings: >680 Low, 620-680 Medium, <620 High.
+    Internal demo bands: >700 low, 600-700 medium, <600 high.
     Source should be 'bureau_hard_pull' or 'self_reported'.
     """
     if credit_score <= 0:
@@ -114,7 +114,7 @@ def evaluate_credit_risk(credit_score: int, source: str = "self_reported") -> st
             {
                 "value": None,
                 "rating": None,
-                "warning": "No credit score available",
+                "warning": "尚无可用的模拟征信评分",
             }
         )
 
@@ -146,7 +146,7 @@ def assess_income_stability(employment_statuses: list[str]) -> str:
             {
                 "value": None,
                 "rating": None,
-                "warning": "No employment status on file",
+                "warning": "尚未填写就业状态",
             }
         )
 
@@ -178,7 +178,7 @@ def assess_asset_sufficiency(total_assets: float, loan_amount: float) -> str:
     Ratings: >20% Low, 10-20% Medium, <10% High.
     """
     if loan_amount <= 0 or total_assets <= 0:
-        warning = "No asset data on file" if total_assets <= 0 else "Missing loan amount"
+        warning = "尚无可核验的资产数据" if total_assets <= 0 else "缺少贷款金额"
         return json.dumps({"value": None, "rating": None, "warning": warning})
 
     asset_ratio = round(total_assets / loan_amount * 100, 1)
@@ -213,31 +213,31 @@ def generate_risk_recommendation(
 
     Takes the outputs of the 5 individual risk tools, an optional ML model
     prediction, and context flags.
-    Returns Approve, Approve with Conditions, Suspend, or Deny.
+    Returns a workflow suggestion; it never renders a credit decision.
     """
     # Build compensating factors
     compensating_factors: list[str] = []
     if credit_score is not None and credit_score > 740 and dti_rating == _RISK_HIGH:
-        compensating_factors.append("Strong credit (>740) offsets elevated DTI")
+        compensating_factors.append("模拟征信评分较高，可作为人工复核债务负担时的补充信息")
     if ltv_value is not None and ltv_value < 60 and credit_rating == _RISK_HIGH:
-        compensating_factors.append("Low LTV (<60%) offsets weak credit")
+        compensating_factors.append("贷款成数较低，可作为人工复核信用风险时的补充信息")
     if asset_sufficiency_value is not None and asset_sufficiency_value > 50:
-        compensating_factors.append("High reserves (>50% of loan amount)")
+        compensating_factors.append("已录入资产相对贷款金额较充足，仍须核验资金来源")
     if predictive_model_result and "approved" in predictive_model_result.lower():
-        compensating_factors.append("Predictive model supports approval")
+        compensating_factors.append("外部预测模型结果可作为人工复核的补充参考")
 
     # Build warnings
     warnings: list[str] = []
     if dti_value is None:
-        warnings.append("Missing income data -- DTI cannot be computed")
+        warnings.append("缺少收入数据，无法计算债务收入比")
     if ltv_value is None:
-        warnings.append("Missing loan amount or property value -- LTV cannot be computed")
+        warnings.append("缺少贷款金额或房产价值，无法计算贷款成数")
     if credit_score is None:
-        warnings.append("No credit score on file")
+        warnings.append("尚无可用的模拟征信评分")
     if not employment_statuses:
-        warnings.append("No employment status on file")
+        warnings.append("尚未填写就业状态")
     if asset_sufficiency_value is None:
-        warnings.append("No asset data on file")
+        warnings.append("尚无可核验的资产数据")
 
     # Build RiskAssessment and borrower info for compute_recommendation
     risk = RiskAssessment(
@@ -261,14 +261,12 @@ def generate_risk_recommendation(
 
     # Factor in predictive model rejection
     if predictive_model_result and "rejected" in predictive_model_result.lower():
-        warnings.append("Predictive model flags elevated risk -- review recommended")
-        if rec.recommendation == "Approve":
+        warnings.append("外部预测模型提示风险升高，须由有权人员复核")
+        if rec.recommendation == "可提交人工决策":
             rec = Recommendation(
-                recommendation="Approve with Conditions",
-                rationale=[
-                    "Predictive model indicates elevated risk despite passing rule-based checks"
-                ],
-                conditions=["Review predictive model risk flag before final approval"],
+                recommendation="需重点人工复核",
+                rationale=["外部预测模型提示风险升高，但该结果不得替代确定性规则检查"],
+                conditions=["由有权人员复核预测模型风险提示及相关业务材料"],
             )
 
     # Compute overall risk

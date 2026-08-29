@@ -245,10 +245,10 @@ AGENT_A2A_CONFIG: dict[str, dict] = {
             ),
             AgentSkill(
                 id="compliance_verification",
-                name="Compliance Verification",
-                description="HMDA, ECOA, and TRID regulatory compliance checks",
-                tags=["compliance", "HMDA", "ECOA", "TRID", "regulatory"],
-                examples=["Check HMDA compliance for this application"],
+                name="住房信贷合规辅助检查",
+                description="核验申请材料、还款能力以及全国与成都住房信贷政策适用性",
+                tags=["合规", "住房贷款", "成都政策", "材料核验"],
+                examples=["检查这笔申请的材料和政策适用情况"],
             ),
             AgentSkill(
                 id="decision_making",

@@ -44,12 +44,12 @@ class TestEligibility:
         ineligible_ids = {p.product_id for p in result.ineligible_products}
 
         assert "fha" in eligible_ids
-        assert "va" in eligible_ids  # VA min is also 580
+        assert "va" in ineligible_ids
         assert "conventional_30" in ineligible_ids
         assert "jumbo" in ineligible_ids  # jumbo needs 700
 
         conv = next(p for p in result.ineligible_products if p.product_id == "conventional_30")
-        assert "Credit score 580 below minimum 620" in conv.ineligibility_reasons
+        assert any("征信评分 580" in reason for reason in conv.ineligibility_reasons)
 
     def test_should_reject_jumbo_for_high_ltv(self):
         """95% LTV exceeds jumbo's 90% max but passes conventional's 97%."""
@@ -62,10 +62,10 @@ class TestEligibility:
         )
 
         jumbo = next(p for p in result.ineligible_products if p.product_id == "jumbo")
-        assert "LTV 95.0% exceeds maximum 90.0%" in jumbo.ineligibility_reasons
+        assert any("贷款成数 95.0%" in reason for reason in jumbo.ineligibility_reasons)
 
-        conv = next(p for p in result.eligible_products if p.product_id == "conventional_30")
-        assert conv.is_eligible
+        conv = next(p for p in result.ineligible_products if p.product_id == "conventional_30")
+        assert not conv.is_eligible
 
     def test_should_reject_all_when_dti_too_high(self):
         """$3000 debts on $5000 income + housing payment exceeds all DTI limits."""
@@ -80,14 +80,14 @@ class TestEligibility:
         assert len(result.eligible_products) == 0
         # Every rejection should cite DTI
         for p in result.ineligible_products:
-            assert any("DTI" in r for r in p.ineligibility_reasons)
+            assert any("债务收入比" in r for r in p.ineligibility_reasons)
 
 
 class TestMathCorrectness:
     """Verify the actual computed values, not just > 0."""
 
     def test_should_compute_correct_monthly_payment(self):
-        """$300K at 6.5% over 30yr = $1896.20/mo (standard amortization)."""
+        """¥300K at the 3.5% LPR benchmark over 30 years."""
         result = evaluate_prequalification(
             credit_score=750,
             gross_monthly_income=Decimal("10000"),
@@ -97,8 +97,8 @@ class TestMathCorrectness:
         )
 
         conv30 = next(p for p in result.eligible_products if p.product_id == "conventional_30")
-        assert conv30.estimated_monthly_payment == 1896.20
-        assert conv30.estimated_rate == 6.5
+        assert conv30.estimated_monthly_payment == 1347.13
+        assert conv30.estimated_rate == 3.5
 
     def test_should_compute_different_payments_for_15yr_vs_30yr(self):
         result = evaluate_prequalification(
@@ -113,10 +113,10 @@ class TestMathCorrectness:
         conv15 = next(p for p in result.eligible_products if p.product_id == "conventional_15")
 
         # 15-year has higher monthly payment but lower rate
-        assert conv15.estimated_monthly_payment == 2491.23
+        assert conv15.estimated_monthly_payment == 2144.65
         assert conv15.estimated_monthly_payment > conv30.estimated_monthly_payment
-        # 15-year has lower max loan (higher payments eat more DTI room)
-        assert conv15.max_loan_amount < conv30.max_loan_amount
+        # Both are capped by the public 85% LTV baseline in this scenario.
+        assert conv15.max_loan_amount == conv30.max_loan_amount == 340000.0
 
     def test_should_compute_correct_ltv_and_down_payment(self):
         result = evaluate_prequalification(
@@ -141,12 +141,12 @@ class TestMathCorrectness:
         )
 
         conv30 = next(p for p in result.eligible_products if p.product_id == "conventional_30")
-        # Conv30 max LTV = 97%, so max loan <= 400000 * 0.97 = 388000
-        assert conv30.max_loan_amount == 388000.0
+        # Public baseline uses 85% LTV, so max loan <= 400000 * 0.85.
+        assert conv30.max_loan_amount == 340000.0
 
         jumbo = next(p for p in result.eligible_products if p.product_id == "jumbo")
-        # Jumbo max LTV = 90%, so max loan <= 400000 * 0.90 = 360000
-        assert jumbo.max_loan_amount == 360000.0
+        # Large-loan internal demo review line uses 80% LTV.
+        assert jumbo.max_loan_amount == 320000.0
 
 
 class TestRecommendation:
@@ -260,9 +260,7 @@ class TestEdgeCases:
         assert len(result.eligible_products) == 0
         assert len(result.ineligible_products) == 1
         assert result.ineligible_products[0].product_id == "conventional_30"
-        assert any(
-            "credit score" in r.lower() for r in result.ineligible_products[0].ineligibility_reasons
-        )
+        assert any("征信评分" in r for r in result.ineligible_products[0].ineligibility_reasons)
         assert result.recommended_product_id is None
 
     def test_dti_ratio_uses_recommended_product(self):

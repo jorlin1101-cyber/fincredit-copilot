@@ -91,8 +91,20 @@ const DENIAL_REASON_LABELS: Record<string, string> = {
 };
 
 function denialReasonLabel(reason: string): string {
-  return DENIAL_REASON_LABELS[reason] ?? reason;
+  if (DENIAL_REASON_LABELS[reason]) return DENIAL_REASON_LABELS[reason];
+  return /\p{Script=Han}/u.test(reason) ? reason : '其他授信政策或风险原因';
 }
+
+function safeBusinessText(value: string, fallback: string): string {
+  return /\p{Script=Han}/u.test(value) ? value : fallback;
+}
+
+const DECISION_LABELS: Record<string, string> = {
+  approved: '同意',
+  conditional_approval: '有条件同意',
+  suspended: '暂缓',
+  denied: '拒绝',
+};
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
   application_created: '创建申请',
@@ -491,19 +503,22 @@ function eventDescription(event: AuditEventItem): string {
   const data = event.event_data;
   if (!data) return EVENT_TYPE_LABELS[event.event_type] ?? event.event_type;
 
-  if (typeof data.description === 'string') return data.description;
-  if (typeof data.message === 'string') return data.message;
-  if (typeof data.detail === 'string') return data.detail;
+  const fallback = EVENT_TYPE_LABELS[event.event_type] ?? '其他业务操作';
+  if (typeof data.description === 'string')
+    return safeBusinessText(data.description, fallback);
+  if (typeof data.message === 'string') return safeBusinessText(data.message, fallback);
+  if (typeof data.detail === 'string') return safeBusinessText(data.detail, fallback);
 
   // Build a description from known fields
   if (event.event_type === 'stage_transition' && data.from_stage && data.to_stage) {
     return `办理阶段由“${STAGE_NAME_LABELS[String(data.from_stage)] ?? String(data.from_stage)}”变更为“${STAGE_NAME_LABELS[String(data.to_stage)] ?? String(data.to_stage)}”`;
   }
   if (event.event_type === 'decision_made' && data.decision) {
-    return `审批结论：${String(data.decision)}`;
+    const decision = String(data.decision);
+    return `审批结论：${DECISION_LABELS[decision] ?? safeBusinessText(decision, '已记录')}`;
   }
 
-  return EVENT_TYPE_LABELS[event.event_type] ?? event.event_type;
+  return fallback;
 }
 
 function formatTimestamp(ts: string): string {
@@ -582,12 +597,12 @@ function AuditEventsCard({ data }: { data: AuditSearchResponse }) {
                               badgeClass,
                             )}
                           >
-                            {EVENT_TYPE_LABELS[event.event_type] ?? event.event_type}
+                            {EVENT_TYPE_LABELS[event.event_type] ?? '其他业务操作'}
                           </span>
                         </td>
                         <td className="px-6 py-3 text-muted-foreground">
                           {event.user_role
-                            ? (ROLE_LABELS[event.user_role] ?? event.user_role)
+                            ? (ROLE_LABELS[event.user_role] ?? '其他角色')
                             : (event.user_id ?? '--')}
                         </td>
                         <td

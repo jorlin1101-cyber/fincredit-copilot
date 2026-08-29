@@ -74,7 +74,7 @@ def evaluate_prequalification(
 
     Args:
         credit_score: Bureau or self-reported credit score (300-850).
-        gross_monthly_income: Gross monthly income in dollars.
+        gross_monthly_income: Household gross monthly income in CNY.
         monthly_debts: Total monthly debt obligations (non-housing).
         loan_amount: Requested loan amount.
         property_value: Property value / purchase price.
@@ -100,10 +100,12 @@ def evaluate_prequalification(
         reasons: list[str] = []
 
         if credit_score < elig.min_credit_score:
-            reasons.append(f"Credit score {credit_score} below minimum {elig.min_credit_score}")
+            reasons.append(
+                f"征信评分 {credit_score} 低于内部演示复核线 {elig.min_credit_score}"
+            )
 
         if ltv_pct > elig.max_ltv_pct:
-            reasons.append(f"LTV {ltv_pct:.1f}% exceeds maximum {elig.max_ltv_pct:.1f}%")
+            reasons.append(f"贷款成数 {ltv_pct:.1f}% 超过内部演示复核线 {elig.max_ltv_pct:.1f}%")
 
         term_months = _TERM_MONTHS.get(product.id, 360)
         monthly_payment = compute_monthly_payment(
@@ -122,7 +124,7 @@ def evaluate_prequalification(
         product_dti[product.id] = dti_pct
 
         if dti_pct > elig.max_dti_pct:
-            reasons.append(f"DTI {dti_pct:.1f}% exceeds maximum {elig.max_dti_pct:.1f}%")
+            reasons.append(f"债务收入比 {dti_pct:.1f}% 超过内部演示复核线 {elig.max_dti_pct:.1f}%")
 
         if reasons:
             ineligible.append(
@@ -194,18 +196,17 @@ def evaluate_prequalification(
     # Build summary
     if not eligible:
         summary = (
-            f"Based on a credit score of {credit_score}, DTI of {final_dti_pct:.1f}%, "
-            f"and LTV of {ltv_pct:.1f}%, no products currently meet eligibility "
-            "requirements. Consider reducing the loan amount, paying down debts, "
-            "or improving credit score."
+            f"根据征信评分 {credit_score}、债务收入比 {final_dti_pct:.1f}% 和贷款成数"
+            f" {ltv_pct:.1f}% 的内部演示规则，当前没有匹配的演示产品。"
+            "可考虑降低申请金额、减少现有债务或补充可核验材料；最终结果须人工审批。"
         )
     else:
         rec_name = next((e.product_name for e in eligible if e.product_id == recommended), "")
         rec_max = next((e.max_loan_amount for e in eligible if e.product_id == recommended), 0)
         summary = (
-            f"Pre-qualified for {len(eligible)} product(s). "
-            f"Recommended: {rec_name} with max loan amount "
-            f"${rec_max:,.2f}."
+            f"按内部演示规则可初步匹配 {len(eligible)} 个产品。"
+            f"参考方案：{rec_name}，最高参考贷款额 ¥{rec_max:,.2f}。"
+            "该结果不构成授信承诺，实际利率、额度和资格须由有权人员审批。"
         )
 
     return PrequalificationResult(

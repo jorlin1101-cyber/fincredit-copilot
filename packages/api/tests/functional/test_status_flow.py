@@ -65,8 +65,7 @@ class TestBorrowerStatus:
     def test_borrower_sees_status_with_pending_actions(self, app, make_client):
         sarah_app = make_app_sarah_1()
         docs = [
-            _make_doc(1, DocumentType.W2),
-            _make_doc(2, DocumentType.PAY_STUB),
+            _make_doc(1, DocumentType.INCOME_CERTIFICATE),
         ]
         session = _make_status_session(sarah_app, docs)
         client = make_client(borrower_sarah(), session)
@@ -75,10 +74,10 @@ class TestBorrowerStatus:
         assert resp.status_code == 200
         data = resp.json()
         assert data["stage"] == "application"
-        assert data["stage_info"]["label"] == "Application"
+        assert data["stage_info"]["label"] == "申请中"
         assert data["is_document_complete"] is False
-        assert data["provided_doc_count"] == 2
-        assert data["required_doc_count"] == 4
+        assert data["provided_doc_count"] == 1
+        assert data["required_doc_count"] == 3
 
         upload_actions = [
             a for a in data["pending_actions"] if a["action_type"] == "upload_document"
@@ -107,7 +106,7 @@ class TestLoanOfficerStatus:
                 expected_stage_days=7,
             )
         }
-        docs = [_make_doc(1, DocumentType.W2)]
+        docs = [_make_doc(1, DocumentType.INCOME_CERTIFICATE)]
         session = _make_status_session(sarah_app, docs, condition_count=2)
 
         # Add 5th execute result for urgency's get_application call

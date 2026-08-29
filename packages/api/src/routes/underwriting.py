@@ -55,7 +55,7 @@ async def create_deterministic_assessment(
         trace_id=trace_id,
     )
     if result is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="未找到贷款申请")
     return result
 
 

@@ -5,7 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CameraCapture } from './camera-capture';
 
 function getButton(): HTMLElement {
-    return screen.getByRole('button', { name: /take a photo/i });
+    return screen.getByRole('button', { name: '拍照上传' });
 }
 
 describe('CameraCapture', () => {
@@ -32,7 +32,7 @@ describe('CameraCapture', () => {
     it('should open dialog on click', () => {
         render(<CameraCapture onCapture={vi.fn()} />);
         fireEvent.click(getButton());
-        expect(screen.getByText('Capture Document')).toBeInTheDocument();
+        expect(screen.getByText('拍摄申请材料')).toBeInTheDocument();
     });
 
     it('should request rear camera when dialog opens', async () => {
@@ -75,7 +75,7 @@ describe('CameraCapture', () => {
         fireEvent.click(getButton());
 
         expect(
-            await screen.findByText('Camera not available. Please check your permissions.'),
+            await screen.findByText('无法使用相机，请检查相机权限。'),
         ).toBeInTheDocument();
     });
 
@@ -91,7 +91,7 @@ describe('CameraCapture', () => {
         fireEvent.click(getButton());
 
         expect(
-            await screen.findByText('Could not access camera.'),
+            await screen.findByText('无法访问相机。'),
         ).toBeInTheDocument();
     });
 
@@ -111,7 +111,7 @@ describe('CameraCapture', () => {
         fireEvent.click(getButton());
         await waitFor(() => expect(getUserMedia).toHaveBeenCalled());
 
-        fireEvent.click(screen.getByLabelText('Close'));
+        fireEvent.click(screen.getByLabelText('关闭'));
         await waitFor(() => expect(stopTrack).toHaveBeenCalled());
     });
 

@@ -59,15 +59,15 @@ async def uw_issue_condition(
 
     sev = _SEVERITY_MAP.get(severity.lower().strip())
     if sev is None:
-        valid = ", ".join(sorted(_SEVERITY_MAP.keys()))
-        return f"Invalid severity '{severity}'. Must be one of: {valid}"
+        valid = "、".join(format_enum_label(item) for item in sorted(_SEVERITY_MAP.keys()))
+        return f"无法识别完成节点“{severity}”，请选择：{valid}。"
 
     parsed_due: datetime | None = None
     if due_date:
         try:
             parsed_due = datetime.fromisoformat(due_date)
         except ValueError:
-            return f"Invalid due_date format: '{due_date}'. Use ISO-8601 (e.g. 2026-03-15)."
+            return f"到期日期“{due_date}”格式无效，请使用 YYYY-MM-DD，例如 2026-03-15。"
 
     async with SessionLocal() as session:
         result = await issue_condition(
@@ -80,13 +80,14 @@ async def uw_issue_condition(
         )
 
     if result is None:
-        return f"Application #{application_id} not found or you don't have access to it."
+        return f"未找到申请 #{application_id}，或您没有查看权限。"
     if "error" in result:
         return result["error"]
 
-    due_str = f" (due: {result['due_date'][:10]})" if result.get("due_date") else ""
+    due_str = f"，到期日期：{result['due_date'][:10]}" if result.get("due_date") else ""
     return (
-        f"Condition #{result['id']} issued: {description} (severity: {result['severity']}){due_str}"
+        f"已新增审批条件 #{result['id']}：{description}（完成节点："
+        f"{format_enum_label(result['severity'])}{due_str}）"
     )
 
 
@@ -110,14 +111,11 @@ async def uw_review_condition(
         result = await review_condition(session, user, application_id, condition_id)
 
     if result is None:
-        return (
-            f"Condition #{condition_id} on application #{application_id} "
-            f"not found or you don't have access."
-        )
+        return f"未找到申请 #{application_id} 的审批条件 #{condition_id}，或您没有查看权限。"
     if "error" in result:
         return result["error"]
 
-    return f"Condition #{condition_id} now under review."
+    return f"审批条件 #{condition_id} 已转入复核。"
 
 
 @tool
@@ -139,10 +137,7 @@ async def uw_clear_condition(
     async with SessionLocal() as session:
         result = await clear_condition(session, user, application_id, condition_id)
         if result is None:
-            return (
-                f"Condition #{condition_id} on application #{application_id} "
-                f"not found or you don't have access."
-            )
+            return f"未找到申请 #{application_id} 的审批条件 #{condition_id}，或您没有查看权限。"
         if "error" in result:
             return result["error"]
 
@@ -154,10 +149,10 @@ async def uw_clear_condition(
         parts = []
         for status, count in summary["counts"].items():
             if count > 0:
-                parts.append(f"{status}: {count}")
-        summary_text = f" Remaining: {', '.join(parts)}." if parts else " All conditions cleared."
+                parts.append(f"{format_enum_label(status)} {count} 项")
+        summary_text = f" 当前剩余：{'、'.join(parts)}。" if parts else " 全部审批条件均已完成。"
 
-    return f"Condition #{condition_id} cleared.{summary_text}"
+    return f"审批条件 #{condition_id} 已标记为完成。{summary_text}"
 
 
 @tool
@@ -188,14 +183,11 @@ async def uw_waive_condition(
         )
 
     if result is None:
-        return (
-            f"Condition #{condition_id} on application #{application_id} "
-            f"not found or you don't have access."
-        )
+        return f"未找到申请 #{application_id} 的审批条件 #{condition_id}，或您没有查看权限。"
     if "error" in result:
         return result["error"]
 
-    return f"Condition #{condition_id} waived: {rationale}"
+    return f"审批条件 #{condition_id} 已由有权人员豁免。理由：{rationale}"
 
 
 @tool
@@ -226,14 +218,14 @@ async def uw_return_condition(
         )
 
     if result is None:
-        return (
-            f"Condition #{condition_id} on application #{application_id} "
-            f"not found or you don't have access."
-        )
+        return f"未找到申请 #{application_id} 的审批条件 #{condition_id}，或您没有查看权限。"
     if "error" in result:
         return result["error"]
 
-    return f"Condition #{condition_id} returned (attempt {result['iteration_count']}): {note}"
+    return (
+        f"审批条件 #{condition_id} 已第 {result['iteration_count']} 次退回补充。"
+        f"退回说明：{note}"
+    )
 
 
 @tool
@@ -254,15 +246,15 @@ async def uw_condition_summary(
         result = await get_condition_summary(session, user, application_id)
 
     if result is None:
-        return f"Application #{application_id} not found or you don't have access to it."
+        return f"未找到申请 #{application_id}，或您没有查看权限。"
 
     if result["total"] == 0:
-        return f"Application #{application_id} has no conditions."
+        return f"申请 #{application_id} 当前没有审批条件。"
 
-    lines = [f"Condition Summary -- Application #{application_id} ({result['total']} total):", ""]
+    lines = [f"申请 #{application_id} 审批条件汇总（共 {result['total']} 项）：", ""]
     for status, count in result["counts"].items():
         if count > 0:
-            lines.append(f"  {format_enum_label(status)}: {count}")
+            lines.append(f"  {format_enum_label(status)}：{count} 项")
 
     # Highlight unresolved
     unresolved = (
@@ -273,6 +265,6 @@ async def uw_condition_summary(
     )
     resolved = result["counts"].get("cleared", 0) + result["counts"].get("waived", 0)
     lines.append("")
-    lines.append(f"  Resolved: {resolved} | Unresolved: {unresolved}")
+    lines.append(f"  已解决：{resolved} 项｜未解决：{unresolved} 项")
 
     return "\n".join(lines)

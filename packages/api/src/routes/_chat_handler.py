@@ -405,46 +405,56 @@ async def _build_application_context(
     """Look up the user's applications and return a context string for the agent."""
     from db.database import SessionLocal
 
-    from ..services.application import list_applications
+    from ..services.application import get_application, list_applications
 
     try:
         async with SessionLocal() as session:
-            apps, total = await list_applications(session, user, limit=5)
+            if application_id is not None:
+                primary = await get_application(session, user, application_id)
+                if primary is None:
+                    return ""
+            elif user.role == UserRole.BORROWER:
+                apps, _ = await list_applications(session, user, limit=20)
+                if not apps:
+                    return ""
+                stage_order = {
+                    "inquiry": 0,
+                    "prequalification": 1,
+                    "application": 2,
+                    "processing": 3,
+                    "underwriting": 4,
+                    "conditional_approval": 5,
+                    "clear_to_close": 6,
+                    "closed": 7,
+                    "denied": -1,
+                    "withdrawn": -2,
+                }
+                primary = max(apps, key=lambda app: stage_order.get(app.stage.value, -3))
+            else:
+                return ""
     except Exception:
         logger.warning("Failed to load application context for %s", user.user_id)
         return ""
 
-    if not apps:
-        return ""
-
-    # Only borrowers need dynamic app-ID injection; LOs/UWs/CEOs specify IDs themselves
-    if user.role != UserRole.BORROWER:
-        return ""
-
-    # Keep the agent focused on the same application shown by the borrower
-    # dashboard: the furthest-progressed application, then the most recently
-    # updated one (the API list is already ordered by updated_at descending).
-    stage_order = {
-        "inquiry": 0,
-        "prequalification": 1,
-        "application": 2,
-        "processing": 3,
-        "underwriting": 4,
-        "conditional_approval": 5,
-        "clear_to_close": 6,
-        "closed": 7,
-        "denied": -1,
-        "withdrawn": -2,
-    }
-    requested = next((app for app in apps if app.id == application_id), None)
-    primary = requested or max(apps, key=lambda app: stage_order.get(app.stage.value, -3))
     stage = primary.stage.value
+    stage_labels = {
+        "inquiry": "咨询",
+        "prequalification": "预审",
+        "application": "申请中",
+        "processing": "材料处理中",
+        "underwriting": "授信审批",
+        "conditional_approval": "有条件通过",
+        "clear_to_close": "具备放款条件",
+        "closed": "已结案",
+        "denied": "未通过",
+        "withdrawn": "已撤回",
+    }
     loan = f"人民币{primary.loan_amount:,.0f}元" if primary.loan_amount else "金额待录入"
     addr = primary.property_address or "房产地址待录入"
 
     return (
-        f"[内部系统上下文] 当前借款人工作台展示的申请编号为#{primary.id}，"
-        f"阶段为{stage}，贷款金额为{loan}，房产地址为{addr}。"
+        f"[内部系统上下文] 当前页面对应的申请编号为#{primary.id}，"
+        f"阶段为{stage_labels.get(stage, stage)}，贷款金额为{loan}，房产地址为{addr}。"
         f"所有工具调用统一使用application_id={primary.id}，不要向用户询问申请编号。"
     )
 
@@ -490,7 +500,7 @@ def create_authenticated_chat_router(
         except Exception:
             logger.exception("Failed to load %s agent", agent_name)
             await ws.send_json(
-                {"type": "error", "content": "Our chat assistant is temporarily unavailable."}
+                {"type": "error", "content": "智能助手暂时不可用，请稍后重试。"}
             )
             await ws.close()
             return
@@ -502,7 +512,7 @@ def create_authenticated_chat_router(
             try:
                 app_id = int(app_id_param)
             except (ValueError, OverflowError):
-                await ws.send_json({"type": "error", "content": "Invalid app_id parameter."})
+                await ws.send_json({"type": "error", "content": "申请编号格式无效。"})
                 await ws.close(code=4000)
                 return
         thread_id = ConversationService.get_thread_id(user.user_id, agent_name, app_id)

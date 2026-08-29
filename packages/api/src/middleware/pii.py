@@ -24,15 +24,19 @@ logger = logging.getLogger(__name__)
 # Fields to mask and their masking functions (defined below after masker functions)
 
 
-def mask_ssn(value: str | None) -> str | None:
-    """Mask SSN to ***-**-1234 format (last 4 visible)."""
+def mask_id_number(value: str | None) -> str | None:
+    """Mask an identity-card number, leaving only the final four characters."""
     if value is None:
         return None
-    # Extract last 4 digits from any format
-    digits = re.sub(r"\D", "", value)
-    if len(digits) >= 4:
-        return f"***-**-{digits[-4:]}"
-    return "***-**-****"
+    normalized = re.sub(r"\s", "", str(value))
+    if len(normalized) >= 4:
+        return f"**************{normalized[-4:]}"
+    return "******************"
+
+
+def mask_ssn(value: str | None) -> str | None:
+    """Backward-compatible alias for the legacy database/API field name."""
+    return mask_id_number(value)
 
 
 def mask_dob(value: str | None) -> str | None:
@@ -59,6 +63,7 @@ def mask_account_number(value: str | None) -> str | None:
 # Register PII fields and their maskers
 _PII_FIELD_MASKERS = {
     "ssn": mask_ssn,
+    "id_number": mask_id_number,
     "dob": mask_dob,
     "account_number": mask_account_number,
 }

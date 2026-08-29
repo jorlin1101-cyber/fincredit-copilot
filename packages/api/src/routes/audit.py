@@ -147,7 +147,7 @@ async def decision_trace(
     """Backward trace from decision to all contributing events (S-5-F13-05)."""
     trace = await get_decision_trace(session, decision_id)
     if trace is None:
-        raise HTTPException(status_code=404, detail="Decision not found")
+        raise HTTPException(status_code=404, detail="未找到审批记录")
     return DecisionTraceResponse(**trace)
 
 

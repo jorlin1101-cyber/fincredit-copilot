@@ -67,10 +67,10 @@ async def test_render_decision_propose_approve(mock_session_cls, mock_propose):
         }
     )
 
-    assert "PROPOSED DECISION" in result
-    assert "Approved" in result
-    assert "NOT been recorded" in result
-    assert "confirm" in result.lower()
+    assert "待确认授信决定" in result
+    assert "通过" in result
+    assert "尚未写入业务记录" in result
+    assert "明确确认" in result
     mock_propose.assert_awaited_once()
 
 
@@ -106,7 +106,7 @@ async def test_render_decision_propose_deny(mock_session_cls, mock_propose):
         }
     )
 
-    assert "PROPOSED DECISION" in result
+    assert "待确认授信决定" in result
     assert "Insufficient income" in result
     assert "High DTI" in result
 
@@ -162,10 +162,10 @@ async def test_render_decision_confirmed_approve(mock_session_cls, mock_render):
         }
     )
 
-    assert "Decision rendered" in result
-    assert "Decision ID: 1" in result
-    assert "Approved" in result
-    assert "Clear To Close" in result
+    assert "授信决定已记录" in result
+    assert "决策编号：1" in result
+    assert "通过" in result
+    assert "具备签约条件" in result
     mock_render.assert_awaited_once()
 
 
@@ -210,8 +210,8 @@ async def test_render_decision_confirmed_deny(mock_session_cls, mock_render):
         }
     )
 
-    assert "Decision rendered" in result
-    assert "Denied" in result
+    assert "授信决定已记录" in result
+    assert "未通过" in result
 
 
 # ---------------------------------------------------------------------------
@@ -239,7 +239,7 @@ async def test_render_decision_not_found(mock_session_cls, mock_propose):
         }
     )
 
-    assert "not found" in result
+    assert "未找到" in result
 
 
 @patch("src.agents.decision_tools.SessionLocal")
@@ -262,7 +262,7 @@ async def test_render_decision_compliance_gate_no_check(mock_session_cls):
         }
     )
 
-    assert "compliance_check" in result.lower()
+    assert "尚未完成合规检查" in result
 
 
 @patch("src.agents.decision_tools.SessionLocal")
@@ -273,7 +273,7 @@ async def test_render_decision_compliance_gate_failed(mock_session_cls):
     mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=False)
 
     comp_event = MagicMock()
-    comp_event.event_data = {"status": "FAIL", "failed_checks": ["ECOA"]}
+    comp_event.event_data = {"status": "FAIL", "failed_checks": ["个人信息授权核验"]}
     comp_result = MagicMock()
     comp_result.scalar_one_or_none.return_value = comp_event
     session.execute.return_value = comp_result
@@ -287,15 +287,15 @@ async def test_render_decision_compliance_gate_failed(mock_session_cls):
         }
     )
 
-    assert "FAILED" in result
-    assert "ECOA" in result
+    assert "合规检查未通过" in result
+    assert "个人信息授权核验" in result
 
 
 @patch("src.agents.decision_tools.render_decision", new_callable=AsyncMock)
 @patch("src.agents.decision_tools.SessionLocal")
 async def test_render_decision_confirmed_service_error(mock_session_cls, mock_render):
     """Phase 2: returns service error message."""
-    mock_render.return_value = {"error": "Wrong stage for this operation"}
+    mock_render.return_value = {"error": "当前办理阶段不允许执行此操作"}
 
     session = AsyncMock()
     mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=session)
@@ -322,7 +322,7 @@ async def test_render_decision_confirmed_service_error(mock_session_cls, mock_re
         }
     )
 
-    assert "Wrong stage" in result
+    assert "当前办理阶段不允许" in result
 
 
 @patch("src.agents.decision_tools.propose_decision", new_callable=AsyncMock)
@@ -363,9 +363,9 @@ async def test_render_decision_propose_override_warning(mock_session_cls, mock_p
         }
     )
 
-    assert "OVERRIDE" in result
+    assert "人工调整理由" in result
     assert "Strong reserves" in result
-    assert "NOT been recorded" in result
+    assert "尚未写入业务记录" in result
 
 
 # ---------------------------------------------------------------------------
@@ -423,13 +423,13 @@ async def test_draft_adverse_action_success(mock_session_cls, mock_audit):
         }
     )
 
-    assert "ADVERSE ACTION NOTICE" in result
+    assert "授信决定告知书" in result
     assert "John Doe" in result
     assert "Low credit" in result
     assert "High DTI" in result
     assert "580" in result
     assert "Equifax" in result
-    assert "DISCLAIMER" in result
+    assert "仅用于虚构项目演示" in result
 
 
 @patch("src.agents.decision_tools.write_audit_event", new_callable=AsyncMock)
@@ -473,7 +473,7 @@ async def test_draft_adverse_action_auto_find(mock_session_cls, mock_audit):
         }
     )
 
-    assert "ADVERSE ACTION NOTICE" in result
+    assert "授信决定告知书" in result
     assert "Alice Chen" in result
     assert "Insufficient income" in result
     assert "620" in result
@@ -498,7 +498,7 @@ async def test_draft_adverse_action_not_found(mock_session_cls):
         }
     )
 
-    assert "not found" in result
+    assert "未找到" in result
 
 
 @patch("src.agents.decision_tools.SessionLocal")
@@ -523,7 +523,7 @@ async def test_draft_adverse_action_no_denied_decision(mock_session_cls):
         }
     )
 
-    assert "No DENIED decision" in result
+    assert "未找到“未通过”决策" in result
 
 
 @patch("src.agents.decision_tools.SessionLocal")
@@ -551,7 +551,7 @@ async def test_draft_adverse_action_wrong_decision_type(mock_session_cls):
         }
     )
 
-    assert "DENIED" in result
+    assert "只有未通过的申请" in result
 
 
 # ---------------------------------------------------------------------------
@@ -598,12 +598,12 @@ async def test_generate_le_success(
         }
     )
 
-    assert "LOAN ESTIMATE" in result
+    assert "个人住房贷款要素确认书" in result
     assert "Jane Smith" in result
-    assert "$350,000.00" in result
+    assert "¥350,000.00" in result
     assert "6.500%" in result
     assert "123 Main St" in result
-    assert "DISCLAIMER" in result
+    assert "仅用于虚构项目演示" in result
     mock_audit.assert_awaited_once()
     assert mock_audit.call_args.kwargs["event_type"] == "le_generated"
 
@@ -626,7 +626,7 @@ async def test_generate_le_not_found(mock_session_cls):
         }
     )
 
-    assert "not found" in result
+    assert "未找到" in result
 
 
 # ---------------------------------------------------------------------------
@@ -674,10 +674,10 @@ async def test_generate_cd_success(
         }
     )
 
-    assert "CLOSING DISCLOSURE" in result
+    assert "个人住房贷款签约要素确认书" in result
     assert "Jane Smith" in result
-    assert "$350,000.00" in result
-    assert "DISCLAIMER" in result
+    assert "¥350,000.00" in result
+    assert "仅用于虚构项目演示" in result
     mock_audit.assert_awaited_once()
     assert mock_audit.call_args.kwargs["event_type"] == "cd_generated"
 
@@ -704,8 +704,8 @@ async def test_generate_cd_outstanding_conditions(mock_session_cls, mock_cond):
         }
     )
 
-    assert "outstanding" in result.lower()
-    assert "1 condition" in result
+    assert "审批条件未完成" in result
+    assert "1 项" in result
 
 
 @patch("src.agents.decision_tools.SessionLocal")
@@ -726,4 +726,4 @@ async def test_generate_cd_not_found(mock_session_cls):
         }
     )
 
-    assert "not found" in result
+    assert "未找到" in result

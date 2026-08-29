@@ -52,13 +52,13 @@ _COMMUNICATION_TYPES = {
 }
 
 _LOAN_TYPE_LABELS: dict[str, str] = {
-    "conventional_30": "30年期个人住房贷款",
-    "conventional_15": "15年期个人住房贷款",
-    "fha": "首套住房贷款（兼容类型）",
-    "va": "优待客群住房贷款（兼容类型）",
-    "jumbo": "大额住房贷款",
-    "usda": "县域住房贷款（兼容类型）",
-    "arm": "利率调整型住房贷款",
+    "conventional_30": "30年期商业性个人住房贷款",
+    "conventional_15": "15年期商业性个人住房贷款",
+    "fha": "住房公积金个人住房贷款",
+    "va": "商业贷款与公积金组合贷款",
+    "jumbo": "大额商业性个人住房贷款",
+    "usda": "县域住房贷款（演示产品）",
+    "arm": "LPR浮动利率个人住房贷款",
 }
 
 _SEVERITY_LABELS: dict[str, str] = {
@@ -115,6 +115,12 @@ _DOCUMENT_STATUS_LABELS: dict[str, str] = {
     "accepted": "已通过",
     "flagged_for_resubmission": "需重新提交",
     "rejected": "已驳回",
+}
+
+_RATE_LOCK_STATUS_LABELS: dict[str, str] = {
+    "active": "有效",
+    "expired": "已到期",
+    "none": "未锁定",
 }
 
 
@@ -634,7 +640,7 @@ async def lo_draft_communication(
         if rl_status == "none":
             lines.append("  暂无已确认的执行利率")
         else:
-            lines.append(f"  状态：{rl_status}")
+            lines.append(f"  状态：{_RATE_LOCK_STATUS_LABELS.get(rl_status, rl_status)}")
             if rate_lock.get("locked_rate") is not None:
                 lines.append(f"  利率：{rate_lock['locked_rate']:.3f}%")
             if rate_lock.get("expiration_date"):
@@ -673,7 +679,7 @@ async def lo_send_communication(
     async with SessionLocal() as session:
         app = await get_application(session, user, application_id)
         if app is None:
-            return "Application not found or you don't have access to it."
+            return "未找到该申请，或您没有查看权限。"
 
         await write_audit_event(
             session,
@@ -691,9 +697,8 @@ async def lo_send_communication(
         await session.commit()
 
     return (
-        f"Communication recorded: '{subject}' to {recipient_name} "
-        f"for application #{application_id}. "
-        "(MVP: audit log only -- no email delivery.)"
+        f"已记录申请 #{application_id} 向 {recipient_name} 发送的“{subject}”沟通事项。"
+        "演示系统仅写入审计日志，不会实际发送邮件或短信。"
     )
 
 
@@ -716,13 +721,13 @@ async def lo_pull_credit(
         pull_type: "soft" or "hard".
     """
     if pull_type not in ("soft", "hard"):
-        return "Invalid pull_type. Must be 'soft' or 'hard'."
+        return "征信查询类型无效，可选值为 soft 或 hard。"
 
     user = _user_context_from_state(state)
     async with SessionLocal() as session:
         app = await get_application(session, user, application_id)
         if app is None:
-            return "Application not found or you don't have access to it."
+            return "未找到该申请，或您没有查看权限。"
 
         # Find primary borrower
         primary_ab = next(
@@ -730,7 +735,7 @@ async def lo_pull_credit(
             None,
         )
         if primary_ab is None or primary_ab.borrower is None:
-            return "No primary borrower found for this application."
+            return "该申请未找到主借款人信息。"
 
         borrower = primary_ab.borrower
         bureau = get_credit_bureau_service()
@@ -783,22 +788,25 @@ async def lo_pull_credit(
         )
         await session.commit()
 
+    query_label = "预审查询" if pull_type == "soft" else "审批查询"
     lines = [
-        f"Credit {pull_type} pull complete for {borrower.first_name} {borrower.last_name}:",
-        f"Bureau: {result.bureau}",
-        f"Credit score: {result.credit_score}",
-        f"Outstanding accounts: {result.outstanding_accounts}",
-        f"Total outstanding debt: ${result.total_outstanding_debt:,.2f}",
-        f"Derogatory marks: {result.derogatory_marks}",
-        f"Oldest account: {result.oldest_account_years} years",
-        f"Expires: {report.expires_at.strftime('%Y-%m-%d')}",
+        f"已完成 {_person_name(borrower.first_name, borrower.last_name)} 的{query_label}（模拟）：",
+        "数据来源：项目内置虚构征信服务，不连接真实征信机构",
+        f"征信评分：{result.credit_score}",
+        f"未结清账户数：{result.outstanding_accounts}",
+        f"未结清负债合计：¥{result.total_outstanding_debt:,.2f}",
+        f"不良记录数：{result.derogatory_marks}",
+        f"最早账户年限：{result.oldest_account_years} 年",
+        f"项目内部演示数据有效期至：{report.expires_at.strftime('%Y年%m月%d日')}",
     ]
 
     if pull_type == "hard":
-        lines.append(f"Trade lines: {len(result.trade_lines)}")
-        lines.append(f"Collections: {result.collections_count}")
-        lines.append(f"Bankruptcy flag: {result.bankruptcy_flag}")
-        lines.append(f"Public records: {result.public_records_count}")
+        lines.append(f"信贷账户明细：{len(result.trade_lines)} 条")
+        lines.append(f"催收记录：{result.collections_count} 条")
+        lines.append(
+            f"重大风险记录标记（演示兼容字段）：{'是' if result.bankruptcy_flag else '否'}"
+        )
+        lines.append(f"公共记录：{result.public_records_count} 条")
 
     return "\n".join(lines)
 
@@ -820,7 +828,7 @@ async def lo_prequalification_check(
     async with SessionLocal() as session:
         app = await get_application(session, user, application_id)
         if app is None:
-            return "Application not found or you don't have access to it."
+            return "未找到该申请，或您没有查看权限。"
 
         # Load most recent soft-pull credit report
         stmt = (
@@ -834,24 +842,21 @@ async def lo_prequalification_check(
         )
         cr = (await session.execute(stmt)).scalar_one_or_none()
         if cr is None:
-            return (
-                "No soft credit pull on file for this application. "
-                "Use lo_pull_credit with pull_type='soft' first."
-            )
+            return "该申请尚无预审征信查询记录，请先执行模拟预审查询。"
 
         # Check expiration
         now = datetime.now(UTC)
         expired_warning = ""
         if cr.expires_at and cr.expires_at < now:
             expired_warning = (
-                "WARNING: Credit report expired on "
-                f"{cr.expires_at.strftime('%Y-%m-%d')}. Consider pulling fresh credit.\n\n"
+                f"提示：演示征信数据已于 {cr.expires_at.strftime('%Y年%m月%d日')} 到期，"
+                "请重新执行模拟查询。\n\n"
             )
 
         # Load financials
         financials = await get_financials(session, application_id)
         if not financials:
-            return "No financial data found for this application. Borrower needs to provide income and debt information."
+            return "该申请尚无财务数据，请借款人补充收入与负债信息。"
 
         fin = financials[0]
         gross_monthly_income = fin.gross_monthly_income or Decimal("0")
@@ -860,7 +865,7 @@ async def lo_prequalification_check(
         property_value = app.property_value or Decimal("0")
 
         if loan_amount <= 0 or property_value <= 0:
-            return "Loan amount and property value must be set on the application before running pre-qualification."
+            return "执行预审测算前，须先填写贷款金额和房产价值。"
 
         loan_type = app.loan_type.value if app.loan_type else None
 
@@ -893,32 +898,33 @@ async def lo_prequalification_check(
     lines = [expired_warning] if expired_warning else []
     lines.extend(
         [
-            f"Pre-qualification evaluation for application #{application_id}:",
-            f"Bureau credit score: {cr.credit_score} (pulled {cr.pulled_at.strftime('%Y-%m-%d')})",
-            f"Gross monthly income: ${gross_monthly_income:,.2f}",
-            f"Monthly debts: ${monthly_debts:,.2f}",
-            f"Loan amount: ${loan_amount:,.2f}",
-            f"Property value: ${property_value:,.2f}",
-            f"DTI: {result.dti_ratio:.1f}%  |  LTV: {result.ltv_ratio:.1f}%  |  Down payment: {result.down_payment_pct:.1f}%",
+            f"申请 #{application_id} 预审测算：",
+            f"模拟征信评分：{cr.credit_score}（查询日期 {cr.pulled_at.strftime('%Y年%m月%d日')}）",
+            f"家庭月收入：¥{gross_monthly_income:,.2f}",
+            f"每月负债：¥{monthly_debts:,.2f}",
+            f"贷款金额：¥{loan_amount:,.2f}",
+            f"房产价值：¥{property_value:,.2f}",
+            f"债务收入比：{result.dti_ratio:.1f}%｜贷款成数：{result.ltv_ratio:.1f}%｜"
+            f"首付款比例：{result.down_payment_pct:.1f}%",
             "",
         ]
     )
 
     if result.eligible_products:
-        lines.append(f"ELIGIBLE ({len(result.eligible_products)}):")
+        lines.append(f"初步匹配（{len(result.eligible_products)} 个）：")
         for p in result.eligible_products:
-            rec = " ** RECOMMENDED" if p.product_id == result.recommended_product_id else ""
+            rec = "（参考方案）" if p.product_id == result.recommended_product_id else ""
             lines.append(
-                f"  - {p.product_name}: max ${p.max_loan_amount:,.2f} "
-                f"at {p.estimated_rate:.2f}% (${p.estimated_monthly_payment:,.2f}/mo){rec}"
+                f"  - {p.product_name}：最高参考贷款额 ¥{p.max_loan_amount:,.2f}，"
+                f"测算利率 {p.estimated_rate:.2f}%，预计月供 ¥{p.estimated_monthly_payment:,.2f}{rec}"
             )
         lines.append("")
 
     if result.ineligible_products:
-        lines.append(f"INELIGIBLE ({len(result.ineligible_products)}):")
+        lines.append(f"暂未匹配（{len(result.ineligible_products)} 个）：")
         for p in result.ineligible_products:
-            reasons = "; ".join(p.ineligibility_reasons)
-            lines.append(f"  - {p.product_name}: {reasons}")
+            reasons = "；".join(p.ineligibility_reasons)
+            lines.append(f"  - {p.product_name}：{reasons}")
         lines.append("")
 
     lines.append(result.summary)
@@ -947,19 +953,19 @@ async def lo_issue_prequalification(
     """
     if product_id not in _VALID_PRODUCT_IDS:
         valid = ", ".join(sorted(_VALID_PRODUCT_IDS))
-        return f"Invalid product_id '{product_id}'. Must be one of: {valid}"
+        return f"产品标识“{product_id}”无效。可选值：{valid}。"
 
     user = _user_context_from_state(state)
     async with SessionLocal() as session:
         app = await get_application(session, user, application_id)
         if app is None:
-            return "Application not found or you don't have access to it."
+            return "未找到该申请，或您没有查看权限。"
 
         current_stage = app.stage or ApplicationStage.INQUIRY
         if current_stage != ApplicationStage.INQUIRY:
             return (
-                f"Application is in '{current_stage.value}' stage. "
-                "Pre-qualification can only be issued from the INQUIRY stage."
+                f"申请当前处于“{_STAGE_LABELS.get(current_stage.value, current_stage.value)}”阶段。"
+                "只有咨询阶段可以出具预审结果。"
             )
 
         # Load latest soft pull for credit score
@@ -974,12 +980,12 @@ async def lo_issue_prequalification(
         )
         cr = (await session.execute(stmt)).scalar_one_or_none()
         if cr is None:
-            return "No soft credit pull on file. Pull credit before issuing pre-qualification."
+            return "尚无模拟预审征信查询记录，不能出具预审结果。"
 
         # Compute DTI (including housing payment) and LTV for the decision record
         financials = await get_financials(session, application_id)
         if not financials:
-            return "No financial records on file. Borrower must submit financials before pre-qualification."
+            return "尚无财务记录，请借款人先补充收入和负债信息。"
         fin = financials[0]
         gross_monthly_income = float(fin.gross_monthly_income or 0)
         monthly_debts = float(fin.monthly_debts or 0)
@@ -1065,10 +1071,10 @@ async def lo_issue_prequalification(
         await session.commit()
 
     return (
-        f"Pre-qualification issued for application #{application_id}:\n"
-        f"Product: {product_name}\n"
-        f"Max amount: ${max_amount:,.2f}\n"
-        f"Rate: {product_rate:.2f}%\n"
-        f"Expires: {decision.expires_at.strftime('%Y-%m-%d')}\n"
-        f"Stage transitioned to: PREQUALIFICATION"
+        f"已为申请 #{application_id} 记录预审结果：\n"
+        f"参考产品：{product_name}\n"
+        f"最高参考金额：¥{max_amount:,.2f}\n"
+        f"测算利率：{product_rate:.2f}%\n"
+        f"项目内部演示结果有效期至：{decision.expires_at.strftime('%Y年%m月%d日')}\n"
+        "申请阶段已更新为：预审"
     )

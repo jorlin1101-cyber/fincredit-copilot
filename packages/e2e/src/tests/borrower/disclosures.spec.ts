@@ -27,29 +27,6 @@ test.describe("Borrower Disclosures", () => {
         expect(isAllDone || hasPending).toBeTruthy();
     });
 
-    test("should open disclosure modal on Review & Acknowledge click", async ({ page }) => {
-        const reviewButton = page.getByRole("button", {
-            name: "查看并确认",
-        });
-        await expect(reviewButton.first()).toBeVisible({ timeout: 10_000 });
-
-        await reviewButton.first().click();
-        await expect(dashboard.disclosureModal).toBeVisible();
-    });
-
-    test("should close disclosure modal via close button", async ({ page }) => {
-        const reviewButton = page.getByRole("button", {
-            name: "查看并确认",
-        });
-        await expect(reviewButton.first()).toBeVisible({ timeout: 10_000 });
-
-        await reviewButton.first().click();
-        await expect(dashboard.disclosureModal).toBeVisible();
-
-        await dashboard.modalCloseButton.click();
-        await expect(dashboard.disclosureModal).not.toBeVisible();
-    });
-
     test("should immediately show acknowledgment without sending a chat message", async ({ page }) => {
         const reviewButton = page.getByRole("button", {
             name: "查看并确认",
@@ -58,9 +35,6 @@ test.describe("Borrower Disclosures", () => {
         const beforeCount = await reviewButton.count();
         if (beforeCount > 0) {
             await reviewButton.first().click();
-            await expect(dashboard.disclosureModal).toBeVisible();
-            await dashboard.modalAcknowledgeButton.click();
-            await expect(dashboard.disclosureModal).not.toBeVisible();
             await expect(reviewButton).toHaveCount(beforeCount - 1);
             await expect(page.getByText(/我已阅读并确认《/)).toHaveCount(0);
         }

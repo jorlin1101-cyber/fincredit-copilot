@@ -1,7 +1,7 @@
 {
-  "name": "mortgage-ai",
+  "name": "fincredit-copilot",
   "version": "0.1.0",
-  "description": "Multi-agent loan origination system",
+  "description": "China-oriented housing loan origination demo with multi-agent workflows and evidence-grounded policy retrieval",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -41,10 +41,10 @@
     "@commitlint/config-conventional": "^19.4.0",
     "semantic-release": "^24.2.7"
   },
-  "packageManager": "pnpm@9.15.9",
   "pnpm": {
     "overrides": {
-      "esbuild": "^0.27.0"
+      "@babel/core": "7.29.6"
     }
-  }
+  },
+  "packageManager": "pnpm@9.15.9"
 }

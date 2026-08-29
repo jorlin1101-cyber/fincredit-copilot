@@ -39,7 +39,7 @@ async def chat_websocket(ws: WebSocket):
     except Exception:
         logger.exception("Failed to load public-assistant agent")
         await ws.send_json(
-            {"type": "error", "content": "Our chat assistant is temporarily unavailable."}
+            {"type": "error", "content": "智能助手暂时不可用，请稍后重试。"}
         )
         await ws.close()
         return

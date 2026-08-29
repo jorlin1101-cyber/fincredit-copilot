@@ -3,14 +3,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import {
-  Root as DialogRoot,
-  Portal as DialogPortal,
-  Overlay as DialogOverlay,
-  Content as DialogContent,
-  Title as DialogTitle,
-  Close as DialogClose,
-} from '@radix-ui/react-dialog';
-import {
   FileText,
   Upload,
   AlertTriangle,
@@ -24,7 +16,6 @@ import {
   Info,
   CheckCircle2,
   Loader2,
-  X,
   Award,
 } from 'lucide-react';
 import { CameraCapture } from '@/components/camera-capture';
@@ -567,65 +558,6 @@ function ConditionsCard({
   );
 }
 
-function DisclosureModal({
-  item,
-  onClose,
-  onAcknowledge,
-}: {
-  item: DisclosureItem;
-  onClose: () => void;
-  onAcknowledge: () => void;
-}) {
-  return (
-    <DialogRoot
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-    >
-      <DialogPortal>
-        <DialogOverlay className="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-        <DialogContent
-          className="fixed left-1/2 top-1/2 z-50 mx-4 flex max-h-[85vh] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl bg-white shadow-xl dark:bg-slate-900"
-          aria-describedby={undefined}
-        >
-          <div className="flex items-center justify-between border-b border-border px-6 py-4">
-            <DialogTitle className="text-lg font-semibold text-foreground">
-              {item.label}
-            </DialogTitle>
-            <DialogClose asChild>
-              <button
-                className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-slate-100 hover:text-foreground dark:hover:bg-slate-800"
-                aria-label="关闭"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </DialogClose>
-          </div>
-          <div className="flex-1 overflow-y-auto px-6 py-4">
-            <div className="whitespace-pre-line text-sm leading-relaxed text-foreground">
-              {item.content}
-            </div>
-          </div>
-          <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
-            <DialogClose asChild>
-              <button className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">
-                关闭
-              </button>
-            </DialogClose>
-            <button
-              onClick={onAcknowledge}
-              className="rounded-md bg-[#1e3a5f] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#152e42]"
-            >
-              我已阅读并确认
-            </button>
-          </div>
-        </DialogContent>
-      </DialogPortal>
-    </DialogRoot>
-  );
-}
-
 function DisclosuresCard({
   disclosures,
   applicationId,
@@ -635,7 +567,6 @@ function DisclosuresCard({
   applicationId: number | undefined;
   isLoading: boolean;
 }) {
-  const [reviewingItem, setReviewingItem] = useState<DisclosureItem | null>(null);
   const acknowledgeMutation = useAcknowledgeDisclosure(applicationId);
 
   if (isLoading) {
@@ -666,17 +597,6 @@ function DisclosuresCard({
 
   return (
     <>
-      {reviewingItem && (
-        <DisclosureModal
-          item={reviewingItem}
-          onClose={() => setReviewingItem(null)}
-          onAcknowledge={() => {
-            const item = reviewingItem;
-            setReviewingItem(null);
-            acknowledgeMutation.mutate(item.id);
-          }}
-        />
-      )}
       <CardShell>
         <h3 className="mb-4 text-base font-semibold text-foreground">信息披露</h3>
         {acknowledgeMutation.isError && (
@@ -701,7 +621,8 @@ function DisclosuresCard({
                 <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />
               ) : (
                 <button
-                  onClick={() => setReviewingItem(item)}
+                  onClick={() => acknowledgeMutation.mutate(item.id)}
+                  disabled={acknowledgeMutation.isPending}
                   className="shrink-0 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
                   查看并确认

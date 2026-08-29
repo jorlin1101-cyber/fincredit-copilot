@@ -121,7 +121,7 @@ class TestKbSearchTool:
         ):
             output = await kb_search.ainvoke({"query": "something obscure", "state": agent_state})
 
-        assert "政策证据不足" in output
+        assert "政策库证据不足" in output
         assert "人工复核" in output
 
     @pytest.mark.asyncio

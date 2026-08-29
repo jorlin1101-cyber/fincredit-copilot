@@ -45,12 +45,31 @@ CASES = [
     DemoCase(3, "低清晰度", "模糊", "王晴", "王晴", "王晴", "510100198803030036", "成都青禾数据有限公司", 13500, 13320),
     DemoCase(4, "关键字段缺失", "字段缺失", "赵宁", "赵宁", "赵宁", None, None, None, None),
     DemoCase(5, "姓名不一致", "清晰", "张安宁", "李安宁", "张安宁", "510100199404040044", "成都万象咨询有限公司", 16000, 15850),
-    DemoCase(6, "收入不一致", "清晰", "周平", "周平", "周平", "510100199105050052", "成都星云软件有限公司", 20000, 10800),
+    DemoCase(6, "收入不一致", "清晰", "周平", "周平", "周平", "510100199105050053", "成都星云软件有限公司", 20000, 10800),
     DemoCase(7, "证件或证明过期", "历史日期", "孙悦", "孙悦", "孙悦", "510100198706060060", "成都锦程商贸有限公司", 12000, 11950),
     DemoCase(8, "部分字段遮罩", "遮罩", "何川", "何川", "何川", "510100199307070079", "成都西岭智能科技有限公司", 17500, 17250),
     DemoCase(9, "低对比度", "低对比度", "罗欣", "罗欣", "罗欣", "510100199508080087", "成都新川创意有限公司", 14500, 14300),
     DemoCase(10, "正常一致-边界金额", "清晰", "唐晓", "唐晓", "唐晓", "510100199609090095", "成都天府企服有限公司", 10000, 9900),
 ]
+
+ID_CHECKSUM_WEIGHTS = (7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2)
+ID_CHECKSUM_CODES = "10X98765432"
+
+
+def is_valid_chinese_id_number(value: str) -> bool:
+    """Return whether a value passes the Chinese resident ID checksum."""
+    if len(value) != 18 or not value[:17].isdigit():
+        return False
+    checksum = sum(int(digit) * weight for digit, weight in zip(value[:17], ID_CHECKSUM_WEIGHTS, strict=True))
+    return value[-1].upper() == ID_CHECKSUM_CODES[checksum % 11]
+
+
+def validate_synthetic_ids() -> None:
+    """Prevent generated demo documents from containing checksum-valid ID numbers."""
+    valid_case_ids = [case.index for case in CASES if case.id_number and is_valid_chinese_id_number(case.id_number)]
+    if valid_case_ids:
+        joined_case_ids = ", ".join(f"CASE-{case_id:02d}" for case_id in valid_case_ids)
+        raise ValueError(f"演示身份证号码不得通过校验码验证：{joined_case_ids}")
 
 
 def setup_fonts() -> None:
@@ -241,6 +260,7 @@ def main() -> None:
     output_dir: Path = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     setup_fonts()
+    validate_synthetic_ids()
 
     manifest: list[dict[str, object]] = []
     generators = {

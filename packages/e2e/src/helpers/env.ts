@@ -8,7 +8,7 @@ export const BASE_URL = process.env.MORTGAGE_E2E_BASE_URL || process.env.BASE_UR
 export const API_URL = process.env.API_URL || "http://localhost:8000";
 export const KEYCLOAK_URL = process.env.KEYCLOAK_URL || "http://localhost:8080";
 export const IS_DEV_AUTH = process.env.E2E_DEV_AUTH === "true";
-export const COMPANY_NAME = process.env.COMPANY_NAME || "Acme FinTech Company";
+export const COMPANY_NAME = process.env.COMPANY_NAME || "融安住房金融（虚构演示机构）";
 
 export const DEV_PASSWORD = process.env.E2E_DEV_PASSWORD || "demo1234";
 export const KEYCLOAK_PASSWORD = process.env.E2E_KEYCLOAK_PASSWORD || "demo";
@@ -19,27 +19,27 @@ export function getPassword(): string {
 
 export const PERSONAS = {
   borrower: {
-    title: "Borrower",
+    title: "借款人",
     testId: "persona-borrower",
-    email: "sarah.mitchell@example.com",
+    email: "li.xiaoyu@example.com",
     homeRoute: "/borrower",
   },
   loan_officer: {
-    title: "Loan Officer",
+    title: "客户经理",
     testId: "persona-loan_officer",
-    email: "james.torres@example.com",
+    email: "wang.chen@example.com",
     homeRoute: "/loan-officer",
   },
   underwriter: {
-    title: "Underwriter",
+    title: "审批人员",
     testId: "persona-underwriter",
-    email: "maria.chen@example.com",
+    email: "chen.jing@example.com",
     homeRoute: "/underwriter",
   },
   ceo: {
-    title: "CEO",
+    title: "管理驾驶舱",
     testId: "persona-ceo",
-    email: "david.park@example.com",
+    email: "zhou.mingyuan@example.com",
     homeRoute: "/ceo",
   },
 } as const;

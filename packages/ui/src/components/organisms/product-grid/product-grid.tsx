@@ -8,15 +8,14 @@ import { Badge } from '@/components/atoms/badge/badge';
 import { formatPercent } from '@/lib/format';
 import type { ProductInfo } from '@/schemas/products';
 
-// Map product names to icons by keyword matching
+// Map Chinese product names to icons by business meaning.
 function getProductIcon(name: string): LucideIcon {
     const lower = name.toLowerCase();
-    if (lower.includes('15') || lower.includes('fifteen')) return Calendar;
-    if (lower.includes('fha')) return Shield;
-    if (lower.includes('va')) return Shield;
-    if (lower.includes('usda')) return TrendingDown;
-    if (lower.includes('jumbo')) return DollarSign;
-    if (lower.includes('arm') || lower.includes('adjustable')) return Percent;
+    if (lower.includes('15')) return Calendar;
+    if (lower.includes('公积金') || lower.includes('组合')) return Shield;
+    if (lower.includes('县域')) return TrendingDown;
+    if (lower.includes('大额')) return DollarSign;
+    if (lower.includes('浮动') || lower.includes('lpr')) return Percent;
     return Home;
 }
 
@@ -43,7 +42,7 @@ function ProductCard({ product, isPopular = false }: ProductCardProps) {
                     </div>
                     {isPopular && (
                         <Badge className="bg-[#cc0000] text-white hover:bg-[#990000]">
-                            Popular
+                            常用
                         </Badge>
                     )}
                 </div>
@@ -61,15 +60,26 @@ function ProductCard({ product, isPopular = false }: ProductCardProps) {
                 {/* Rate footer */}
                 <div className="flex items-end justify-between border-t border-border pt-4">
                     <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        Interest Rate
+                        测算参考利率
                     </span>
                     <div className="flex items-baseline gap-1">
                         <span className="font-display text-2xl font-bold text-[#cc0000]">
                             {rateDisplay}
                         </span>
-                        <span className="text-xs text-muted-foreground">APR</span>
+                        <span className="text-xs text-muted-foreground">年利率</span>
                     </div>
                 </div>
+                <p className="text-xs leading-5 text-muted-foreground">
+                    {product.rate_note}
+                </p>
+                <a
+                    href={product.source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs font-medium text-[#1e3a5f] hover:underline dark:text-blue-300"
+                >
+                    查看数据来源（{product.data_as_of}）
+                </a>
             </div>
         </article>
     );
@@ -103,14 +113,13 @@ export function ProductGrid() {
                 {/* Section header */}
                 <div className="mb-12 flex flex-col items-center gap-3 text-center">
                     <span className="text-xs font-semibold uppercase tracking-widest text-[#cc0000]">
-                        Our Products
+                        贷款产品
                     </span>
                     <h2 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
-                        Find the loan that fits your life
+                        了解适合您的住房贷款方案
                     </h2>
                     <p className="max-w-2xl text-base text-muted-foreground">
-                        From first-time buyers to seasoned investors, we have flexible loan options
-                        designed to match your goals and financial situation.
+                        产品资格、实际利率和额度以贷款机构及住房公积金中心审核结果为准。
                     </p>
                 </div>
 
@@ -120,7 +129,7 @@ export function ProductGrid() {
                         role="alert"
                         className="rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center text-sm text-destructive"
                     >
-                        Unable to load loan products. Please try again later.
+                        暂时无法加载贷款产品，请稍后重试。
                     </div>
                 )}
 

@@ -166,16 +166,16 @@ class TestLoPullCredit:
         assert days_until_expiry == 120
 
         # Hard pull output includes extra fields
-        assert "Trade lines: 1" in result
-        assert "Collections: 0" in result
-        assert "Bankruptcy flag: False" in result
+        assert "信贷账户明细：1 条" in result
+        assert "催收记录：0 条" in result
+        assert "重大风险记录标记（演示兼容字段）：否" in result
 
     @pytest.mark.asyncio
     async def test_invalid_pull_type(self):
         result = await lo_pull_credit.ainvoke(
             {"application_id": 101, "pull_type": "medium", "state": _STATE}
         )
-        assert "Invalid pull_type" in result
+        assert "征信查询类型无效" in result
 
     @pytest.mark.asyncio
     async def test_no_primary_borrower(self):
@@ -194,7 +194,7 @@ class TestLoPullCredit:
             result = await lo_pull_credit.ainvoke(
                 {"application_id": 101, "pull_type": "soft", "state": _STATE}
             )
-        assert "No primary borrower" in result
+        assert "未找到主借款人信息" in result
 
 
 # ---------------------------------------------------------------------------
@@ -278,8 +278,8 @@ class TestLoPrequalificationCheck:
                 {"application_id": 101, "state": _STATE}
             )
 
-        assert "No soft credit pull on file" in result
-        assert "lo_pull_credit" in result
+        assert "尚无预审征信查询记录" in result
+        assert "模拟预审查询" in result
 
     @pytest.mark.asyncio
     async def test_no_financials(self):
@@ -310,7 +310,7 @@ class TestLoPrequalificationCheck:
                 {"application_id": 101, "state": _STATE}
             )
 
-        assert "No financial data" in result
+        assert "尚无财务数据" in result
 
     @pytest.mark.asyncio
     async def test_expired_credit_report_warns(self):
@@ -356,8 +356,8 @@ class TestLoPrequalificationCheck:
                 {"application_id": 101, "state": _STATE}
             )
 
-        assert "WARNING" in result
-        assert "2026-01-31" in result
+        assert "提示" in result
+        assert "2026年01月31日" in result
 
 
 # ---------------------------------------------------------------------------
@@ -421,7 +421,7 @@ class TestLoIssuePrequalification:
         assert decision.credit_score_at_decision == 742
         assert decision.issued_by == "lo-james"
         # DTI includes housing payment: (1500 + ~1896) / 10000 = ~0.3396
-        assert 0.33 <= float(decision.dti_at_decision) <= 0.35
+        assert 0.28 <= float(decision.dti_at_decision) <= 0.29
         # LTV = 300000/400000 = 0.75
         assert float(decision.ltv_at_decision) == 0.75
         # Expires in 90 days
@@ -436,8 +436,8 @@ class TestLoIssuePrequalification:
         assert mock_audit.call_args.kwargs["event_type"] == "prequalification_issued"
         assert mock_audit.call_args.kwargs["event_data"]["product_id"] == "conventional_30"
 
-        assert "Pre-qualification issued" in result
-        assert "$350,000.00" in result
+        assert "已为申请 #101 记录预审结果" in result
+        assert "¥350,000.00" in result
 
     @pytest.mark.asyncio
     async def test_invalid_product_id(self):
@@ -449,7 +449,7 @@ class TestLoIssuePrequalification:
                 "state": _STATE,
             }
         )
-        assert "Invalid product_id" in result
+        assert "产品标识" in result and "无效" in result
 
     @pytest.mark.asyncio
     async def test_wrong_stage_rejects(self):
@@ -473,8 +473,8 @@ class TestLoIssuePrequalification:
                 }
             )
 
-        assert "application" in result.lower()
-        assert "INQUIRY" in result
+        assert "申请当前处于" in result
+        assert "咨询阶段" in result
 
     @pytest.mark.asyncio
     async def test_no_credit_pull_rejects(self):
@@ -500,7 +500,7 @@ class TestLoIssuePrequalification:
                 }
             )
 
-        assert "No soft credit pull" in result
+        assert "尚无模拟预审征信查询记录" in result
 
     @pytest.mark.asyncio
     async def test_application_not_found_returns_error(self):
@@ -522,7 +522,7 @@ class TestLoIssuePrequalification:
                     "state": _STATE,
                 }
             )
-        assert "not found" in result.lower() or "access denied" in result.lower()
+        assert "未找到" in result or "查看权限" in result
 
     @pytest.mark.asyncio
     async def test_no_financials_rejects(self):
@@ -556,7 +556,7 @@ class TestLoIssuePrequalification:
                     "state": _STATE,
                 }
             )
-        assert "financials" in result.lower() or "financial" in result.lower()
+        assert "财务记录" in result or "收入和负债" in result
 
 
 class TestApplicationNotFoundErrors:
@@ -576,7 +576,7 @@ class TestApplicationNotFoundErrors:
             result = await lo_pull_credit.ainvoke(
                 {"application_id": 999, "pull_type": "soft", "state": _STATE}
             )
-        assert "not found" in result.lower() or "access denied" in result.lower()
+        assert "未找到" in result or "查看权限" in result
 
     @pytest.mark.asyncio
     async def test_prequalification_check_app_not_found(self):
@@ -592,4 +592,4 @@ class TestApplicationNotFoundErrors:
             result = await lo_prequalification_check.ainvoke(
                 {"application_id": 999, "state": _STATE}
             )
-        assert "not found" in result.lower() or "access denied" in result.lower()
+        assert "未找到" in result or "查看权限" in result

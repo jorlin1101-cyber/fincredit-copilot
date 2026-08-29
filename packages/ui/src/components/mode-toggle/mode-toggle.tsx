@@ -21,9 +21,9 @@ export function ModeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme('light')}>Light</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('dark')}>Dark</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')}>System</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('light')}>浅色</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('dark')}>深色</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('system')}>跟随系统</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

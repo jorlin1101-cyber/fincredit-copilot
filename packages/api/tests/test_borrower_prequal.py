@@ -53,7 +53,7 @@ class TestPrequalificationEstimate:
                 {"application_id": 1, "state": _state()}
             )
 
-        assert "not found" in result
+        assert "未找到" in result
 
     @pytest.mark.asyncio
     async def test_no_financials_asks_for_info(self):
@@ -80,7 +80,7 @@ class TestPrequalificationEstimate:
                 {"application_id": 1, "state": _state()}
             )
 
-        assert "financial information" in result.lower()
+        assert "财务信息" in result
 
     @pytest.mark.asyncio
     async def test_missing_credit_score_lists_needed_fields(self):
@@ -110,7 +110,7 @@ class TestPrequalificationEstimate:
                 {"application_id": 1, "state": _state()}
             )
 
-        assert "credit score" in result
+        assert "征信评分" in result
 
     @pytest.mark.asyncio
     async def test_happy_path_shows_eligible_products(self):
@@ -143,11 +143,11 @@ class TestPrequalificationEstimate:
                 {"application_id": 1, "state": _state()}
             )
 
-        assert "Preliminary Pre-Qualification Estimate" in result
-        assert "Eligible Products" in result
-        assert "preliminary estimate" in result.lower()
-        assert "DTI Ratio" in result
-        assert "LTV Ratio" in result
+        assert "住房贷款预审测算" in result
+        assert "初步匹配产品" in result
+        assert "不构成授信承诺" in result
+        assert "债务收入比" in result
+        assert "贷款成数" in result
 
     @pytest.mark.asyncio
     async def test_passes_self_reported_data_to_evaluator(self):
@@ -265,8 +265,8 @@ class TestPrequalificationEstimate:
                 {"application_id": 1, "state": _state()}
             )
 
-        assert "loan officer will review" in result.lower()
-        assert "credit check" in result.lower()
+        assert "客户经理和有权审批人员" in result
+        assert "核验材料、征信及适用政策" in result
 
     @pytest.mark.asyncio
     async def test_no_loan_type_passes_none(self):

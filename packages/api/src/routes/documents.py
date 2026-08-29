@@ -244,7 +244,7 @@ async def correct_extracted_field(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
         ) from exc
     if result is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Extraction not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="未找到材料识别结果")
     correction, extraction = result
     return ExtractionCorrectionResponse(
         id=correction.id,
@@ -281,7 +281,7 @@ async def get_extraction_corrections(
         extraction_id=extraction_id,
     )
     if corrections is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Extraction not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="未找到材料识别结果")
     return ExtractionCorrectionListResponse(
         extraction_id=extraction_id,
         corrections=[ExtractionCorrectionResponse.model_validate(item) for item in corrections],

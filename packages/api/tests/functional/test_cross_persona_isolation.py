@@ -104,7 +104,7 @@ class TestPiiByRole:
         app = make_app_sarah_1()
         client = make_client(ceo(), make_mock_session(single=app))
         data = client.get("/api/applications/101").json()
-        assert data["borrowers"][0]["ssn"] == "***-**-6789"
+        assert data["borrowers"][0]["ssn"] == "**************6789"
 
     def test_ceo_sees_masked_dob(self, make_client):
         app = make_app_sarah_1()

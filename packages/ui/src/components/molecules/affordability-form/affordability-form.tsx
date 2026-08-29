@@ -39,7 +39,7 @@ const POLICY_SOURCES = [
     title: '全国最低首付比例政策',
     detail: '商业性个人住房贷款最低首付比例全国下限为 15%，地方和银行可因城施策。',
     source: '中国人民银行、国家金融监督管理总局（2024-09-24）',
-    href: 'https://www.pbc.gov.cn/goutongjiaoliu/113456/113469/2025092212554216285/index.html',
+    href: 'https://www.nfra.gov.cn/cn/view/pages/governmentDetail.html?docId=1180751&generaltype=1',
   },
   {
     title: '5 年期以上 LPR',
@@ -254,11 +254,7 @@ export function AffordabilityForm() {
 
                 <button
                   type="button"
-                  onClick={() =>
-                    openChat(
-                      '我已有意向住房，请根据房屋总价、首付款、家庭收入和现有债务，帮我分析贷款方案与所需资料。',
-                    )
-                  }
+                  onClick={() => openChat()}
                   className="mt-4 w-full cursor-pointer text-center text-sm text-[#1e3a5f] underline decoration-[#1e3a5f]/30 underline-offset-2 transition-colors hover:text-[#2b5a8f] hover:decoration-[#2b5a8f]/50 dark:text-blue-300 dark:decoration-blue-300/30 dark:hover:text-blue-200"
                 >
                   已有意向住房？咨询小融

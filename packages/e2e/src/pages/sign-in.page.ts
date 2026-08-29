@@ -31,8 +31,8 @@ export class SignInPage {
     this.underwriterButton = page.getByTestId("persona-underwriter");
     this.ceoButton = page.getByTestId("persona-ceo");
 
-    this.closeButton = page.getByLabel("Return to home");
-    this.passwordToggle = page.getByLabel(/Show password|Hide password/);
+    this.closeButton = page.getByLabel("返回首页");
+    this.passwordToggle = page.getByLabel(/显示密码|隐藏密码/);
   }
 
   async goto(): Promise<void> {

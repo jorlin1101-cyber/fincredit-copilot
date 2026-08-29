@@ -64,7 +64,7 @@ class TestPrequalInGetResponse:
         pq = data["prequalification"]
         assert pq is not None
         assert pq["product_id"] == "conventional_30"
-        assert pq["product_name"] == "30-Year Fixed Conventional"
+        assert pq["product_name"] == "30年期商业性个人住房贷款"
         assert float(pq["max_loan_amount"]) == 350000.0
         assert pq["estimated_rate"] == 6.5
         assert pq["issued_at"] is not None
@@ -86,7 +86,7 @@ class TestPrequalInGetResponse:
 
         resp = client.get(f"/api/applications/{app.id}")
         pq = resp.json()["prequalification"]
-        assert pq["product_name"] == "FHA Loan"
+        assert pq["product_name"] == "住房公积金个人住房贷款"
 
     def test_should_fall_back_to_product_id_for_unknown_product(self, make_client):
         """If product_id isn't in PRODUCTS, use the raw ID as name."""

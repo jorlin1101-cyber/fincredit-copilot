@@ -4,13 +4,13 @@ import { test, expect, type Locator, type Page } from "@playwright/test";
 
 // S-01: Extract repeated "ensure chat visible" pattern into a local helper.
 async function ensureChatVisible(page: Page): Promise<Locator> {
-    const textarea = page.locator('textarea[placeholder="Type your message..."]').first();
+    const textarea = page.locator('textarea[placeholder="请输入您的问题…"]').first();
     // Wait for the chat sidebar to render (may take a moment after navigation)
     await textarea.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {
         // On mobile viewports the sidebar is hidden behind a FAB
     });
     if (!(await textarea.isVisible())) {
-        const fab = page.locator('button[aria-label="Open chat assistant"]');
+        const fab = page.locator('button[aria-label="打开智能助手"]');
         if (await fab.isVisible()) await fab.click();
     }
     return textarea;
@@ -19,19 +19,24 @@ async function ensureChatVisible(page: Page): Promise<Locator> {
 test.describe("Chat Panel", () => {
     test.beforeEach(async ({ page }) => {
         await page.goto("/borrower");
+        const clearButton = page.locator('button[aria-label="清空聊天记录"]');
+        if (await clearButton.isVisible()) {
+            await expect(clearButton).toBeEnabled({ timeout: 15_000 });
+            await clearButton.click();
+        }
     });
 
     // This test MUST be first -- later tests send messages via WS which leave
     // conversation history that hides the empty state.
     test("should show empty state with suggestion text before messages", async ({ page }) => {
-        await expect(page.getByText("How can I help?")).toBeVisible({ timeout: 15_000 });
+        await expect(page.getByText(/您好，我是小融/)).toBeVisible({ timeout: 15_000 });
     });
 
     test("should display chat sidebar on authenticated pages", async ({ page }) => {
-        const chatSidebar = page.locator('aside[aria-label="Chat Assistant"]');
+        const chatSidebar = page.locator('aside[aria-label="智能助手"]');
         // On desktop, sidebar should be visible; on mobile, FAB button instead
         const sidebarVisible = await chatSidebar.isVisible();
-        const fabButton = page.locator('button[aria-label="Open chat assistant"]');
+        const fabButton = page.locator('button[aria-label="打开智能助手"]');
         const fabVisible = await fabButton.isVisible();
 
         expect(sidebarVisible || fabVisible).toBeTruthy();
@@ -39,18 +44,18 @@ test.describe("Chat Panel", () => {
 
     test("should accept text in chat input", async ({ page }) => {
         const textarea = await ensureChatVisible(page);
-        await textarea.fill("Hello, I need help with my mortgage application");
-        await expect(textarea).toHaveValue("Hello, I need help with my mortgage application");
+        await textarea.fill("我想了解当前住房贷款申请进度");
+        await expect(textarea).toHaveValue("我想了解当前住房贷款申请进度");
     });
 
     test("should display user message after sending", async ({ page }) => {
         const textarea = await ensureChatVisible(page);
 
-        await textarea.fill("Test message for E2E");
-        await page.locator('button[aria-label="Send message"]').click();
+        await textarea.fill("请查询我的申请进度");
+        await page.locator('button[aria-label="发送消息"]').click();
 
         // The user message should appear in the chat
-        await expect(page.getByText("Test message for E2E")).toBeVisible({ timeout: 5_000 });
+        await expect(page.getByText("请查询我的申请进度")).toBeVisible({ timeout: 5_000 });
     });
 
     test("should populate input via chat-prefill event with autoSend false", async ({ page }) => {
@@ -61,14 +66,14 @@ test.describe("Chat Panel", () => {
             window.dispatchEvent(
                 new CustomEvent("chat-prefill", {
                     detail: {
-                        message: "Prefilled via E2E test",
+                        message: "请帮我查看待补充材料",
                         autoSend: false,
                     },
                 }),
             );
         });
 
-        await expect(textarea).toHaveValue("Prefilled via E2E test");
+        await expect(textarea).toHaveValue("请帮我查看待补充材料");
     });
 
     test("should auto-send message via chat-prefill with autoSend true", async ({ page }) => {
@@ -79,7 +84,7 @@ test.describe("Chat Panel", () => {
             window.dispatchEvent(
                 new CustomEvent("chat-prefill", {
                     detail: {
-                        message: "Auto-sent E2E test message",
+                        message: "请查询审批条件",
                         autoSend: true,
                     },
                 }),
@@ -88,28 +93,29 @@ test.describe("Chat Panel", () => {
 
         // The message should appear as a user message bubble (auto-sent)
         // Use .first() since desktop sidebar and mobile panel may both render the text
-        await expect(page.getByText("Auto-sent E2E test message").first()).toBeVisible({ timeout: 5_000 });
+        await expect(page.getByText("请查询审批条件").first()).toBeVisible({ timeout: 5_000 });
     });
 
     test("should show clear history button after sending a message and clear on click", async ({ page }) => {
         const textarea = await ensureChatVisible(page);
-        const clearButton = page.locator('button[aria-label="Clear chat history"]');
+        const clearButton = page.locator('button[aria-label="清空聊天记录"]');
 
         // Send a message so the trash button appears
-        await textarea.fill("Message to be cleared");
-        await page.locator('button[aria-label="Send message"]').click();
-        await expect(page.getByText("Message to be cleared").first()).toBeVisible({ timeout: 5_000 });
+        await textarea.fill("这条消息将被清除");
+        await page.locator('button[aria-label="发送消息"]').click();
+        await expect(page.getByText("这条消息将被清除").first()).toBeVisible({ timeout: 5_000 });
 
-        // Trash button should now be visible
+        // Reload to end the active stream without coupling this UI test to model latency.
+        // The persisted user message must still be present and can then be cleared.
+        await page.reload();
+        await expect(page.getByText("这条消息将被清除").first()).toBeVisible({ timeout: 10_000 });
         await expect(clearButton).toBeVisible();
-
-        // Wait for streaming to finish (button becomes enabled) before clicking
-        await expect(clearButton).toBeEnabled({ timeout: 15_000 });
+        await expect(clearButton).toBeEnabled({ timeout: 10_000 });
         await clearButton.click();
 
         // The message should be gone and empty state should return
-        await expect(page.getByText("Message to be cleared")).toHaveCount(0);
-        await expect(page.getByText("How can I help?")).toBeVisible({ timeout: 5_000 });
+        await expect(page.getByText("这条消息将被清除")).toHaveCount(0);
+        await expect(page.getByText(/您好，我是小融/)).toBeVisible({ timeout: 5_000 });
     });
 
     // C-1: Replaced vacuous `ws !== null || true` assertion. The test documents intent

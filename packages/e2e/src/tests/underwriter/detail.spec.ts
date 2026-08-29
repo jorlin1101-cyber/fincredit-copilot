@@ -40,6 +40,25 @@ test.describe("Underwriter Application Detail", () => {
     });
 
     test("should send chat-prefill when clicking Run Assessment", async ({ page }) => {
+        // The queue also contains decision-stage records where reassessment is disabled.
+        // Walk the visible rows until an underwriting-stage record is found.
+        await page.goto("/underwriter");
+        const rows = page.locator("tbody tr");
+        await expect(rows.first()).toBeVisible({ timeout: 10_000 });
+        const rowCount = await rows.count();
+        let foundEnabledAssessment = false;
+        for (let index = 0; index < rowCount; index += 1) {
+            await page.locator("tbody tr").nth(index).click();
+            await page.waitForURL(/\/underwriter\/\d+/);
+            if (await detail.runAssessmentButton.isEnabled()) {
+                foundEnabledAssessment = true;
+                break;
+            }
+            await page.goto("/underwriter");
+            await expect(page.locator("tbody tr").first()).toBeVisible({ timeout: 10_000 });
+        }
+        expect(foundEnabledAssessment).toBeTruthy();
+
         const prefillPromise = page.evaluate(() => {
             return new Promise<{ message: string; autoSend: boolean }>((resolve, reject) => {
                 const timeout = setTimeout(
@@ -59,7 +78,7 @@ test.describe("Underwriter Application Detail", () => {
 
         await detail.runAssessmentButton.click();
         const result = await prefillPromise;
-        expect(result.message).toContain("risk assessment");
+        expect(result.message).toContain("风险画像");
     });
 
     test("should display Compliance Checks card", async () => {
@@ -94,7 +113,7 @@ test.describe("Underwriter Application Detail", () => {
 
         await detail.issueConditionButton.click();
         const result = await prefillPromise;
-        expect(result.message).toContain("condition");
+        expect(result.message).toContain("审批条件");
     });
 
     test("should display Preliminary Recommendation banner", async () => {
@@ -117,13 +136,13 @@ test.describe("Underwriter Application Detail", () => {
         await expect(detail.recordDecisionButton).toBeDisabled();
 
         // Add rationale
-        await detail.rationaleInput.fill("Strong credit profile, low DTI");
+        await detail.rationaleInput.fill("征信与偿付能力符合当前审批要求");
         await expect(detail.recordDecisionButton).toBeEnabled();
     });
 
     test("should send chat-prefill when clicking Record Decision", async ({ page }) => {
         await detail.approveRadio.check();
-        await detail.rationaleInput.fill("All conditions met");
+        await detail.rationaleInput.fill("申请材料及审批条件均已核验");
 
         const prefillPromise = page.evaluate(() => {
             return new Promise<{ message: string; autoSend: boolean }>((resolve, reject) => {
@@ -144,8 +163,8 @@ test.describe("Underwriter Application Detail", () => {
 
         await detail.recordDecisionButton.click();
         const result = await prefillPromise;
-        expect(result.message).toContain("Approve");
-        expect(result.message).toContain("All conditions met");
+        expect(result.message).toContain("同意");
+        expect(result.message).toContain("申请材料及审批条件均已核验");
     });
 
     test("should display Application Summary card", async () => {
@@ -178,7 +197,7 @@ test.describe("Underwriter Application Detail", () => {
 
         await detail.kbTopicChips.first().click();
         const result = await prefillPromise;
-        expect(result.message).toContain("compliance KB");
+        expect(result.message).toContain("监管政策");
     });
 
     test("should show application not found for invalid ID", async ({ page }) => {

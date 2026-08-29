@@ -20,9 +20,11 @@ from ..services.condition import get_outstanding_count
 logger = logging.getLogger(__name__)
 
 _DECISION_STAGES = frozenset({ApplicationStage.UNDERWRITING, ApplicationStage.CONDITIONAL_APPROVAL})
-_APPROVAL_CATEGORIES = frozenset({"Approve", "Approve with Conditions"})
-_DENY_CATEGORIES = frozenset({"Deny"})
-_SUSPEND_CATEGORIES = frozenset({"Suspend"})
+_STAGE_LABELS = {
+    ApplicationStage.UNDERWRITING: "授信审批",
+    ApplicationStage.CONDITIONAL_APPROVAL: "附条件通过",
+    ApplicationStage.CLEAR_TO_CLOSE: "具备签约条件",
+}
 
 
 async def check_compliance_gate(session: AsyncSession, application_id: int) -> str | None:
@@ -52,18 +54,18 @@ async def check_compliance_gate(session: AsyncSession, application_id: int) -> s
 
     if comp_event is None:
         return (
-            "Run compliance_check before rendering a decision. No compliance "
-            f"check found for application #{application_id}."
+            f"申请 #{application_id} 尚未完成合规检查，暂不能提交通过决定。"
+            "请先运行合规检查并由审批人员核对结果。"
         )
 
     event_data = comp_event.event_data or {}
     overall = event_data.get("overall_status") or event_data.get("status")
     if overall == "FAIL" or not event_data.get("can_proceed", True):
         failed_checks = event_data.get("failed_checks", [])
-        failed_str = ", ".join(failed_checks) if failed_checks else "one or more checks"
+        failed_str = "、".join(failed_checks) if failed_checks else "一项或多项检查"
         return (
-            f"Cannot approve application #{application_id} -- compliance check "
-            f"FAILED ({failed_str}). Resolve compliance issues before approval."
+            f"申请 #{application_id} 的合规检查未通过（{failed_str}），暂不能提交通过决定。"
+            "请先处理合规问题并重新检查。"
         )
 
     return None
@@ -145,9 +147,9 @@ async def _resolve_decision(
     if current_stage not in _DECISION_STAGES:
         return {
             "error": (
-                f"Decisions can only be rendered during underwriting or conditional "
-                f"approval. Application #{application_id} is in "
-                f"{current_stage.value.replace('_', ' ').title()}."
+                "仅可在“授信审批”或“附条件通过”阶段记录授信决定。"
+                f"申请 #{application_id} 当前处于“"
+                f"{_STAGE_LABELS.get(current_stage, current_stage.value)}”阶段。"
             )
         }
 
@@ -165,9 +167,8 @@ async def _resolve_decision(
             if outstanding_conditions > 0:
                 return {
                     "error": (
-                        f"Cannot approve application #{application_id} from Conditional "
-                        f"Approval -- there are still outstanding conditions. Clear or "
-                        f"waive all conditions before final approval."
+                        f"申请 #{application_id} 仍有未完成的审批条件，暂不能从“附条件通过”"
+                        "推进至最终通过。请先完成或由有权人员豁免全部条件。"
                     )
                 }
             decision_type = DecisionType.APPROVED
@@ -183,7 +184,7 @@ async def _resolve_decision(
 
     elif decision_lower == "deny":
         if not denial_reasons:
-            return {"error": "Denial requires at least one denial_reason (ECOA compliance)."}
+            return {"error": "记录未通过决定时，必须填写至少一项具体、可说明的原因。"}
         decision_type = DecisionType.DENIED
         new_stage = ApplicationStage.DENIED
 
@@ -191,15 +192,20 @@ async def _resolve_decision(
         if current_stage != ApplicationStage.UNDERWRITING:
             return {
                 "error": (
-                    f"Suspend is only available from the UNDERWRITING stage. "
-                    f"Application #{application_id} is in "
-                    f"{current_stage.value.replace('_', ' ').title()}."
+                    "“暂缓”仅可在授信审批阶段使用。"
+                    f"申请 #{application_id} 当前处于“"
+                    f"{_STAGE_LABELS.get(current_stage, current_stage.value)}”阶段。"
                 )
             }
         decision_type = DecisionType.SUSPENDED
         new_stage = None  # No stage change for suspend
     else:
-        return {"error": f"Invalid decision '{decision}'. Must be approve, deny, or suspend."}
+        return {
+            "error": (
+                f"无法识别决定类型“{decision}”。系统内部仅接受 approve、deny 或 suspend，"
+                "界面应分别显示为通过、未通过或暂缓。"
+            )
+        }
 
     # Compute AI agreement
     ai_agreement = None

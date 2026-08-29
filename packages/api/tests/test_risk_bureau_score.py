@@ -37,16 +37,16 @@ class TestBureauCreditScoreOverride:
         risk = compute_risk_factors(_make_app(), [fin], [], bureau_credit_score=680)
         # Bureau score 680 used instead of self-reported 720
         assert risk.credit["value"] == 680
-        assert risk.credit["rating"] == "Medium"
+        assert risk.credit["rating"] == "中"
 
     def test_bureau_changes_risk_rating(self):
         """Bureau score of 610 produces High risk despite self-reported 750."""
         fin = _make_fin(credit_score=750)
         risk_without = compute_risk_factors(_make_app(), [fin], [])
         risk_with = compute_risk_factors(_make_app(), [fin], [], bureau_credit_score=610)
-        assert risk_without.credit["rating"] == "Low"
-        # 610 < 620 threshold -> High risk
-        assert risk_with.credit["rating"] == "High"
+        assert risk_without.credit["rating"] == "低"
+        # 610 falls inside the internal 600-700 manual-review band.
+        assert risk_with.credit["rating"] == "中"
         assert risk_with.credit["value"] == 610
 
     def test_bureau_none_falls_through_to_self_reported(self):
@@ -60,11 +60,11 @@ class TestBureauCreditScoreOverride:
         fin = _make_fin(credit_score=None)
         risk = compute_risk_factors(_make_app(), [fin], [], bureau_credit_score=740)
         assert risk.credit["value"] == 740
-        assert risk.credit["rating"] == "Low"
+        assert risk.credit["rating"] == "低"
 
     def test_no_bureau_no_self_reported_warns(self):
         """No scores at all produces warning."""
         fin = _make_fin(credit_score=None)
         risk = compute_risk_factors(_make_app(), [fin], [])
         assert risk.credit["value"] is None
-        assert "No credit score on file" in risk.warnings
+        assert "尚无可用的模拟征信评分" in risk.warnings
