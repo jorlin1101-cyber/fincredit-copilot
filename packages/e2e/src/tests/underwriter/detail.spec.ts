@@ -33,13 +33,19 @@ test.describe("Underwriter Application Detail", () => {
         await expect(detail.creditMetric).toBeVisible();
         await expect(detail.capacityMetric).toBeVisible();
         await expect(detail.collateralMetric).toBeVisible();
+        const breakdown = detail.page.getByTestId("dti-calculation-breakdown");
+        if (await breakdown.count()) {
+            await expect(breakdown).toContainText("现有月负债");
+            await expect(breakdown).toContainText("拟贷款月供");
+            await expect(breakdown).toContainText("合计月偿付额");
+        }
     });
 
     test("should display Run Assessment button", async () => {
         await expect(detail.runAssessmentButton).toBeVisible();
     });
 
-    test("should send chat-prefill when clicking Run Assessment", async ({ page }) => {
+    test("should run the deterministic assessment directly", async ({ page }) => {
         // The queue also contains decision-stage records where reassessment is disabled.
         // Walk the visible rows until an underwriting-stage record is found.
         await page.goto("/underwriter");
@@ -59,26 +65,14 @@ test.describe("Underwriter Application Detail", () => {
         }
         expect(foundEnabledAssessment).toBeTruthy();
 
-        const prefillPromise = page.evaluate(() => {
-            return new Promise<{ message: string; autoSend: boolean }>((resolve, reject) => {
-                const timeout = setTimeout(
-                    () => reject(new Error("chat-prefill event not received within 5s")),
-                    5_000,
-                );
-                window.addEventListener(
-                    "chat-prefill",
-                    ((e: CustomEvent) => {
-                        clearTimeout(timeout);
-                        resolve(e.detail);
-                    }) as EventListener,
-                    { once: true },
-                );
-            });
-        });
-
+        const responsePromise = page.waitForResponse(
+            (response) =>
+                response.url().includes("/deterministic-assessment") && response.request().method() === "POST",
+        );
         await detail.runAssessmentButton.click();
-        const result = await prefillPromise;
-        expect(result.message).toContain("风险画像");
+        const response = await responsePromise;
+        expect(response.ok()).toBeTruthy();
+        await expect(page.getByText("风险画像已生成并刷新。")).toBeVisible();
     });
 
     test("should display Compliance Checks card", async () => {

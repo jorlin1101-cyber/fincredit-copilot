@@ -49,8 +49,15 @@ export function useComplianceResult(applicationId: number | undefined) {
 }
 
 export function useDeterministicAssessment(applicationId: number) {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: (proposedMonthlyPayment: number) =>
       runDeterministicAssessment({ applicationId, proposedMonthlyPayment }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ['applications', applicationId, 'risk-assessment'],
+      });
+    },
   });
 }

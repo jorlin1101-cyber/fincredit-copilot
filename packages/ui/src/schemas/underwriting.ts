@@ -24,6 +24,24 @@ export const RiskAssessmentSchema = z.object({
   recommendation: z.string().nullable().optional(),
   recommendation_rationale: z.array(z.string()).nullable().optional(),
   recommendation_conditions: z.array(z.string()).nullable().optional(),
+  calculation_inputs: z
+    .object({
+      dti: z
+        .object({
+          monthly_income: z.number().optional(),
+          existing_monthly_debt: z.number().optional(),
+          proposed_monthly_payment: z.number().optional(),
+        })
+        .optional(),
+      ltv: z
+        .object({
+          loan_amount: z.number().optional(),
+          property_value: z.number().optional(),
+        })
+        .optional(),
+    })
+    .nullable()
+    .optional(),
   assessed_by: z.string().nullable().optional(),
   created_at: z.string().nullable().optional(),
 });

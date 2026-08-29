@@ -261,6 +261,17 @@ class TestUwApplicationDetail:
             "is_urgent": False,
         }
 
+        mock_risk_assessment = MagicMock()
+        mock_risk_assessment.dti_value = 68.75
+        mock_risk_assessment.dti_rating = "High"
+        mock_risk_assessment.calculation_inputs = {
+            "dti": {
+                "monthly_income": 8000,
+                "existing_monthly_debt": 2500,
+                "proposed_monthly_payment": 3000,
+            }
+        }
+
         state = {"user_id": "uw-maria", "user_role": "underwriter"}
 
         with (
@@ -283,6 +294,11 @@ class TestUwApplicationDetail:
                 "src.agents.underwriter_tools.get_rate_lock_status",
                 new_callable=AsyncMock,
                 return_value=mock_rate_lock,
+            ),
+            patch(
+                "src.agents.underwriter_tools.get_latest_risk_assessment",
+                new_callable=AsyncMock,
+                return_value=mock_risk_assessment,
             ),
             patch(
                 "src.agents.underwriter_tools.update_recommendation",
@@ -314,7 +330,11 @@ class TestUwApplicationDetail:
         assert "工薪就业" in result
         assert "财务情况：" in result
         assert "¥8,000.00" in result
-        assert "债务收入比：" in result
+        assert "现有负债率（不含拟贷款月供，仅供参考）：31.25%" in result
+        assert "指标口径：总债务收入比（DTI，含拟贷款月供）" in result
+        assert "拟贷款月供：¥3,000.00" in result
+        assert "合计月偿付额：¥5,500.00" in result
+        assert "DTI：68.75%" in result
         assert "贷款信息：" in result
         assert "贷款成数：" in result
         assert "申请材料（1 项）：" in result
@@ -378,6 +398,11 @@ class TestUwApplicationDetail:
                 "src.agents.underwriter_tools.get_rate_lock_status",
                 new_callable=AsyncMock,
                 return_value={"status": "none"},
+            ),
+            patch(
+                "src.agents.underwriter_tools.get_latest_risk_assessment",
+                new_callable=AsyncMock,
+                return_value=None,
             ),
             patch(
                 "src.agents.underwriter_tools.write_audit_event",

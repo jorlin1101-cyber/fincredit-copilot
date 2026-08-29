@@ -15,6 +15,7 @@ import jwt as pyjwt
 from db.enums import UserRole
 from fastapi import APIRouter, Depends, Query, WebSocket
 from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage, SystemMessage
+from langgraph.errors import GraphRecursionError
 
 from ..agents.registry import get_agent
 from ..core.auth import build_data_scope
@@ -29,7 +30,8 @@ from ..services.audit import write_audit_event
 from ..services.conversation import ConversationService, get_conversation_service
 
 logger = logging.getLogger(__name__)
-CHAT_RESPONSE_TIMEOUT_SECONDS = 60
+CHAT_RESPONSE_TIMEOUT_SECONDS = settings.CHAT_RESPONSE_TIMEOUT_SECONDS
+CHAT_AGENT_RECURSION_LIMIT = settings.CHAT_AGENT_RECURSION_LIMIT
 
 
 async def authenticate_websocket(
@@ -171,7 +173,7 @@ async def run_agent_stream(
         set_trace_context(session_id=session_id, user_id=user_id)
         config = {
             "configurable": {"thread_id": thread_id},
-            "recursion_limit": 50,
+            "recursion_limit": CHAT_AGENT_RECURSION_LIMIT,
         }
 
         full_response = ""
@@ -349,6 +351,19 @@ async def run_agent_stream(
                     }
                 )
                 continue
+            except GraphRecursionError:
+                logger.warning(
+                    "Agent stopped after reaching the %s-step limit for session %s",
+                    CHAT_AGENT_RECURSION_LIMIT,
+                    session_id,
+                )
+                await _send(
+                    {
+                        "type": "error",
+                        "content": "本次查询需要的步骤过多，已安全停止。请缩小查询范围后重试。",
+                    }
+                )
+                continue
             except Exception:
                 logger.exception("Agent invocation failed")
                 await _send(
@@ -499,9 +514,7 @@ def create_authenticated_chat_router(
             graph = get_agent(agent_name, checkpointer=checkpointer)
         except Exception:
             logger.exception("Failed to load %s agent", agent_name)
-            await ws.send_json(
-                {"type": "error", "content": "智能助手暂时不可用，请稍后重试。"}
-            )
+            await ws.send_json({"type": "error", "content": "智能助手暂时不可用，请稍后重试。"})
             await ws.close()
             return
 

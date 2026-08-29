@@ -27,7 +27,7 @@ test.describe("Borrower Disclosures", () => {
         expect(isAllDone || hasPending).toBeTruthy();
     });
 
-    test("should immediately show acknowledgment without sending a chat message", async ({ page }) => {
+    test("should require reading confirmation before showing acknowledgment", async ({ page }) => {
         const reviewButton = page.getByRole("button", {
             name: "查看并确认",
         });
@@ -35,7 +35,32 @@ test.describe("Borrower Disclosures", () => {
         const beforeCount = await reviewButton.count();
         if (beforeCount > 0) {
             await reviewButton.first().click();
-            await expect(reviewButton).toHaveCount(beforeCount - 1);
+            const dialog = page.getByRole("dialog");
+            await expect(dialog).toBeVisible();
+
+            const submitButton = dialog.getByRole("button", {
+                name: "确认并提交",
+            });
+            await expect(submitButton).toBeDisabled();
+
+            await dialog.getByRole("checkbox").check();
+            await expect(submitButton).toBeEnabled();
+
+            const responsePromise = page.waitForResponse(
+                (response) =>
+                    response.url().includes("/disclosures/") &&
+                    response.url().endsWith("/acknowledge") &&
+                    response.request().method() === "POST",
+            );
+            await submitButton.click();
+            expect((await responsePromise).ok()).toBeTruthy();
+            await expect(dialog).not.toBeVisible();
+
+            if (beforeCount > 1) {
+                await expect(reviewButton).toHaveCount(beforeCount - 1);
+            } else {
+                await expect(page.getByText("信息披露均已确认")).toBeVisible();
+            }
             await expect(page.getByText(/我已阅读并确认《/)).toHaveCount(0);
         }
     });

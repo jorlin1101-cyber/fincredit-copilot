@@ -55,7 +55,7 @@ export class UWDetailPage {
         this.riskAssessmentHeading = page.getByText("补充风险画像").first();
         this.runAssessmentButton = page.getByRole("button", { name: /运行画像|重新运行/ }).first();
         this.creditMetric = page.getByText("征信", { exact: true }).first();
-        this.capacityMetric = page.getByText(/偿付能力 DTI/).first();
+        this.capacityMetric = page.getByText(/总债务收入比 DTI/).first();
         this.collateralMetric = page.getByText(/抵押物 LTV/).first();
 
         this.complianceHeading = page.getByText("合规检查").first();

@@ -38,6 +38,11 @@ system_prompt: |
     uw_application_detail to get the full picture: borrower info, financials,
     loan details, documents, conditions, and rate lock.
   - Present information in organized sections for easy review.
+  - The current-debt ratio excludes the proposed housing payment and MUST NOT
+    be described as DTI. When a saved deterministic assessment exists, quote
+    its DTI value and calculation inputs exactly. DTI in this workflow means
+    (existing monthly debt + proposed monthly housing payment) / household
+    monthly income. Never recalculate or replace that persisted value.
 
   STAGE-AWARE SUGGESTIONS:
   - NEVER suggest or offer to perform an action that is not valid for the
@@ -55,31 +60,20 @@ system_prompt: |
 
   RISK ASSESSMENT:
   - Only available in the UNDERWRITING stage.
-  - When asked to assess risk or evaluate an application, you MUST
-    complete ALL of the following tool calls before responding to the
-    user. Do not respond with partial results or commentary between
-    steps. Execute all steps silently, then present only the final
-    recommendation.
-
-    Step 1: Call uw_application_detail to get all application data.
-    Step 2: Call ALL FIVE risk tools using values from step 1:
-       - calculate_dti(monthly_income=..., monthly_debts=...)
-       - calculate_ltv(loan_amount=..., property_value=...)
-       - evaluate_credit_risk(credit_score=..., source=...)
-       - assess_income_stability(employment_statuses=[...])
-       - assess_asset_sufficiency(total_assets=..., loan_amount=...)
-    Step 3: Call uw_predict_loan_approval(application_id=...) for the
-       ML prediction. If it returns "not configured", that is normal.
-    Step 4: Call generate_risk_recommendation with ALL results from
-       step 2, plus has_financials and doc_count from step 1, plus
-       predictive_model_result from step 3 (null if unavailable).
-    Step 5: Call uw_save_risk_assessment to persist the assessment,
-       including predictive_model_result and predictive_model_available.
-
-  - After ALL steps complete, present the recommendation to the user:
-    the overall risk level, the recommendation (Approve / Approve with
-    Conditions / Suspend / Deny), key risk factors with ratings, any
-    compensating factors, conditions, or warnings.
+  - When asked to interpret an already generated risk profile, call
+    uw_application_detail and explain the latest saved fixed-rule result.
+    Do not call calculate_dti and do not create a second assessment.
+  - When asked to generate or rerun a risk profile, first obtain the proposed
+    monthly housing payment from the user or from the latest saved fixed-rule
+    assessment. Then call uw_deterministic_assessment exactly once. This tool
+    calculates DTI/LTV, checks documents and consistency, and persists one
+    auditable result. Never use the language model or calculate_dti to redo
+    the arithmetic.
+  - Explain the DTI inputs separately: household monthly income, existing
+    monthly debt, proposed monthly housing payment, and total monthly
+    obligations. Distinguish the current-debt ratio from DTI.
+  - Present the overall risk level, key factors, missing evidence, and the
+    fixed-rule suggestion in concise Chinese.
   - If the predictive model was available, mention its result as one
     signal among many -- not a definitive decision.
   - Always note that assessments are advisory only.
@@ -302,6 +296,9 @@ tools:
     allowed_roles: [underwriter, admin]
   - name: uw_application_detail
     description: "Get full application details including borrower, financials, documents, and conditions"
+    allowed_roles: [underwriter, admin]
+  - name: uw_deterministic_assessment
+    description: "Run and persist the fixed-rule DTI/LTV, document, and consistency assessment"
     allowed_roles: [underwriter, admin]
   - name: calculate_dti
     description: "Calculate Debt-to-Income ratio and risk rating from income and debts"

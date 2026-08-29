@@ -1,6 +1,6 @@
 // This project was developed with assistance from AI tools.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { staffName } from '@/lib/staff-names';
 import {
@@ -222,13 +222,21 @@ const ASSESSMENT_RATING_LABELS: Record<string, string> = {
 function DeterministicAssessmentCard({
   appId,
   stage,
+  monthlyPayment,
+  onMonthlyPaymentChange,
 }: {
   appId: number;
   stage?: ApplicationStage;
+  monthlyPayment: string;
+  onMonthlyPaymentChange: (value: string) => void;
 }) {
-  const [monthlyPayment, setMonthlyPayment] = useState('6500');
   const assessment = useDeterministicAssessment(appId);
-  const disabled = !stageAllows(stage, ASSESSMENT_STAGES) || assessment.isPending;
+  const paymentValue = Number(monthlyPayment);
+  const disabled =
+    !stageAllows(stage, ASSESSMENT_STAGES) ||
+    assessment.isPending ||
+    !Number.isFinite(paymentValue) ||
+    paymentValue <= 0;
   const result = assessment.data;
 
   return (
@@ -255,14 +263,14 @@ function DeterministicAssessmentCard({
               type="number"
               min="0"
               value={monthlyPayment}
-              onChange={(event) => setMonthlyPayment(event.target.value)}
+              onChange={(event) => onMonthlyPaymentChange(event.target.value)}
               className="mt-1 block w-32 rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground"
             />
           </label>
           <button
             type="button"
-            disabled={disabled || Number(monthlyPayment) < 0}
-            onClick={() => assessment.mutate(Number(monthlyPayment))}
+            disabled={disabled}
+            onClick={() => assessment.mutate(paymentValue)}
             className="rounded-lg bg-[#1e3a5f] px-4 py-2 text-sm font-semibold text-white hover:bg-[#152e42] disabled:cursor-not-allowed disabled:opacity-40"
           >
             {assessment.isPending ? '计算中…' : '执行规则评估'}
@@ -310,6 +318,17 @@ function DeterministicAssessmentCard({
                   <p className="mt-2 break-words text-xs text-muted-foreground">
                     公式：{item.formula}
                   </p>
+                  {label === 'DTI' && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      代入：现有月负债 ¥
+                      {item.inputs.existing_monthly_debt?.toLocaleString('zh-CN') ?? 0}{' '}
+                      + 拟贷款月供 ¥
+                      {item.inputs.proposed_monthly_payment?.toLocaleString('zh-CN') ??
+                        0}
+                      ，除以家庭月收入 ¥
+                      {item.inputs.monthly_income?.toLocaleString('zh-CN') ?? 0}
+                    </p>
+                  )}
                   <p className="mt-1 text-xs text-muted-foreground">
                     规则版本：{item.rule_version}
                   </p>
@@ -367,14 +386,24 @@ function RiskAssessmentCard({
   appId,
   stage,
   predictiveModelEnabled,
+  monthlyPayment,
+  onMonthlyPaymentChange,
 }: {
   appId: number;
   stage?: ApplicationStage;
   predictiveModelEnabled: boolean;
+  monthlyPayment: string;
+  onMonthlyPaymentChange: (value: string) => void;
 }) {
   const { data: assessment, isError } = useRiskAssessment(appId);
+  const runAssessment = useDeterministicAssessment(appId);
   const hasData = assessment && !isError;
-  const disabled = !stageAllows(stage, ASSESSMENT_STAGES);
+  const paymentValue = Number(monthlyPayment);
+  const disabled =
+    !stageAllows(stage, ASSESSMENT_STAGES) ||
+    runAssessment.isPending ||
+    !Number.isFinite(paymentValue) ||
+    paymentValue <= 0;
   const tooltip = disabledReason(stage, ASSESSMENT_STAGES);
 
   const metrics = hasData
@@ -389,7 +418,7 @@ function RiskAssessmentCard({
           rating: assessment.credit_rating,
         },
         {
-          label: '偿付能力 DTI',
+          label: '总债务收入比 DTI',
           value: assessment.dti_value != null ? `${assessment.dti_value}%` : '--',
           detail: assessment.dti_rating
             ? `${ASSESSMENT_RATING_LABELS[assessment.dti_rating] ?? assessment.dti_rating}`
@@ -408,7 +437,7 @@ function RiskAssessmentCard({
     : [
         { label: '征信', value: '--', detail: '运行后生成风险画像', rating: null },
         {
-          label: '偿付能力 DTI',
+          label: '总债务收入比 DTI',
           value: '--',
           detail: '运行后生成风险画像',
           rating: null,
@@ -423,7 +452,7 @@ function RiskAssessmentCard({
 
   return (
     <CardShell>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
         <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
           <Scale className="h-5 w-5 text-muted-foreground" />
           补充风险画像
@@ -441,17 +470,53 @@ function RiskAssessmentCard({
             </span>
           )}
         </h3>
-        <button
-          onClick={() =>
-            chatPrefill(`请为申请 #${appId} 生成补充风险画像，并说明证据来源。`)
-          }
-          disabled={disabled}
-          title={tooltip ?? undefined}
-          className="flex items-center gap-1.5 rounded-lg bg-[#1e3a5f] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#152e42] disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {hasData ? '重新运行' : '运行画像'}
-        </button>
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="text-xs text-muted-foreground">
+            拟贷款月供（元）
+            <input
+              aria-label="拟贷款月供（元）"
+              type="number"
+              min="1"
+              value={monthlyPayment}
+              onChange={(event) => onMonthlyPaymentChange(event.target.value)}
+              className="mt-1 block w-32 rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => runAssessment.mutate(paymentValue)}
+            disabled={disabled}
+            title={tooltip ?? undefined}
+            className="flex items-center gap-1.5 rounded-lg bg-[#1e3a5f] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#152e42] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {runAssessment.isPending ? '生成中…' : hasData ? '重新运行' : '运行画像'}
+          </button>
+          {hasData && (
+            <button
+              type="button"
+              onClick={() =>
+                chatPrefill(
+                  `请解读申请 #${appId} 已生成的补充风险画像，并说明各项指标及证据来源。`,
+                  false,
+                )
+              }
+              className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-slate-50"
+            >
+              请小融解读
+            </button>
+          )}
+        </div>
       </div>
+      {runAssessment.isError && (
+        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          风险画像生成失败，请确认申请材料完整后重试。
+        </p>
+      )}
+      {runAssessment.isSuccess && (
+        <p className="mb-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          风险画像已生成并刷新。最终授信结论仍须由审批人员确认。
+        </p>
+      )}
       <div
         className={cn(
           'grid grid-cols-1 gap-4',
@@ -534,6 +599,59 @@ function RiskAssessmentCard({
             );
           })()}
       </div>
+      {hasData && assessment.calculation_inputs?.dti && (
+        <div
+          data-testid="dti-calculation-breakdown"
+          className="mt-4 rounded-lg border border-blue-100 bg-blue-50/70 p-4"
+        >
+          <p className="text-sm font-semibold text-foreground">
+            DTI 计算明细（包含拟贷款月供）
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
+            <div>
+              <p className="text-xs text-muted-foreground">家庭月收入</p>
+              <p className="font-semibold text-foreground">
+                ¥
+                {(assessment.calculation_inputs.dti.monthly_income ?? 0).toLocaleString(
+                  'zh-CN',
+                )}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">现有月负债</p>
+              <p className="font-semibold text-foreground">
+                ¥
+                {(
+                  assessment.calculation_inputs.dti.existing_monthly_debt ?? 0
+                ).toLocaleString('zh-CN')}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">拟贷款月供</p>
+              <p className="font-semibold text-foreground">
+                ¥
+                {(
+                  assessment.calculation_inputs.dti.proposed_monthly_payment ?? 0
+                ).toLocaleString('zh-CN')}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">合计月偿付额</p>
+              <p className="font-semibold text-foreground">
+                ¥
+                {(
+                  (assessment.calculation_inputs.dti.existing_monthly_debt ?? 0) +
+                  (assessment.calculation_inputs.dti.proposed_monthly_payment ?? 0)
+                ).toLocaleString('zh-CN')}
+              </p>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            计算公式：（现有月负债 + 拟贷款月供）÷ 家庭月收入 ×
+            100%。本指标为项目内部辅助复核口径，不替代金融机构正式审批标准。
+          </p>
+        </div>
+      )}
       {hasData && assessment.warnings && assessment.warnings.length > 0 && (
         <div className="mt-4 space-y-1">
           {assessment.warnings.map((w, i) => (
@@ -1108,6 +1226,16 @@ function UnderwriterDetail() {
 
   const { data: app, isLoading: appLoading } = useApplication(appId);
   const { data: features } = useFeatures();
+  const { data: savedAssessment } = useRiskAssessment(appId);
+  const [monthlyPayment, setMonthlyPayment] = useState('');
+
+  useEffect(() => {
+    const savedPayment =
+      savedAssessment?.calculation_inputs?.dti?.proposed_monthly_payment;
+    if (monthlyPayment === '' && savedPayment != null && savedPayment > 0) {
+      setMonthlyPayment(String(savedPayment));
+    }
+  }, [monthlyPayment, savedAssessment]);
 
   if (appLoading) {
     return (
@@ -1175,11 +1303,18 @@ function UnderwriterDetail() {
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
         {/* Left column */}
         <div className="flex flex-col gap-6 lg:col-span-8">
-          <DeterministicAssessmentCard appId={appId} stage={stage} />
+          <DeterministicAssessmentCard
+            appId={appId}
+            stage={stage}
+            monthlyPayment={monthlyPayment}
+            onMonthlyPaymentChange={setMonthlyPayment}
+          />
           <RiskAssessmentCard
             appId={appId}
             stage={stage}
             predictiveModelEnabled={features?.predictive_model ?? false}
+            monthlyPayment={monthlyPayment}
+            onMonthlyPaymentChange={setMonthlyPayment}
           />
           <RecommendationBanner appId={appId} />
           <ComplianceChecksCard appId={appId} stage={stage} />

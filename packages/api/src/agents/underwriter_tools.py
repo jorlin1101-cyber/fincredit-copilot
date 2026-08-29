@@ -34,7 +34,11 @@ from ..services.condition import get_conditions
 from ..services.deterministic_assessment import run_deterministic_assessment
 from ..services.document import list_documents
 from ..services.rate_lock import get_rate_lock_status
-from ..services.risk_assessment import create_risk_assessment, update_recommendation
+from ..services.risk_assessment import (
+    create_risk_assessment,
+    get_latest_risk_assessment,
+    update_recommendation,
+)
 from ..services.urgency import compute_urgency
 from .mcp_integration import get_predictive_tool, is_predictive_model_available
 from .risk_tools import (
@@ -224,6 +228,7 @@ def _format_application_detail(
     doc_total: int,
     conditions,
     rate_lock,
+    risk_assessment=None,
 ) -> str:
     """Format application detail view into text.
 
@@ -262,15 +267,43 @@ def _format_application_detail(
         min_credit = min(credit_scores) if credit_scores else None
 
         lines.append(f"  家庭月收入：¥{total_income:,.2f}")
-        lines.append(f"  每月负债：¥{total_debts:,.2f}")
+        lines.append(f"  现有月负债：¥{total_debts:,.2f}")
         if total_income > 0:
-            dti = float(total_debts) / float(total_income) * 100
-            lines.append(f"  债务收入比：{dti:.1f}%")
+            existing_debt_ratio = float(total_debts) / float(total_income) * 100
+            lines.append(f"  现有负债率（不含拟贷款月供，仅供参考）：{existing_debt_ratio:.2f}%")
         lines.append(f"  资产合计：¥{total_assets:,.2f}")
         if min_credit is not None:
             lines.append(f"  最低模拟征信评分：{min_credit}")
     else:
         lines.append("  暂无财务数据。")
+
+    # Use the persisted deterministic record as the single source of truth for
+    # DTI.  The current-debt ratio above is deliberately not labelled DTI,
+    # because DTI in this workflow includes the proposed housing payment.
+    lines.append("")
+    if risk_assessment and risk_assessment.dti_value is not None:
+        dti_inputs = (risk_assessment.calculation_inputs or {}).get("dti", {})
+        monthly_income = float(dti_inputs.get("monthly_income") or 0)
+        existing_debt = float(dti_inputs.get("existing_monthly_debt") or 0)
+        proposed_payment = float(dti_inputs.get("proposed_monthly_payment") or 0)
+        total_obligations = existing_debt + proposed_payment
+        lines.extend(
+            [
+                "最近一次固定规则评估：",
+                "  指标口径：总债务收入比（DTI，含拟贷款月供）",
+                f"  家庭月收入：¥{monthly_income:,.2f}",
+                f"  现有月负债：¥{existing_debt:,.2f}",
+                f"  拟贷款月供：¥{proposed_payment:,.2f}",
+                f"  合计月偿付额：¥{total_obligations:,.2f}",
+                f"  DTI：{float(risk_assessment.dti_value):.2f}%",
+                "  公式：（现有月负债 + 拟贷款月供）/ 家庭月收入 × 100%",
+            ]
+        )
+        if risk_assessment.dti_rating:
+            lines.append(f"  风险等级：{format_enum_label(str(risk_assessment.dti_rating))}")
+        lines.append("  数据来源：最近一次已保存的固定规则评估记录。")
+    else:
+        lines.append("固定规则评估：尚未生成，当前仅可查看现有负债率。")
 
     # Loan Details
     lines.append("")
@@ -335,9 +368,7 @@ def _format_application_detail(
                 lines.append(f"  利率：{rate_lock['locked_rate']:.3f}%")
             if rate_lock.get("expiration_date"):
                 days = rate_lock.get("days_remaining", 0)
-                lines.append(
-                    f"  有效期至：{rate_lock['expiration_date'][:10]}（剩余 {days} 天）"
-                )
+                lines.append(f"  有效期至：{rate_lock['expiration_date'][:10]}（剩余 {days} 天）")
             if rate_lock.get("is_urgent"):
                 lines.append("  提醒：执行利率将在 7 天内到期，请优先处理。")
     else:
@@ -371,10 +402,18 @@ async def uw_application_detail(
         documents, doc_total = await list_documents(session, user, application_id, limit=50)
         conditions = await get_conditions(session, user, application_id)
         rate_lock = await get_rate_lock_status(session, user, application_id)
+        risk_assessment = await get_latest_risk_assessment(session, application_id)
 
         # Format output before commit to avoid expired-attribute errors
         output = _format_application_detail(
-            application_id, app, financials, documents, doc_total, conditions, rate_lock
+            application_id,
+            app,
+            financials,
+            documents,
+            doc_total,
+            conditions,
+            rate_lock,
+            risk_assessment,
         )
 
         await write_audit_event(
@@ -624,9 +663,7 @@ async def uw_save_risk_assessment(
         )
         await session.commit()
 
-    return (
-        f"申请 #{application_id} 的风险辅助评估已保存。流程建议：{recommendation}。"
-    )
+    return f"申请 #{application_id} 的风险辅助评估已保存。流程建议：{recommendation}。"
 
 
 @tool

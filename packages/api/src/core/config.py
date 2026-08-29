@@ -117,6 +117,18 @@ class Settings(BaseSettings):
         default="qwen3.7-plus",
         description="Model name for the primary LLM.",
     )
+    CHAT_RESPONSE_TIMEOUT_SECONDS: int = Field(
+        default=120,
+        ge=30,
+        le=300,
+        description="Maximum wall-clock time for one chat response.",
+    )
+    CHAT_AGENT_RECURSION_LIMIT: int = Field(
+        default=12,
+        ge=4,
+        le=50,
+        description="Maximum LangGraph steps per chat turn to stop repeated tool loops.",
+    )
 
     # -- Vision model (optional, falls back to main LLM when unset) --
     VISION_MODEL: str | None = Field(

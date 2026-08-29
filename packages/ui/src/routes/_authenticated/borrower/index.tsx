@@ -3,6 +3,14 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import {
+  Root as DialogRoot,
+  Portal as DialogPortal,
+  Overlay as DialogOverlay,
+  Content as DialogContent,
+  Title as DialogTitle,
+  Description as DialogDescription,
+} from '@radix-ui/react-dialog';
+import {
   FileText,
   Upload,
   AlertTriangle,
@@ -17,6 +25,7 @@ import {
   CheckCircle2,
   Loader2,
   Award,
+  X,
 } from 'lucide-react';
 import { CameraCapture } from '@/components/camera-capture';
 import { useApplications } from '@/hooks/use-applications';
@@ -568,6 +577,32 @@ function DisclosuresCard({
   isLoading: boolean;
 }) {
   const acknowledgeMutation = useAcknowledgeDisclosure(applicationId);
+  const [selectedDisclosure, setSelectedDisclosure] = useState<DisclosureItem | null>(
+    null,
+  );
+  const [hasRead, setHasRead] = useState(false);
+
+  const closeReview = () => {
+    if (acknowledgeMutation.isPending) return;
+    setSelectedDisclosure(null);
+    setHasRead(false);
+  };
+
+  const openReview = (item: DisclosureItem) => {
+    acknowledgeMutation.reset();
+    setSelectedDisclosure(item);
+    setHasRead(false);
+  };
+
+  const confirmDisclosure = () => {
+    if (!selectedDisclosure || !hasRead) return;
+    acknowledgeMutation.mutate(selectedDisclosure.id, {
+      onSuccess: () => {
+        setSelectedDisclosure(null);
+        setHasRead(false);
+      },
+    });
+  };
 
   if (isLoading) {
     return (
@@ -621,7 +656,8 @@ function DisclosuresCard({
                 <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />
               ) : (
                 <button
-                  onClick={() => acknowledgeMutation.mutate(item.id)}
+                  type="button"
+                  onClick={() => openReview(item)}
                   disabled={acknowledgeMutation.isPending}
                   className="shrink-0 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
@@ -662,6 +698,94 @@ function DisclosuresCard({
           <span>。本页面文件为演示文本，具体业务以持牌金融机构正式文件为准。</span>
         </div>
       </CardShell>
+      <DialogRoot
+        open={selectedDisclosure != null}
+        onOpenChange={(open) => {
+          if (!open) closeReview();
+        }}
+      >
+        <DialogPortal>
+          <DialogOverlay className="fixed inset-0 z-50 bg-slate-950/45 backdrop-blur-[1px]" />
+          <DialogContent
+            className="fixed left-1/2 top-1/2 z-50 flex max-h-[88vh] w-[calc(100vw-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-border bg-white shadow-2xl focus:outline-none dark:bg-slate-900"
+            onEscapeKeyDown={(event) => {
+              if (acknowledgeMutation.isPending) event.preventDefault();
+            }}
+            onPointerDownOutside={(event) => {
+              if (acknowledgeMutation.isPending) event.preventDefault();
+            }}
+          >
+            {selectedDisclosure && (
+              <>
+                <div className="flex items-start justify-between border-b border-border px-6 py-5">
+                  <div className="pr-6">
+                    <DialogTitle className="text-lg font-bold text-foreground">
+                      {selectedDisclosure.label}
+                    </DialogTitle>
+                    <DialogDescription className="mt-1 text-sm text-muted-foreground">
+                      请阅读完整内容，并在确认知悉后提交确认记录。
+                    </DialogDescription>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="关闭确认书"
+                    onClick={closeReview}
+                    disabled={acknowledgeMutation.isPending}
+                    className="rounded-md p-1.5 text-muted-foreground hover:bg-slate-100 hover:text-foreground disabled:opacity-40 dark:hover:bg-slate-800"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+                  <div className="rounded-lg border border-border bg-slate-50 px-5 py-4 text-sm leading-7 text-foreground whitespace-pre-line dark:bg-slate-800/50">
+                    {selectedDisclosure.content}
+                  </div>
+                </div>
+
+                <div className="border-t border-border px-6 py-5">
+                  {acknowledgeMutation.isError && (
+                    <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+                      确认记录保存失败，请稍后重新提交。
+                    </p>
+                  )}
+                  <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border px-4 py-3 text-sm text-foreground">
+                    <input
+                      type="checkbox"
+                      checked={hasRead}
+                      onChange={(event) => setHasRead(event.target.checked)}
+                      disabled={acknowledgeMutation.isPending}
+                      className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-[#1e3a5f]"
+                    />
+                    <span>
+                      我已阅读并知悉《{selectedDisclosure.label}
+                      》的全部内容，并确认提交本次确认记录。
+                    </span>
+                  </label>
+                  <div className="mt-4 flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={closeReview}
+                      disabled={acknowledgeMutation.isPending}
+                      className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-slate-50 disabled:opacity-40 dark:hover:bg-slate-800"
+                    >
+                      暂不确认
+                    </button>
+                    <button
+                      type="button"
+                      onClick={confirmDisclosure}
+                      disabled={!hasRead || acknowledgeMutation.isPending}
+                      className="rounded-lg bg-[#1e3a5f] px-4 py-2 text-sm font-semibold text-white hover:bg-[#152e42] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {acknowledgeMutation.isPending ? '提交中…' : '确认并提交'}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </DialogPortal>
+      </DialogRoot>
     </>
   );
 }

@@ -14,12 +14,13 @@ API_PACKAGE = PROJECT_ROOT / "packages" / "api"
 sys.path.insert(0, str(API_PACKAGE))
 load_dotenv(PROJECT_ROOT / ".env")
 
-from src.inference.config import load_config  # noqa: E402
+from src.inference.config import load_config
 
-# One opaque white PNG pixel. It is sufficient to verify image input routing.
+# A 16x16 opaque white PNG. DashScope vision models reject dimensions <= 10px.
 WHITE_PIXEL = (
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/"
-    "x8AAusB9Y9Z1ZkAAAAASUVORK5CYII="
+    "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARn"
+    "QU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAcSURBVDhPY/hPIWBAFyAV"
+    "jBowagAIjBowGAwAAF14/C6S1TgxAAAAAElFTkSuQmCC"
 )
 
 
