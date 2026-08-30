@@ -41,7 +41,7 @@ services:
     dockerCommand: >-
       sh -c 'DB_ASYNC_URL=$(printf "%s" "$DATABASE_CONNECTION_STRING" | sed "s|^postgresql://|postgresql+asyncpg://|");
       export DATABASE_URL="$DB_ASYNC_URL" COMPLIANCE_DATABASE_URL="$DB_ASYNC_URL"
-      S3_ENDPOINT="http://$S3_HOSTPORT" MCP_RISK_SERVER_URL="http://$MCP_HOSTPORT/mcp";
+      export S3_ENDPOINT="http://$S3_HOSTPORT" MCP_RISK_SERVER_URL="http://$MCP_HOSTPORT/mcp";
       cd /app/packages/db && alembic upgrade head &&
       cd /app/packages/api && exec uvicorn src.main:app --host 0.0.0.0 --port "$PORT"'
     healthCheckPath: /health/
@@ -73,12 +73,6 @@ services:
       - key: AUTH_DISABLED
         value: "true"
       - key: DASHSCOPE_API_KEY
-        sync: false
-      - key: LLM_API_KEY
-        sync: false
-      - key: VISION_API_KEY
-        sync: false
-      - key: EMBEDDING_API_KEY
         sync: false
       - key: COMPANY_NAME
         value: 融安住房金融（虚构演示机构）
