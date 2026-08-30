@@ -13,11 +13,14 @@ or ``provider: openai_compatible`` to delegate to a remote server.
 import logging
 import os
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
 from .config import get_model_config
+
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 
@@ -60,10 +63,14 @@ class LocalEmbeddingProvider(EmbeddingProvider):
     def __init__(self, model_name: str, dimensions: int = 768) -> None:
         self._model_name = model_name
         self._dimensions = dimensions
-        self._model: SentenceTransformer | None = None
+        self._model: "SentenceTransformer | None" = None
 
-    def _load_model(self) -> SentenceTransformer:
+    def _load_model(self) -> "SentenceTransformer":
         if self._model is None:
+            # Keep the large torch/transformers dependency out of the normal
+            # remote-embedding path. It is only needed for provider=local.
+            from sentence_transformers import SentenceTransformer
+
             logger.info("Loading local embedding model: %s", self._model_name)
             self._model = SentenceTransformer(self._model_name, trust_remote_code=True)
         return self._model
