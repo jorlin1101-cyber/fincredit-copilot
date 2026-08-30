@@ -24,6 +24,16 @@ branch_labels = None
 depends_on = None
 
 
+def _execute_if_role_exists(sql: str, role: str) -> None:
+    escaped_sql = sql.replace("'", "''")
+    op.execute(
+        sa.text(
+            f"DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{role}') "
+            f"THEN EXECUTE '{escaped_sql}'; END IF; END $$;"
+        )
+    )
+
+
 def upgrade() -> None:
     # Enable pgvector extension
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
@@ -79,8 +89,10 @@ def upgrade() -> None:
 
     # Grants
     for table in ("kb_documents", "kb_chunks"):
-        op.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON {table} TO lending_app")
-        op.execute(f"GRANT SELECT ON {table} TO compliance_app")
+        _execute_if_role_exists(
+            f"GRANT SELECT, INSERT, UPDATE, DELETE ON {table} TO lending_app", "lending_app"
+        )
+        _execute_if_role_exists(f"GRANT SELECT ON {table} TO compliance_app", "compliance_app")
 
 
 def downgrade() -> None:
