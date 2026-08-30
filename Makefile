@@ -14,7 +14,7 @@
 # Override with: make run COMPOSE="docker compose"
 COMPOSE ?= $(shell command -v podman-compose >/dev/null 2>&1 && echo "podman-compose" || echo "docker compose")
 
-# Auto-detect container CLI: podman > docker (used by build-images / push-images)
+# Auto-detect container CLI: podman > docker (used by image tasks)
 # Override with: make build-images CONTAINER_CLI="docker"
 CONTAINER_CLI ?= $(shell command -v podman >/dev/null 2>&1 && echo "podman" || echo "docker")
 
@@ -22,7 +22,7 @@ CONTAINER_CLI ?= $(shell command -v podman >/dev/null 2>&1 && echo "podman" || e
 
 # Override with: make push-images REGISTRY=my-registry.example.com REGISTRY_NS=my-org
 REGISTRY    ?= quay.io
-REGISTRY_NS ?= rh-ai-quickstart
+REGISTRY_NS ?=
 
 # -- Deployment configuration (OpenShift targets only) -----------------------
 

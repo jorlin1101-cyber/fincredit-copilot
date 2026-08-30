@@ -68,7 +68,14 @@ Image name helper
 {{- $repository := .Values.global.imageRepository -}}
 {{- $name := .name -}}
 {{- $tag := .tag | default .Values.global.imageTag -}}
-{{- printf "%s/%s/%s:%s" $registry $repository $name $tag -}}
+{{- $path := $name -}}
+{{- if $repository -}}
+{{- $path = printf "%s/%s" $repository $path -}}
+{{- end -}}
+{{- if $registry -}}
+{{- $path = printf "%s/%s" $registry $path -}}
+{{- end -}}
+{{- printf "%s:%s" $path $tag -}}
 {{- end }}
 
 {{/*
@@ -184,22 +191,6 @@ app.kubernetes.io/component: llamastack
 {{- end }}
 
 {{/*
-NeMo Guardrails labels
-*/}}
-{{- define "mortgage-ai.nemo-guardrails.labels" -}}
-{{ include "mortgage-ai.labels" . }}
-app.kubernetes.io/component: nemo-guardrails
-{{- end }}
-
-{{/*
-NeMo Guardrails selector labels
-*/}}
-{{- define "mortgage-ai.nemo-guardrails.selectorLabels" -}}
-{{ include "mortgage-ai.selectorLabels" . }}
-app.kubernetes.io/component: nemo-guardrails
-{{- end }}
-
-{{/*
 MCP Weather Server labels
 */}}
 {{- define "mortgage-ai.mcp-weather.labels" -}}
@@ -214,4 +205,3 @@ MCP Weather Server selector labels
 {{ include "mortgage-ai.selectorLabels" . }}
 app.kubernetes.io/component: mcp-weather
 {{- end }}
-

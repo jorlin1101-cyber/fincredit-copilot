@@ -7,13 +7,18 @@
 #   CONTAINER_CLI  -- podman or docker (default: podman)
 #   IMAGE_TAG      -- image tag (default: latest)
 #   REGISTRY       -- registry host (default: quay.io)
-#   REGISTRY_NS    -- registry namespace/org (default: rh-ai-quickstart)
+#   REGISTRY_NS    -- registry namespace/org (required)
 set -euo pipefail
 
 CONTAINER_CLI="${CONTAINER_CLI:-podman}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 REGISTRY="${REGISTRY:-quay.io}"
-REGISTRY_NS="${REGISTRY_NS:-rh-ai-quickstart}"
+REGISTRY_NS="${REGISTRY_NS:-}"
+
+if [[ -z "$REGISTRY_NS" ]]; then
+    echo "REGISTRY_NS is required, for example: REGISTRY_NS=my-org make push-images"
+    exit 1
+fi
 
 # Build missing images
 need_build=false

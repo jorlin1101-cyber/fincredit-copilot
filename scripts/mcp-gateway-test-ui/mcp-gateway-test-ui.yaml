@@ -17,10 +17,11 @@ spec:
     spec:
       containers:
         - name: ui
-          image: quay.io/rh-ai-quickstart/mortgage-ai-api-mcp-gateway:1.0.3
+          image: mortgage-ai-api-mcp-gateway:local
+          imagePullPolicy: Never
           args:
             - "--url"
-            - "https://mcp-gateway-gateway-system.apps.cluster-8g8ql.dynamic2.redhatworkshops.io"
+            - "https://mcp-gateway.example.invalid"
           ports:
             - name: http
               containerPort: 8501

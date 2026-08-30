@@ -12,16 +12,17 @@ global:
   imageTag: "1.0.1"
 
 secrets:
-  LLM_BASE_URL: ""                     # e.g. https://maas.apps.example.com/v1
+  LLM_BASE_URL: ""                     # e.g. https://dashscope.aliyuncs.com/compatible-mode/v1
   LLM_API_KEY: ""
-  LLM_MODEL: ""                        # e.g. gpt-oss-120b
+  LLM_MODEL: ""                        # e.g. qwen3.7-plus
   # Vision model (optional -- falls back to main LLM when empty)
   # VISION_MODEL: ""
   # VISION_BASE_URL: ""
   # VISION_API_KEY: ""
   COMPANY_NAME: ""                     # 例如“融安住房金融（虚构演示机构）”
   AUTH_DISABLED: "true"
-  MLFLOW_TRACKING_URI: ""             # e.g. https://mlflow.redhat-ods-applications.svc.cluster.local:8443
+  NEMO_GUARDRAILS_ENDPOINT: ""        # optional external safety service
+  MLFLOW_TRACKING_URI: ""             # e.g. http://mlflow:5000
   MLFLOW_EXPERIMENT_NAME: ""          # e.g. "mortgage-ai"
   MLFLOW_TRACKING_INSECURE_TLS: ""
   MLFLOW_WORKSPACE: ""                # e.g. "wksp-user1"
@@ -49,18 +50,3 @@ mcpRiskServer:
 kagenti:
   enabled: false
   # a2aBasePort: 8090
-
-# NeMo Guardrails (safety shields)
-# When enabled, deploys NeMo Guardrails and auto-wires the API to use it.
-nemoGuardrails:
-  enabled: false
-  llm:
-    baseUrl: ""                        # e.g. https://litellm.apps.example.com/v1
-    modelName: ""                      # e.g. Qwen3.6-35B-A3B
-    apiKey: ""
-  proxy:
-    maas:
-      upstream: ""                     # e.g. https://litellm.apps.example.com
-      pathPrefix: ""
-  contentSafety:
-    deploy: false

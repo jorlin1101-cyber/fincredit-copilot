@@ -280,7 +280,7 @@ Everything is gated by `KAGENTI_ENABLED=true`. When false (default), no A2A serv
 
 In `team1` namespace:
 - Pod running 3/3 (api container + 2 Kagenti sidecars)
-- Image: `quay.io/rh-ai-quickstart/mortgage-ai-api:kagentiv1`
+- Image: `<registry>/<namespace>/mortgage-ai-api:kagentiv1`
 - 5 agent cards responding at ports 8080-8084
 - AgentRuntime CR `risk-assessment-backend` active
 - AuthBridge injected and handling auth

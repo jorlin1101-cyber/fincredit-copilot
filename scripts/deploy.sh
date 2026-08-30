@@ -11,7 +11,7 @@
 #   ENV_FILE        -- env file to source (default: .env)
 #   IMAGE_TAG       -- image tag (default: latest)
 #   REGISTRY        -- registry host (default: quay.io)
-#   REGISTRY_NS     -- registry namespace/org (default: rh-ai-quickstart)
+#   REGISTRY_NS     -- registry namespace/org (required for remote deployment)
 #   HELM_TIMEOUT    -- helm timeout (default: 15m)
 #   HELM_EXTRA_ARGS -- additional helm args (default: empty)
 set -euo pipefail
@@ -21,9 +21,14 @@ NAMESPACE="${NAMESPACE:-$PROJECT_NAME}"
 ENV_FILE="${ENV_FILE:-.env}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 REGISTRY="${REGISTRY:-quay.io}"
-REGISTRY_NS="${REGISTRY_NS:-rh-ai-quickstart}"
+REGISTRY_NS="${REGISTRY_NS:-}"
 HELM_TIMEOUT="${HELM_TIMEOUT:-15m}"
 HELM_EXTRA_ARGS="${HELM_EXTRA_ARGS:-}"
+
+if [[ -z "$REGISTRY_NS" ]]; then
+    echo "REGISTRY_NS is required, for example: REGISTRY_NS=my-org make deploy"
+    exit 1
+fi
 
 # Load env file only when explicitly specified via ENV_FILE.
 # The default .env contains local dev values (localhost URLs) that override
