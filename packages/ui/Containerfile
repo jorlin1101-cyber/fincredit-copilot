@@ -56,6 +56,7 @@ RUN sed -i 's|/run/nginx.pid|/var/run/nginx/nginx.pid|' /etc/nginx/nginx.conf
 # Default API upstream -- override via env var in compose/k8s
 ENV API_UPSTREAM=mortgage-ai-api:8000
 ENV API_UPSTREAM_SCHEME=http
+ENV DEMO_ACCESS_KEY=""
 # Keycloak URL reachable from the browser (empty = dev mode / auth disabled in UI)
 ENV KEYCLOAK_EXTERNAL=""
 ENV KEYCLOAK_REALM=mortgage-ai

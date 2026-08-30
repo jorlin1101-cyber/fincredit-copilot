@@ -16,6 +16,7 @@ from .admin import setup_admin
 from .agents.mcp_integration import init_mcp_client, shutdown_mcp_client
 from .core.config import settings
 from .inference.safety import log_safety_status
+from .middleware.demo_access import DemoAccessMiddleware
 from .middleware.pii import PIIMaskingMiddleware
 from .observability import init_mlflow_tracing, log_observability_status
 from .routes import (
@@ -126,6 +127,10 @@ app.add_middleware(
 
 # PII masking -- runs after CORS, masks JSON response bodies for CEO role
 app.add_middleware(PIIMaskingMiddleware)
+
+# Optional outer gate for the public portfolio deployment.  The UI reverse
+# proxy injects this server-side; it is never included in browser JavaScript.
+app.add_middleware(DemoAccessMiddleware, access_key=settings.DEMO_ACCESS_KEY)
 
 _HTTP_STATUS_TITLES: dict[int, str] = {
     400: "Bad Request",

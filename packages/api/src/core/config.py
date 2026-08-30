@@ -59,6 +59,13 @@ class Settings(BaseSettings):
         default=False,
         description="Bypass JWT validation. Set True for tests and local dev without Keycloak.",
     )
+    DEMO_ACCESS_KEY: str | None = Field(
+        default=None,
+        description=(
+            "Optional deployment-only key required in X-Demo-Key for non-health routes. "
+            "Leave unset for local development and authenticated production deployments."
+        ),
+    )
     KEYCLOAK_URL: str = "http://localhost:8080"
     KEYCLOAK_ISSUER: str = Field(
         default="",
