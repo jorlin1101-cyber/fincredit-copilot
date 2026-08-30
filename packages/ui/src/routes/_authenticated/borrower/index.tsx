@@ -79,7 +79,7 @@ function CardShell({
   return (
     <div
       className={cn(
-        'rounded-xl border border-border bg-white p-6 shadow-sm dark:bg-slate-900',
+        'rounded-xl border border-border bg-card p-6 shadow-sm dark:bg-card',
         className,
       )}
     >
@@ -161,7 +161,7 @@ function StageStepper({ currentStage }: { currentStage: ApplicationStage }) {
                     className={cn(
                       'h-0.5 flex-1',
                       isCompleted || isCurrent
-                        ? 'bg-[#1e3a5f]'
+                        ? 'bg-[#C15F3C]'
                         : 'bg-slate-200 dark:bg-slate-700',
                     )}
                   />
@@ -169,8 +169,8 @@ function StageStepper({ currentStage }: { currentStage: ApplicationStage }) {
                 <div
                   className={cn(
                     'flex shrink-0 items-center justify-center rounded-full transition-all',
-                    isCurrent && 'h-5 w-5 bg-[#1e3a5f] ring-4 ring-[#1e3a5f]/20',
-                    isCompleted && 'h-4 w-4 bg-[#1e3a5f]',
+                    isCurrent && 'h-5 w-5 bg-[#C15F3C] ring-4 ring-[#C15F3C]/20',
+                    isCompleted && 'h-4 w-4 bg-[#C15F3C]',
                     !isCurrent &&
                       !isCompleted &&
                       'h-3 w-3 bg-slate-300 dark:bg-slate-600',
@@ -182,7 +182,7 @@ function StageStepper({ currentStage }: { currentStage: ApplicationStage }) {
                   <div
                     className={cn(
                       'h-0.5 flex-1',
-                      isCompleted ? 'bg-[#1e3a5f]' : 'bg-slate-200 dark:bg-slate-700',
+                      isCompleted ? 'bg-[#C15F3C]' : 'bg-slate-200 dark:bg-slate-700',
                     )}
                   />
                 )}
@@ -191,7 +191,7 @@ function StageStepper({ currentStage }: { currentStage: ApplicationStage }) {
                 className={cn(
                   'whitespace-nowrap text-center text-[10px] font-medium leading-tight',
                   isCurrent
-                    ? 'text-[#1e3a5f] dark:text-blue-400'
+                    ? 'text-[#C15F3C] dark:text-orange-300'
                     : 'text-muted-foreground',
                 )}
               >
@@ -242,7 +242,7 @@ function StatusCard({
           <h2 className="text-lg font-semibold text-foreground">
             申请编号 #{application.id}
           </h2>
-          <span className="rounded-full bg-[#1e3a5f]/10 px-3 py-0.5 text-xs font-semibold text-[#1e3a5f]">
+          <span className="rounded-full bg-[#C15F3C]/10 px-3 py-0.5 text-xs font-semibold text-[#C15F3C]">
             {APPLICATION_STAGE_LABELS[application.stage]}
           </span>
         </div>
@@ -371,7 +371,7 @@ function DocumentsCard({
               <span
                 className={cn(
                   'rounded-full px-2.5 py-0.5 text-xs font-medium',
-                  statusColors[doc.status] ?? 'bg-slate-100 text-slate-700',
+                  statusColors[doc.status] ?? 'bg-muted text-slate-700',
                 )}
               >
                 {DOCUMENT_STATUS_LABELS[doc.status] ?? '状态待更新'}
@@ -425,8 +425,8 @@ function DocumentsCard({
           'mt-4 flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed py-6 transition-colors',
           uploadMutation.isPending && 'pointer-events-none opacity-60',
           isDragOver
-            ? 'border-[#1e3a5f] bg-[#1e3a5f]/5'
-            : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600',
+            ? 'border-[#C15F3C] bg-[#C15F3C]/5'
+            : 'border-border hover:border-primary/30 dark:border-border dark:hover:border-slate-600',
         )}
       >
         <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -552,8 +552,8 @@ function ConditionsCard({
                   className={cn(
                     'shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
                     isCritical
-                      ? 'bg-[#1e3a5f] text-white hover:bg-[#152e42]'
-                      : 'border border-border text-foreground hover:bg-slate-50 dark:hover:bg-slate-800',
+                      ? 'bg-[#C15F3C] text-white hover:bg-[#8F402B]'
+                      : 'border border-border text-foreground hover:bg-secondary dark:hover:bg-muted',
                   )}
                 >
                   去处理
@@ -659,7 +659,7 @@ function DisclosuresCard({
                   type="button"
                   onClick={() => openReview(item)}
                   disabled={acknowledgeMutation.isPending}
-                  className="shrink-0 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+                  className="shrink-0 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary dark:hover:bg-muted"
                 >
                   查看并确认
                 </button>
@@ -673,7 +673,7 @@ function DisclosuresCard({
             href="https://www.cac.gov.cn/2021-08/20/c_1631050028355286.htm"
             target="_blank"
             rel="noreferrer"
-            className="ml-1 text-[#1e3a5f] underline underline-offset-2 dark:text-blue-400"
+            className="ml-1 text-[#C15F3C] underline underline-offset-2 dark:text-orange-300"
           >
             《个人信息保护法》
           </a>
@@ -682,7 +682,7 @@ function DisclosuresCard({
             href="https://xzfg.moj.gov.cn/law/detail?LawID=362"
             target="_blank"
             rel="noreferrer"
-            className="text-[#1e3a5f] underline underline-offset-2 dark:text-blue-400"
+            className="text-[#C15F3C] underline underline-offset-2 dark:text-orange-300"
           >
             《征信业管理条例》
           </a>
@@ -691,7 +691,7 @@ function DisclosuresCard({
             href="https://www.pbc.gov.cn/zhengwugongkai/attachDir/2025/11/2025111914422147275.pdf"
             target="_blank"
             rel="noreferrer"
-            className="text-[#1e3a5f] underline underline-offset-2 dark:text-blue-400"
+            className="text-[#C15F3C] underline underline-offset-2 dark:text-orange-300"
           >
             《中国人民银行金融消费者权益保护实施办法》
           </a>
@@ -707,7 +707,7 @@ function DisclosuresCard({
         <DialogPortal>
           <DialogOverlay className="fixed inset-0 z-50 bg-slate-950/45 backdrop-blur-[1px]" />
           <DialogContent
-            className="fixed left-1/2 top-1/2 z-50 flex max-h-[88vh] w-[calc(100vw-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-border bg-white shadow-2xl focus:outline-none dark:bg-slate-900"
+            className="fixed left-1/2 top-1/2 z-50 flex max-h-[88vh] w-[calc(100vw-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl focus:outline-none dark:bg-card"
             onEscapeKeyDown={(event) => {
               if (acknowledgeMutation.isPending) event.preventDefault();
             }}
@@ -731,14 +731,14 @@ function DisclosuresCard({
                     aria-label="关闭确认书"
                     onClick={closeReview}
                     disabled={acknowledgeMutation.isPending}
-                    className="rounded-md p-1.5 text-muted-foreground hover:bg-slate-100 hover:text-foreground disabled:opacity-40 dark:hover:bg-slate-800"
+                    className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 dark:hover:bg-muted"
                   >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
 
                 <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-                  <div className="rounded-lg border border-border bg-slate-50 px-5 py-4 text-sm leading-7 text-foreground whitespace-pre-line dark:bg-slate-800/50">
+                  <div className="rounded-lg border border-border bg-secondary px-5 py-4 text-sm leading-7 text-foreground whitespace-pre-line dark:bg-muted/50">
                     {selectedDisclosure.content}
                   </div>
                 </div>
@@ -755,7 +755,7 @@ function DisclosuresCard({
                       checked={hasRead}
                       onChange={(event) => setHasRead(event.target.checked)}
                       disabled={acknowledgeMutation.isPending}
-                      className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-[#1e3a5f]"
+                      className="mt-0.5 h-4 w-4 rounded border-input accent-[#C15F3C]"
                     />
                     <span>
                       我已阅读并知悉《{selectedDisclosure.label}
@@ -767,7 +767,7 @@ function DisclosuresCard({
                       type="button"
                       onClick={closeReview}
                       disabled={acknowledgeMutation.isPending}
-                      className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-slate-50 disabled:opacity-40 dark:hover:bg-slate-800"
+                      className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-40 dark:hover:bg-muted"
                     >
                       暂不确认
                     </button>
@@ -775,7 +775,7 @@ function DisclosuresCard({
                       type="button"
                       onClick={confirmDisclosure}
                       disabled={!hasRead || acknowledgeMutation.isPending}
-                      className="rounded-lg bg-[#1e3a5f] px-4 py-2 text-sm font-semibold text-white hover:bg-[#152e42] disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded-lg bg-[#C15F3C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#8F402B] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       {acknowledgeMutation.isPending ? '提交中…' : '确认并提交'}
                     </button>

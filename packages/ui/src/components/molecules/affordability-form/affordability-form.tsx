@@ -107,7 +107,7 @@ function NumberInputField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className={`flex h-11 w-full rounded-lg border border-input bg-slate-50 py-2 pl-9 ${suffix ? 'pr-16' : 'pr-3'} text-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-800`}
+          className={`flex h-11 w-full rounded-lg border border-input bg-secondary py-2 pl-9 ${suffix ? 'pr-16' : 'pr-3'} text-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-muted`}
           aria-label={label}
         />
         {suffix && (
@@ -154,7 +154,7 @@ export function AffordabilityForm() {
       <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <div className="mb-12 flex flex-col items-center gap-3 text-center">
-          <span className="text-xs font-semibold uppercase tracking-widest text-[#cc0000]">
+          <span className="text-xs font-semibold uppercase tracking-widest text-[#D97757]">
             商业住房贷款购房预算测算
           </span>
           <h2 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
@@ -171,7 +171,7 @@ export function AffordabilityForm() {
             {/* Left: form */}
             <div className="flex-1 p-6 lg:w-3/5 lg:p-10">
               <form onSubmit={handleSubmit} aria-label="购房预算测算表单">
-                <div className="mb-5 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm leading-6 text-blue-900 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
+                <div className="mb-5 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm leading-6 text-blue-900 dark:border-blue-900 dark:bg-blue-950/30 dark:text-orange-100">
                   下列金额仅为可编辑的演示输入，不代表官方平均水平。测算按等额本息方式进行。
                 </div>
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -240,7 +240,7 @@ export function AffordabilityForm() {
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="mt-6 flex h-11 w-full items-center justify-center rounded-lg bg-[#1e3a5f] px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#2b5a8f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a5f] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="mt-6 flex h-11 w-full items-center justify-center rounded-lg bg-[#C15F3C] px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#A94F33] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C15F3C] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                   aria-busy={isPending}
                 >
                   {isPending ? '正在测算…' : '开始测算'}
@@ -255,7 +255,7 @@ export function AffordabilityForm() {
                 <button
                   type="button"
                   onClick={() => openChat()}
-                  className="mt-4 w-full cursor-pointer text-center text-sm text-[#1e3a5f] underline decoration-[#1e3a5f]/30 underline-offset-2 transition-colors hover:text-[#2b5a8f] hover:decoration-[#2b5a8f]/50 dark:text-blue-300 dark:decoration-blue-300/30 dark:hover:text-blue-200"
+                  className="mt-4 w-full cursor-pointer text-center text-sm text-[#C15F3C] underline decoration-[#C15F3C]/30 underline-offset-2 transition-colors hover:text-[#A94F33] hover:decoration-[#A94F33]/50 dark:text-orange-200 dark:decoration-orange-300/30 dark:hover:text-orange-100"
                 >
                   已有意向住房？咨询小融
                 </button>
@@ -263,7 +263,7 @@ export function AffordabilityForm() {
             </div>
 
             {/* Right: results */}
-            <div className="flex flex-col justify-center gap-6 bg-slate-50 p-6 dark:bg-slate-800 lg:w-2/5 lg:p-10">
+            <div className="flex flex-col justify-center gap-6 bg-secondary p-6 dark:bg-muted lg:w-2/5 lg:p-10">
               <div className="flex flex-col gap-4">
                 {hasResults &&
                 results.dti_warning &&
@@ -282,7 +282,7 @@ export function AffordabilityForm() {
                 ) : (
                   <>
                     {/* Budget result */}
-                    <div className="rounded-xl border border-border bg-white p-5 dark:bg-card">
+                    <div className="rounded-xl border border-border bg-card p-5 dark:bg-card">
                       <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         参考购房总价上限
                       </p>
@@ -293,7 +293,7 @@ export function AffordabilityForm() {
                       ) : hasResults ? (
                         <p
                           data-testid="estimated-home-budget"
-                          className="font-display text-3xl font-bold text-[#1e3a5f] dark:text-blue-300"
+                          className="font-display text-3xl font-bold text-[#C15F3C] dark:text-orange-200"
                         >
                           {formatCny(results.estimated_purchase_price)}
                         </p>
@@ -305,7 +305,7 @@ export function AffordabilityForm() {
                     </div>
 
                     {/* Monthly payment result */}
-                    <div className="rounded-xl border border-border bg-white p-5 dark:bg-card">
+                    <div className="rounded-xl border border-border bg-card p-5 dark:bg-card">
                       <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         预计等额本息月供
                       </p>
@@ -332,7 +332,7 @@ export function AffordabilityForm() {
 
                     {hasResults && (
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-xl border border-border bg-white p-4 dark:bg-card">
+                        <div className="rounded-xl border border-border bg-card p-4 dark:bg-card">
                           <p className="text-xs text-muted-foreground">
                             最高参考贷款额
                           </p>
@@ -340,7 +340,7 @@ export function AffordabilityForm() {
                             {formatCny(results.max_loan_amount)}
                           </p>
                         </div>
-                        <div className="rounded-xl border border-border bg-white p-4 dark:bg-card">
+                        <div className="rounded-xl border border-border bg-card p-4 dark:bg-card">
                           <p className="text-xs text-muted-foreground">
                             LTV / 总债务收入比
                           </p>
@@ -387,7 +387,7 @@ export function AffordabilityForm() {
           </div>
         </div>
 
-        <div className="mt-8 rounded-2xl border border-border bg-white p-6 dark:bg-card lg:p-8">
+        <div className="mt-8 rounded-2xl border border-border bg-card p-6 dark:bg-card lg:p-8">
           <div className="mb-5">
             <h3 className="font-display text-xl font-bold text-foreground">
               测算依据与官方来源
@@ -404,7 +404,7 @@ export function AffordabilityForm() {
                 href={item.href}
                 target="_blank"
                 rel="noreferrer"
-                className="group rounded-xl border border-border p-4 transition-colors hover:border-[#1e3a5f]/40 hover:bg-slate-50 dark:hover:bg-slate-800"
+                className="group rounded-xl border border-border p-4 transition-colors hover:border-[#C15F3C]/40 hover:bg-secondary dark:hover:bg-muted"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -412,11 +412,11 @@ export function AffordabilityForm() {
                     <p className="mt-1 text-sm leading-6 text-muted-foreground">
                       {item.detail}
                     </p>
-                    <p className="mt-2 text-xs text-[#1e3a5f] dark:text-blue-300">
+                    <p className="mt-2 text-xs text-[#C15F3C] dark:text-orange-200">
                       {item.source}
                     </p>
                   </div>
-                  <ExternalLink className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-[#1e3a5f]" />
+                  <ExternalLink className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-[#C15F3C]" />
                 </div>
               </a>
             ))}

@@ -53,7 +53,7 @@ function AuthenticatedLayout() {
   if (isInitializing) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#1e3a5f]" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -73,7 +73,7 @@ function AuthenticatedLayout() {
         </main>
         <ChatSidebar />
       </div>
-      <div className="fixed bottom-0 left-0 right-0 z-10 border-t border-border bg-slate-50 px-4 py-1.5 text-center text-[10px] leading-tight text-muted-foreground dark:bg-slate-900 lg:right-[320px]">
+      <div className="fixed bottom-0 left-0 right-0 z-10 border-t border-border/80 bg-secondary/95 px-4 py-1.5 text-center text-[10px] leading-tight text-muted-foreground backdrop-blur lg:right-[320px]">
         本平台及其中展示的机构、人员、申请与审批数据均为虚构演示内容，不代表任何真实金融机构、个人或授信结果；如有雷同，纯属巧合。
       </div>
     </div>

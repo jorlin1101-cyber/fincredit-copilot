@@ -5,7 +5,7 @@ import { COMPANY_NAME } from '@/lib/company';
 
 export function Footer() {
   return (
-    <footer className="w-full bg-[#1e3a5f] text-white dark:bg-black">
+    <footer className="w-full bg-[#302A25] text-[#F7F1E8] dark:bg-[#1D1A18]">
       <div className="mx-auto max-w-[1200px] px-4 py-12 sm:px-6 lg:px-8">
         <div className="flex flex-col items-start justify-between gap-8 sm:flex-row sm:items-center">
           {/* Brand */}

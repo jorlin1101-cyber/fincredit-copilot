@@ -57,9 +57,9 @@ const PERSONAS: {
     role: 'ceo',
     label: '管理驾驶舱',
     icon: BarChart3,
-    bg: 'bg-[#1e3a5f]/10',
-    text: 'text-[#1e3a5f]',
-    hoverBg: 'hover:bg-[#1e3a5f]/20',
+    bg: 'bg-[#C15F3C]/10',
+    text: 'text-[#C15F3C]',
+    hoverBg: 'hover:bg-[#C15F3C]/20',
   },
 ];
 
@@ -103,7 +103,7 @@ function SignIn() {
   if (isInitializing) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#1e3a5f]" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#C15F3C]" />
       </div>
     );
   }
@@ -143,19 +143,19 @@ function SignIn() {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-stretch bg-white dark:bg-background">
+    <div className="flex min-h-screen w-full items-stretch bg-background">
       {/* Left side: image + hero text -- flows to left edge */}
-      <div className="relative hidden flex-1 flex-col justify-end overflow-hidden bg-[#1e3a5f] lg:flex">
+      <div className="relative hidden flex-1 flex-col justify-end overflow-hidden bg-[#3A3029] lg:flex">
         <div
-          className="absolute inset-0 z-0 bg-cover bg-center opacity-40 mix-blend-overlay"
+          className="absolute inset-0 z-0 bg-cover bg-center opacity-35 mix-blend-soft-light saturate-50 sepia"
           style={{ backgroundImage: 'url("/sign-in-bg.png")' }}
         />
-        <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#1e3a5f] via-[#1e3a5f]/60 to-transparent" />
+        <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#302721] via-[#48372D]/70 to-[#C15F3C]/10" />
         <div className="relative z-20 flex flex-col gap-6 p-16">
-          <h1 className="max-w-2xl font-display text-5xl font-black leading-tight tracking-tight text-white drop-shadow-md">
+          <h1 className="max-w-2xl font-display text-5xl font-semibold leading-tight tracking-tight text-[#FFF8F0] drop-shadow-md">
             住房贷款服务，一站了解、清晰办理。
           </h1>
-          <p className="max-w-xl text-lg text-slate-200">
+          <p className="max-w-xl text-lg text-[#E8DDD1]">
             在线查看贷款方案、准备申请材料、跟踪办理进度，并获得清晰的业务指引。
           </p>
         </div>
@@ -163,19 +163,19 @@ function SignIn() {
 
       {/* Right side: sign-in form */}
       <div className="flex w-full flex-col items-center justify-center px-6 py-12 lg:w-[480px] lg:shrink-0">
-        <div className="w-full max-w-[400px] rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-700 dark:bg-background sm:p-10">
+        <div className="w-full max-w-[410px] rounded-[1.5rem] border border-border bg-card p-8 shadow-[0_18px_50px_rgba(72,54,41,0.09)] sm:p-10">
           {/* Logo + Close */}
           <div className="mb-10 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Logo />
-              <span className="text-xl font-bold tracking-tight text-[#1e3a5f] dark:text-foreground">
+              <span className="font-display text-xl font-semibold tracking-tight text-foreground">
                 {COMPANY_NAME}
               </span>
             </div>
             <button
               type="button"
               onClick={() => navigate({ to: '/' as never })}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-white/10 dark:hover:text-white"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-muted hover:text-slate-800 dark:hover:bg-white/10 dark:hover:text-white"
               aria-label="返回首页"
             >
               <X className="h-6 w-6" />
@@ -185,7 +185,7 @@ function SignIn() {
           <div className="flex flex-col gap-8">
             {/* Heading */}
             <div>
-              <h2 className="text-3xl font-bold tracking-tight text-foreground">
+              <h2 className="font-display text-3xl font-semibold tracking-tight text-foreground">
                 进入演示
               </h2>
               <p className="mt-2 text-muted-foreground">
@@ -201,7 +201,7 @@ function SignIn() {
                   placeholder="邮箱地址"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full rounded-lg border border-slate-300 bg-transparent px-4 py-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-[#1e3a5f] focus:outline-none focus:ring-1 focus:ring-[#1e3a5f] dark:border-slate-600"
+                  className="block w-full rounded-xl border border-input bg-background/40 px-4 py-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
               <div className="relative">
@@ -211,12 +211,12 @@ function SignIn() {
                   placeholder="密码"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full rounded-lg border border-slate-300 bg-transparent px-4 py-3.5 pr-12 text-sm text-foreground placeholder:text-muted-foreground focus:border-[#1e3a5f] focus:outline-none focus:ring-1 focus:ring-[#1e3a5f] dark:border-slate-600"
+                  className="block w-full rounded-xl border border-input bg-background/40 px-4 py-3.5 pr-12 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((p) => !p)}
-                  className="absolute right-3 top-3.5 text-muted-foreground hover:text-[#1e3a5f]"
+                  className="absolute right-3 top-3.5 text-muted-foreground hover:text-[#C15F3C]"
                   aria-label={showPassword ? '隐藏密码' : '显示密码'}
                 >
                   {showPassword ? (
@@ -231,13 +231,13 @@ function SignIn() {
                 <label className="flex cursor-pointer items-center gap-2">
                   <input
                     type="checkbox"
-                    className="h-4 w-4 rounded border-slate-300 text-[#1e3a5f] focus:ring-[#1e3a5f]"
+                    className="h-4 w-4 rounded border-input text-[#C15F3C] focus:ring-[#C15F3C]"
                   />
                   <span className="text-sm text-muted-foreground">记住我</span>
                 </label>
                 <button
                   type="button"
-                  className="text-sm font-semibold text-[#1e3a5f] hover:underline dark:text-blue-400"
+                  className="text-sm font-semibold text-[#C15F3C] hover:underline dark:text-orange-300"
                 >
                   忘记密码？
                 </button>
@@ -252,7 +252,7 @@ function SignIn() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex h-12 w-full items-center justify-center rounded-lg bg-[#1e3a5f] text-base font-bold text-white shadow-lg shadow-[#1e3a5f]/30 transition hover:bg-[#152e42] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] focus:ring-offset-2 disabled:opacity-60"
+                className="flex h-12 w-full items-center justify-center rounded-xl bg-primary text-base font-semibold text-primary-foreground shadow-sm transition-all hover:-translate-y-px hover:bg-primary/90 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-60"
               >
                 {isLoading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -263,7 +263,7 @@ function SignIn() {
             </form>
 
             {/* Persona demo login */}
-            <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-6 dark:border-white/10 dark:bg-white/5">
+            <div className="mt-4 rounded-2xl border border-border bg-secondary/65 p-6">
               <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 演示角色快捷登录
               </p>
@@ -274,7 +274,7 @@ function SignIn() {
                     data-testid={`persona-${role}`}
                     type="button"
                     onClick={() => handlePersonaClick(role)}
-                    className="group flex flex-col items-center gap-2 rounded-lg p-2 transition-colors hover:bg-slate-100 dark:hover:bg-white/10"
+                    className="group flex flex-col items-center gap-2 rounded-lg p-2 transition-colors hover:bg-muted dark:hover:bg-white/10"
                     title={label}
                   >
                     <div

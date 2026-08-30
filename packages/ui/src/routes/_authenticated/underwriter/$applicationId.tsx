@@ -61,12 +61,12 @@ function disabledReason(
 const STAGE_BADGE_COLORS: Partial<Record<ApplicationStage, string>> = {
   underwriting: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   conditional_approval:
-    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-orange-300',
   clear_to_close:
     'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  closed: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400',
+  closed: 'bg-muted text-slate-600 dark:bg-slate-700 dark:text-slate-400',
   denied: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  withdrawn: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400',
+  withdrawn: 'bg-muted text-slate-600 dark:bg-slate-700 dark:text-slate-400',
 };
 
 export const Route = createFileRoute('/_authenticated/underwriter/$applicationId')({
@@ -88,7 +88,8 @@ const SEVERITY_COLORS: Record<string, string> = {
     'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
   prior_to_closing:
     'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  prior_to_funding: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  prior_to_funding:
+    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-orange-300',
 };
 
 const CONDITION_STATUS_COLORS: Record<string, string> = {
@@ -96,7 +97,7 @@ const CONDITION_STATUS_COLORS: Record<string, string> = {
   responded: 'bg-blue-100 text-blue-700',
   under_review: 'bg-violet-100 text-violet-700',
   cleared: 'bg-emerald-100 text-emerald-700',
-  waived: 'bg-slate-100 text-slate-600',
+  waived: 'bg-muted text-slate-600',
   escalated: 'bg-red-100 text-red-700',
 };
 
@@ -157,7 +158,7 @@ function CardShell({
   return (
     <div
       className={cn(
-        'rounded-xl border border-border bg-white p-6 shadow-sm dark:bg-slate-900',
+        'rounded-xl border border-border bg-card p-6 shadow-sm dark:bg-card',
         className,
       )}
     >
@@ -240,11 +241,11 @@ function DeterministicAssessmentCard({
   const result = assessment.data;
 
   return (
-    <CardShell className="border-[#1e3a5f]/20">
+    <CardShell className="border-[#C15F3C]/20">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="mb-1 flex items-center gap-2">
-            <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-bold text-[#1e3a5f]">
+            <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-bold text-[#C15F3C]">
               固定规则测算
             </span>
             <span className="text-xs text-muted-foreground">采用固定公式计算</span>
@@ -271,7 +272,7 @@ function DeterministicAssessmentCard({
             type="button"
             disabled={disabled}
             onClick={() => assessment.mutate(paymentValue)}
-            className="rounded-lg bg-[#1e3a5f] px-4 py-2 text-sm font-semibold text-white hover:bg-[#152e42] disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg bg-[#C15F3C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#8F402B] disabled:cursor-not-allowed disabled:opacity-40"
           >
             {assessment.isPending ? '计算中…' : '执行规则评估'}
           </button>
@@ -302,17 +303,17 @@ function DeterministicAssessmentCard({
               return (
                 <div
                   key={label as string}
-                  className="rounded-lg border border-border bg-slate-50 p-4 dark:bg-slate-800/50"
+                  className="rounded-lg border border-border bg-secondary p-4 dark:bg-muted/50"
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-foreground">{label as string}</span>
-                    <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-muted-foreground dark:bg-slate-900">
+                    <span className="rounded-full bg-card px-2 py-0.5 text-xs font-semibold text-muted-foreground dark:bg-card">
                       {item.rating
                         ? (ASSESSMENT_RATING_LABELS[item.rating] ?? item.rating)
                         : '待计算'}
                     </span>
                   </div>
-                  <p className="mt-2 text-3xl font-bold text-[#1e3a5f]">
+                  <p className="mt-2 text-3xl font-bold text-[#C15F3C]">
                     {item.value == null ? '--' : `${item.value.toFixed(2)}%`}
                   </p>
                   <p className="mt-2 break-words text-xs text-muted-foreground">
@@ -487,7 +488,7 @@ function RiskAssessmentCard({
             onClick={() => runAssessment.mutate(paymentValue)}
             disabled={disabled}
             title={tooltip ?? undefined}
-            className="flex items-center gap-1.5 rounded-lg bg-[#1e3a5f] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#152e42] disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center gap-1.5 rounded-lg bg-[#C15F3C] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#8F402B] disabled:cursor-not-allowed disabled:opacity-40"
           >
             {runAssessment.isPending ? '生成中…' : hasData ? '重新运行' : '运行画像'}
           </button>
@@ -500,7 +501,7 @@ function RiskAssessmentCard({
                   false,
                 )
               }
-              className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-slate-50"
+              className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
             >
               请小融解读
             </button>
@@ -528,7 +529,7 @@ function RiskAssessmentCard({
           return (
             <div
               key={m.label}
-              className="rounded-lg border border-border bg-slate-50 p-4 dark:bg-slate-800/50"
+              className="rounded-lg border border-border bg-secondary p-4 dark:bg-muted/50"
             >
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-sm font-semibold text-muted-foreground">
@@ -557,7 +558,7 @@ function RiskAssessmentCard({
               hasResult &&
               assessment.predictive_model_result!.toLowerCase().includes('approved');
             return (
-              <div className="rounded-lg border border-border bg-slate-50 p-4 dark:bg-slate-800/50">
+              <div className="rounded-lg border border-border bg-secondary p-4 dark:bg-muted/50">
                 <div className="mb-2 flex items-center justify-between">
                   <span className="text-sm font-semibold text-muted-foreground">
                     模型辅助结果
@@ -706,7 +707,7 @@ function ComplianceChecksCard({
             <span
               className={cn(
                 'ml-2 rounded px-2 py-0.5 text-xs font-medium',
-                STATUS_BADGE[result.overall_status] ?? 'bg-slate-100 text-slate-600',
+                STATUS_BADGE[result.overall_status] ?? 'bg-muted text-slate-600',
               )}
             >
               {COMPLIANCE_STATUS_LABELS[result.overall_status] ?? result.overall_status}
@@ -721,7 +722,7 @@ function ComplianceChecksCard({
           }
           disabled={disabled}
           title={tooltip ?? undefined}
-          className="flex items-center gap-1.5 rounded-lg bg-[#1e3a5f] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#152e42] disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-lg bg-[#C15F3C] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#8F402B] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {hasData ? '重新检查' : '运行检查'}
         </button>
@@ -738,11 +739,11 @@ function ComplianceChecksCard({
           return (
             <div
               key={check.key}
-              className="rounded border border-border bg-white p-3 dark:bg-slate-800"
+              className="rounded border border-border bg-card p-3 dark:bg-muted"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="rounded bg-slate-100 p-1 dark:bg-slate-700">
+                  <div className="rounded bg-muted p-1 dark:bg-slate-700">
                     <Icon className="h-4 w-4 text-slate-500" />
                   </div>
                   <span className="text-sm font-medium text-foreground">
@@ -753,7 +754,7 @@ function ComplianceChecksCard({
                   <span
                     className={cn(
                       'rounded px-2 py-0.5 text-xs font-medium',
-                      STATUS_BADGE[status] ?? 'bg-slate-100 text-slate-600',
+                      STATUS_BADGE[status] ?? 'bg-muted text-slate-600',
                     )}
                   >
                     {COMPLIANCE_STATUS_LABELS[status] ?? status}
@@ -806,7 +807,7 @@ function ConditionsCard({ appId, stage }: { appId: number; stage?: ApplicationSt
           onClick={() => chatPrefill(`请为申请 #${appId} 新增一项审批条件。`)}
           disabled={disabled}
           title={tooltip ?? undefined}
-          className="flex items-center gap-1.5 rounded-lg bg-[#1e3a5f] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#152e42] disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-lg bg-[#C15F3C] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#8F402B] disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Plus className="h-3.5 w-3.5" />
           新增审批条件
@@ -822,7 +823,7 @@ function ConditionsCard({ appId, stage }: { appId: number; stage?: ApplicationSt
           {items.map((cond: Condition) => (
             <li
               key={cond.id}
-              className="flex gap-3 rounded border border-border bg-slate-50 p-3 text-sm dark:bg-slate-800/50"
+              className="flex gap-3 rounded border border-border bg-secondary p-3 text-sm dark:bg-muted/50"
             >
               <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
               <div className="flex-1 min-w-0">
@@ -840,8 +841,7 @@ function ConditionsCard({ appId, stage }: { appId: number; stage?: ApplicationSt
                   <span
                     className={cn(
                       'rounded px-2 py-0.5 text-xs font-medium',
-                      CONDITION_STATUS_COLORS[cond.status] ??
-                        'bg-slate-100 text-slate-600',
+                      CONDITION_STATUS_COLORS[cond.status] ?? 'bg-muted text-slate-600',
                     )}
                   >
                     {CONDITION_STATUS_LABELS[cond.status] ?? cond.status}
@@ -851,7 +851,7 @@ function ConditionsCard({ appId, stage }: { appId: number; stage?: ApplicationSt
                   <span
                     className={cn(
                       'rounded px-2 py-0.5 text-xs font-semibold',
-                      SEVERITY_COLORS[cond.severity] ?? 'bg-slate-100 text-slate-600',
+                      SEVERITY_COLORS[cond.severity] ?? 'bg-muted text-slate-600',
                     )}
                   >
                     {SEVERITY_LABELS[cond.severity] ?? cond.severity}
@@ -1013,7 +1013,7 @@ function DecisionPanel({ appId, stage }: { appId: number; stage?: ApplicationSta
         人工审批决策
       </h3>
       {stageDisabled && tooltip && (
-        <p className="mb-4 rounded-lg border border-border bg-slate-50 px-3 py-2 text-xs text-muted-foreground dark:bg-slate-800/50">
+        <p className="mb-4 rounded-lg border border-border bg-secondary px-3 py-2 text-xs text-muted-foreground dark:bg-muted/50">
           {tooltip}
         </p>
       )}
@@ -1028,9 +1028,9 @@ function DecisionPanel({ appId, stage }: { appId: number; stage?: ApplicationSta
                   'flex items-center gap-3 rounded-lg border p-3 transition-colors',
                   stageDisabled ? 'cursor-not-allowed border-border' : 'cursor-pointer',
                   !stageDisabled && isSelected
-                    ? 'border-[#1e3a5f]/50 bg-[#1e3a5f]/5 ring-1 ring-[#1e3a5f]'
+                    ? 'border-[#C15F3C]/50 bg-[#C15F3C]/5 ring-1 ring-[#C15F3C]'
                     : !stageDisabled
-                      ? 'border-border hover:bg-slate-50 dark:hover:bg-slate-800'
+                      ? 'border-border hover:bg-secondary dark:hover:bg-muted'
                       : '',
                 )}
               >
@@ -1040,12 +1040,12 @@ function DecisionPanel({ appId, stage }: { appId: number; stage?: ApplicationSta
                   value={opt.value}
                   checked={isSelected}
                   onChange={() => setDecision(opt.value)}
-                  className="h-4 w-4 text-[#1e3a5f] focus:ring-[#1e3a5f]"
+                  className="h-4 w-4 text-[#C15F3C] focus:ring-[#C15F3C]"
                 />
                 <span
                   className={cn(
                     'text-sm font-medium',
-                    isSelected ? 'font-bold text-[#1e3a5f]' : 'text-foreground',
+                    isSelected ? 'font-bold text-[#C15F3C]' : 'text-foreground',
                   )}
                 >
                   {opt.label}
@@ -1063,13 +1063,13 @@ function DecisionPanel({ appId, stage }: { appId: number; stage?: ApplicationSta
             onChange={(e) => setRationale(e.target.value)}
             placeholder="请输入可审计的决策理由…"
             rows={4}
-            className="w-full resize-none rounded-lg border border-border bg-transparent p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/30"
+            className="w-full resize-none rounded-lg border border-border bg-transparent p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#C15F3C]/30"
           />
         </div>
         <button
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#1e3a5f] py-3 font-bold text-white shadow-md transition-colors hover:bg-[#152e42] disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#C15F3C] py-3 font-bold text-white shadow-md transition-colors hover:bg-[#8F402B] disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Gavel className="h-4 w-4" />
           生成待确认提案
@@ -1164,7 +1164,7 @@ function ComplianceKBCard() {
           <button
             key={topic.label}
             onClick={() => chatPrefill(topic.query)}
-            className="rounded-full border border-border px-3 py-1 text-xs text-foreground transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="rounded-full border border-border px-3 py-1 text-xs text-foreground transition-colors hover:bg-muted dark:hover:bg-muted"
           >
             {topic.label}
           </button>
@@ -1193,8 +1193,7 @@ function PastDecisions({ appId }: { appId: number }) {
               <span
                 className={cn(
                   'rounded px-2 py-0.5 text-xs font-medium',
-                  DECISION_TYPE_COLORS[d.decision_type] ??
-                    'bg-slate-100 text-slate-600',
+                  DECISION_TYPE_COLORS[d.decision_type] ?? 'bg-muted text-slate-600',
                 )}
               >
                 {DECISION_TYPE_LABELS[d.decision_type] ?? d.decision_type}
@@ -1261,7 +1260,7 @@ function UnderwriterDetail() {
         <CardShell className="flex flex-col items-center gap-3 py-12">
           <AlertTriangle className="h-8 w-8 text-amber-500" />
           <p className="font-medium text-foreground">未找到该申请</p>
-          <Link to="/underwriter" className="text-sm text-[#1e3a5f] hover:underline">
+          <Link to="/underwriter" className="text-sm text-[#C15F3C] hover:underline">
             返回审批队列
           </Link>
         </CardShell>
@@ -1273,7 +1272,7 @@ function UnderwriterDetail() {
   const stage = app.stage as ApplicationStage | undefined;
   const stageBadgeColor = stage
     ? (STAGE_BADGE_COLORS[stage] ??
-      'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400')
+      'bg-muted text-slate-600 dark:bg-slate-700 dark:text-slate-400')
     : '';
 
   return (

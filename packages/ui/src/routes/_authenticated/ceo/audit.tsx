@@ -26,7 +26,7 @@ const PAGE_SIZE = 50;
 
 const EVENT_TYPE_BADGE: Record<string, string> = {
   application_created:
-    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-orange-300',
   application_updated: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
   application_submitted:
     'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
@@ -64,12 +64,12 @@ const EVENT_TYPE_BADGE: Record<string, string> = {
 };
 
 const ROLE_BADGE: Record<string, string> = {
-  borrower: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  borrower: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-orange-300',
   loan_officer:
     'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
   underwriter: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   ceo: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  system: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-400',
+  system: 'bg-muted text-slate-700 dark:bg-slate-700 dark:text-slate-400',
 };
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -292,8 +292,8 @@ function AuditTrailPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1e3a5f]/10">
-            <Shield className="h-5 w-5 text-[#1e3a5f]" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#C15F3C]/10">
+            <Shield className="h-5 w-5 text-[#C15F3C]" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">操作记录</h1>
@@ -304,7 +304,7 @@ function AuditTrailPage() {
         </div>
         <button
           onClick={handleExport}
-          className="inline-flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800"
+          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-secondary dark:bg-card dark:hover:bg-muted"
         >
           <Download className="h-4 w-4" />
           导出 CSV
@@ -313,7 +313,7 @@ function AuditTrailPage() {
 
       {/* Filters */}
       <div className="mb-6 flex flex-wrap items-center gap-4">
-        <div className="inline-flex rounded-lg border border-border bg-white p-1 dark:bg-slate-900">
+        <div className="inline-flex rounded-lg border border-border bg-card p-1 dark:bg-card">
           {TIME_RANGES.map((range) => (
             <button
               key={range.value}
@@ -324,7 +324,7 @@ function AuditTrailPage() {
               className={cn(
                 'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
                 days === range.value
-                  ? 'bg-[#1e3a5f] text-white'
+                  ? 'bg-[#C15F3C] text-white'
                   : 'text-muted-foreground hover:text-foreground',
               )}
             >
@@ -339,7 +339,7 @@ function AuditTrailPage() {
             setEventType(e.target.value);
             setPage(0);
           }}
-          className="rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground shadow-sm dark:bg-slate-900"
+          className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm dark:bg-card"
         >
           <option value="">全部操作类型</option>
           {eventTypes.map((type) => (
@@ -351,11 +351,11 @@ function AuditTrailPage() {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-border bg-white shadow-sm dark:bg-slate-900">
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm dark:bg-card">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-slate-50 dark:bg-slate-800/50">
+              <tr className="border-b border-border bg-secondary dark:bg-muted/50">
                 <th className="px-6 py-3 text-left">
                   <SortHeader field="timestamp">时间</SortHeader>
                 </th>
@@ -413,15 +413,15 @@ function AuditTrailPage() {
                 pagedEvents.map((event) => {
                   const badgeClass =
                     EVENT_TYPE_BADGE[event.event_type] ??
-                    'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-400';
+                    'bg-muted text-slate-700 dark:bg-slate-700 dark:text-slate-400';
                   const roleClass =
                     ROLE_BADGE[event.user_role ?? ''] ??
-                    'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-400';
+                    'bg-muted text-slate-700 dark:bg-slate-700 dark:text-slate-400';
 
                   return (
                     <tr
                       key={event.id}
-                      className="border-b border-border hover:bg-slate-50/50 dark:hover:bg-slate-800/30"
+                      className="border-b border-border hover:bg-secondary/50 dark:hover:bg-muted/30"
                     >
                       <td className="whitespace-nowrap px-6 py-3 text-muted-foreground">
                         {formatTimestamp(event.timestamp)}
@@ -481,7 +481,7 @@ function AuditTrailPage() {
 
         {/* Pagination */}
         {sortedEvents.length > PAGE_SIZE && (
-          <div className="flex items-center justify-between border-t border-border bg-slate-50 px-6 py-3 dark:bg-slate-800/50">
+          <div className="flex items-center justify-between border-t border-border bg-secondary px-6 py-3 dark:bg-muted/50">
             <p className="text-sm text-muted-foreground">
               显示第 {page * PAGE_SIZE + 1}—
               {Math.min((page + 1) * PAGE_SIZE, sortedEvents.length)} 条，共{' '}
@@ -491,7 +491,7 @@ function AuditTrailPage() {
               <button
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={page === 0}
-                className="inline-flex items-center rounded-md border border-border bg-white px-2 py-1 text-sm text-foreground shadow-sm hover:bg-slate-50 disabled:opacity-50 dark:bg-slate-900 dark:hover:bg-slate-800"
+                className="inline-flex items-center rounded-md border border-border bg-card px-2 py-1 text-sm text-foreground shadow-sm hover:bg-secondary disabled:opacity-50 dark:bg-card dark:hover:bg-muted"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -501,7 +501,7 @@ function AuditTrailPage() {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                 disabled={page >= totalPages - 1}
-                className="inline-flex items-center rounded-md border border-border bg-white px-2 py-1 text-sm text-foreground shadow-sm hover:bg-slate-50 disabled:opacity-50 dark:bg-slate-900 dark:hover:bg-slate-800"
+                className="inline-flex items-center rounded-md border border-border bg-card px-2 py-1 text-sm text-foreground shadow-sm hover:bg-secondary disabled:opacity-50 dark:bg-card dark:hover:bg-muted"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>

@@ -30,8 +30,8 @@ export const Route = createFileRoute('/_authenticated/underwriter/')({
 const URGENCY_BADGE: Record<string, string> = {
   critical: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   high: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  medium: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  normal: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400',
+  medium: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-orange-300',
+  normal: 'bg-muted text-slate-600 dark:bg-slate-700 dark:text-slate-400',
 };
 
 const UW_STAGES = new Set<ApplicationStage>(['underwriting', 'conditional_approval']);
@@ -59,7 +59,7 @@ function CardShell({
   return (
     <div
       className={cn(
-        'rounded-xl border border-border bg-white p-6 shadow-sm dark:bg-slate-900',
+        'rounded-xl border border-border bg-card p-6 shadow-sm dark:bg-card',
         className,
       )}
     >
@@ -99,8 +99,8 @@ function QueueMetrics({ applications }: { applications: ApplicationResponse[] })
       label: '处理中',
       value: inProgress.length,
       icon: Clock,
-      color: 'text-[#1e3a5f]',
-      bg: 'bg-[#1e3a5f]/10',
+      color: 'text-[#C15F3C]',
+      bg: 'bg-[#C15F3C]/10',
     },
     {
       label: '今日已决策',
@@ -177,7 +177,7 @@ function rateLockLabel(app: ApplicationResponse): React.ReactNode {
     );
   }
   return (
-    <span className="inline-flex items-center rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-400">
+    <span className="inline-flex items-center rounded bg-muted px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-400">
       未锁定
     </span>
   );
@@ -326,13 +326,13 @@ function UnderwriterQueue() {
               placeholder="按借款人姓名或申请编号搜索…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-border bg-transparent py-2 pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/30"
+              className="w-full rounded-lg border border-border bg-transparent py-2 pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#C15F3C]/30"
             />
           </div>
           <select
             value={filterUrgency}
             onChange={(e) => setFilterUrgency(e.target.value as UrgencyLevel | '')}
-            className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/30"
+            className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#C15F3C]/30"
           >
             {URGENCY_FILTER.map((u) => (
               <option key={u.value} value={u.value}>
@@ -348,7 +348,7 @@ function UnderwriterQueue() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-slate-50 dark:bg-slate-800/50">
+              <tr className="border-b border-border bg-secondary dark:bg-muted/50">
                 <th
                   className="px-6 py-3 text-left font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground"
                   onClick={() => toggleSort('borrower')}
@@ -414,7 +414,7 @@ function UnderwriterQueue() {
           </table>
         </div>
         {!isLoading && totalUw > 0 && (
-          <div className="border-t border-border bg-slate-50 px-6 py-3 text-xs text-muted-foreground dark:bg-slate-800/50">
+          <div className="border-t border-border bg-secondary px-6 py-3 text-xs text-muted-foreground dark:bg-muted/50">
             当前显示 {filtered.length} / {totalUw} 笔待审批申请
           </div>
         )}
@@ -445,7 +445,7 @@ function QueueRow({ app }: { app: ApplicationResponse }) {
           goToDetail();
         }
       }}
-      className="border-b border-border transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1e3a5f]"
+      className="border-b border-border transition-colors hover:bg-secondary dark:hover:bg-muted/50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#C15F3C]"
     >
       <td className="px-6 py-4">
         <div>

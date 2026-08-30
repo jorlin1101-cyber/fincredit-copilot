@@ -175,8 +175,8 @@ export function ChatSidebar() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1e3a5f]">
-            <MessageSquare className="h-4 w-4 text-white" aria-hidden="true" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/12">
+            <MessageSquare className="h-4 w-4 text-primary" aria-hidden="true" />
           </div>
           <div>
             <h2 className="text-sm font-semibold text-foreground">
@@ -200,7 +200,7 @@ export function ChatSidebar() {
             <button
               onClick={clearHistory}
               disabled={isStreaming}
-              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-slate-100 hover:text-foreground disabled:opacity-40 dark:hover:bg-slate-800"
+              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40 dark:hover:bg-muted"
               aria-label="清空聊天记录"
             >
               <Trash2 className="h-4 w-4" />
@@ -208,7 +208,7 @@ export function ChatSidebar() {
           )}
           <button
             onClick={() => setIsMobileOpen(false)}
-            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-slate-100 hover:text-foreground dark:hover:bg-slate-800 lg:hidden"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground dark:hover:bg-muted lg:hidden"
             aria-label="关闭智能助手"
           >
             <X className="h-5 w-5" />
@@ -234,9 +234,9 @@ export function ChatSidebar() {
             const welcome = (user?.role && ROLE_WELCOME[user.role]) || DEFAULT_WELCOME;
             return (
               <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#1e3a5f]/10">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#C15F3C]/10">
                   <MessageSquare
-                    className="h-6 w-6 text-[#1e3a5f]"
+                    className="h-6 w-6 text-[#C15F3C]"
                     aria-hidden="true"
                   />
                 </div>
@@ -254,7 +254,7 @@ export function ChatSidebar() {
       {/* Input */}
       <div className="border-t border-border p-3">
         <div
-          className="flex cursor-text items-end gap-2 rounded-xl border border-border bg-slate-50 px-3 py-2 focus-within:border-[#1e3a5f] focus-within:ring-1 focus-within:ring-[#1e3a5f] dark:bg-slate-800"
+          className="flex cursor-text items-end gap-2 rounded-2xl border border-border bg-background/55 px-3 py-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
           onClick={() => inputRef.current?.focus()}
         >
           <textarea
@@ -273,7 +273,7 @@ export function ChatSidebar() {
           <button
             onClick={handleSend}
             disabled={!input.trim() || isStreaming}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1e3a5f] text-white transition-colors hover:bg-[#1e3a5f]/90 disabled:opacity-40"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
             aria-label="发送消息"
           >
             {isStreaming ? (
@@ -291,7 +291,7 @@ export function ChatSidebar() {
     <>
       {/* Desktop: fixed right sidebar */}
       <aside
-        className="fixed bottom-0 right-0 top-[65px] hidden w-[320px] flex-col border-l border-border bg-white dark:bg-slate-900 lg:flex"
+        className="fixed bottom-0 right-0 top-[65px] hidden w-[320px] flex-col border-l border-border/80 bg-card/95 backdrop-blur lg:flex"
         aria-label="智能助手"
         role="complementary"
       >
@@ -302,7 +302,7 @@ export function ChatSidebar() {
       {!isMobileOpen && (
         <button
           onClick={() => setIsMobileOpen(true)}
-          className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#1e3a5f] text-white shadow-lg transition-all hover:scale-105 hover:bg-[#1e3a5f]/90 lg:hidden"
+          className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#C15F3C] text-white shadow-lg transition-all hover:scale-105 hover:bg-[#C15F3C]/90 lg:hidden"
           aria-label="打开智能助手"
         >
           <MessageSquare className="h-6 w-6" />
@@ -311,7 +311,7 @@ export function ChatSidebar() {
 
       {isMobileOpen && (
         <aside
-          className="fixed bottom-0 left-0 right-0 top-0 z-50 flex flex-col bg-white dark:bg-slate-900 lg:hidden"
+          className="fixed bottom-0 left-0 right-0 top-0 z-50 flex flex-col bg-card lg:hidden"
           aria-label="智能助手"
           role="complementary"
         >

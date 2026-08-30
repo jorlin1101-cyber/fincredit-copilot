@@ -1,80 +1,78 @@
-import React from "react";
-import {
-  CheckCircle2,
-  CircleHelp,
-  AlertTriangle,
-  Folder,
-} from "lucide-react";
-import type { Service } from "../../schemas/health";
-import { getUptime, formatTime } from "../../lib/utils";
-import { useState, useEffect } from "react";
+import React from 'react';
+import { CheckCircle2, CircleHelp, AlertTriangle, Folder } from 'lucide-react';
+import type { Service } from '../../schemas/health';
+import { getUptime, formatTime } from '../../lib/utils';
+import { useState, useEffect } from 'react';
 
 // Package info for each service
-const PACKAGE_INFO: Record<string, {
-  path: string;
-  devUrl: string;
-  quickActions: { label: string; url: string; external?: boolean }[];
-  commands: { label: string; cmd: string }[];
-  gettingStarted: string[];
-}> = {
+const PACKAGE_INFO: Record<
+  string,
+  {
+    path: string;
+    devUrl: string;
+    quickActions: { label: string; url: string; external?: boolean }[];
+    commands: { label: string; cmd: string }[];
+    gettingStarted: string[];
+  }
+> = {
   UI: {
-    path: "packages/ui/",
-    devUrl: "http://localhost:3000",
+    path: 'packages/ui/',
+    devUrl: 'http://localhost:3000',
     quickActions: [
-      { label: "Storybook", url: "http://localhost:6006", external: true },
+      { label: 'Storybook', url: 'http://localhost:6006', external: true },
     ],
     commands: [
-      { label: "Dev", cmd: "pnpm dev" },
-      { label: "Build", cmd: "pnpm build" },
-      { label: "Test", cmd: "pnpm test" },
-      { label: "Lint", cmd: "pnpm lint" },
-      { label: "Format", cmd: "pnpm format" },
-      { label: "Type Check", cmd: "pnpm type-check" },
+      { label: 'Dev', cmd: 'pnpm dev' },
+      { label: 'Build', cmd: 'pnpm build' },
+      { label: 'Test', cmd: 'pnpm test' },
+      { label: 'Lint', cmd: 'pnpm lint' },
+      { label: 'Format', cmd: 'pnpm format' },
+      { label: 'Type Check', cmd: 'pnpm type-check' },
     ],
     gettingStarted: [
-      "Create route in `src/routes/`",
-      "Add components in `src/components/`",
-      "Add API calls in `src/services/`",
-      "Create hooks in `src/hooks/` to use services",
+      'Create route in `src/routes/`',
+      'Add components in `src/components/`',
+      'Add API calls in `src/services/`',
+      'Create hooks in `src/hooks/` to use services',
     ],
   },
   API: {
-    path: "packages/api/",
-    devUrl: "http://localhost:8000",
+    path: 'packages/api/',
+    devUrl: 'http://localhost:8000',
     quickActions: [
-      { label: "API Docs", url: "http://localhost:8000/docs", external: true },
-      { label: "DB Admin", url: "http://localhost:8000/admin", external: true },
+      { label: 'API Docs', url: 'http://localhost:8000/docs', external: true },
+      { label: 'DB Admin', url: 'http://localhost:8000/admin', external: true },
     ],
     commands: [
-      { label: "Dev", cmd: "pnpm dev" },
-      { label: "Start", cmd: "pnpm start" },
-      { label: "Test", cmd: "pnpm test" },
-      { label: "Lint", cmd: "pnpm lint" },
-      { label: "Format", cmd: "pnpm format" },
-      { label: "Type Check", cmd: "pnpm type-check" },
+      { label: 'Dev', cmd: 'pnpm dev' },
+      { label: 'Start', cmd: 'pnpm start' },
+      { label: 'Test', cmd: 'pnpm test' },
+      { label: 'Lint', cmd: 'pnpm lint' },
+      { label: 'Format', cmd: 'pnpm format' },
+      { label: 'Type Check', cmd: 'pnpm type-check' },
     ],
     gettingStarted: [
-      "Create schema in `src/schemas/`",
-      "Add route in `src/routes/`",
-      "Register router in `main.py`",
+      'Create schema in `src/schemas/`',
+      'Add route in `src/routes/`',
+      'Register router in `main.py`',
     ],
   },
   Database: {
-    path: "packages/db/",
-    devUrl: "postgresql://localhost:5432",
+    path: 'packages/db/',
+    devUrl: 'postgresql://localhost:5432',
     quickActions: [],
     commands: [
-      { label: "Start DB", cmd: "pnpm db:start" },
-      { label: "Stop DB", cmd: "pnpm db:stop" },
-      { label: "Logs", cmd: "pnpm db:logs" },
-      { label: "Migrate", cmd: "pnpm migrate" },
-      { label: "New Migration", cmd: "pnpm migrate:new" },
-      { label: "History", cmd: "pnpm migrate:history" },
+      { label: 'Start DB', cmd: 'pnpm db:start' },
+      { label: 'Stop DB', cmd: 'pnpm db:stop' },
+      { label: 'Logs', cmd: 'pnpm db:logs' },
+      { label: 'Migrate', cmd: 'pnpm migrate' },
+      { label: 'New Migration', cmd: 'pnpm migrate:new' },
+      { label: 'History', cmd: 'pnpm migrate:history' },
     ],
     gettingStarted: [
-      "See example model in `src/db/models.py`",
-      "Add/modify models, then run `pnpm migrate:new`",
-      "Apply migration with `pnpm migrate`",
+      'See example model in `src/db/models.py`',
+      'Add/modify models, then run `pnpm migrate:new`',
+      'Apply migration with `pnpm migrate`',
     ],
   },
 };
@@ -85,7 +83,10 @@ function formatWithCode(text: string) {
   return parts.map((part, idx) => {
     if (part.startsWith('`') && part.endsWith('`')) {
       return (
-        <code key={idx} className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
+        <code
+          key={idx}
+          className="rounded bg-muted px-1 py-0.5 font-mono text-foreground"
+        >
           {part.slice(1, -1)}
         </code>
       );
@@ -108,8 +109,8 @@ function DevInfo({ serviceName }: { serviceName: string }) {
           <a
             key={idx}
             href={action.url}
-            target={action.external ? "_blank" : undefined}
-            rel={action.external ? "noopener noreferrer" : undefined}
+            target={action.external ? '_blank' : undefined}
+            rel={action.external ? 'noopener noreferrer' : undefined}
             className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
           >
             {action.label}
@@ -137,13 +138,15 @@ function DevInfo({ serviceName }: { serviceName: string }) {
           onClick={() => setShowSteps(!showSteps)}
           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
-          <span>{showSteps ? "▼" : "▶"}</span>
+          <span>{showSteps ? '▼' : '▶'}</span>
           <span>使用说明</span>
         </button>
         {showSteps && (
           <ol className="mt-2 ml-4 space-y-1 text-xs text-muted-foreground list-decimal list-outside">
             {info.gettingStarted.map((step, idx) => (
-              <li key={idx} className="pl-1">{formatWithCode(step)}</li>
+              <li key={idx} className="pl-1">
+                {formatWithCode(step)}
+              </li>
             ))}
           </ol>
         )}
@@ -157,7 +160,7 @@ function DevInfo({ serviceName }: { serviceName: string }) {
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-muted-foreground">开发地址：</span>
-          {info.devUrl.startsWith("http") ? (
+          {info.devUrl.startsWith('http') ? (
             <a
               href={info.devUrl}
               target="_blank"
@@ -176,45 +179,42 @@ function DevInfo({ serviceName }: { serviceName: string }) {
 }
 
 const STATUS_META: Record<
-  Service["status"],
+  Service['status'],
   { label: string; color: string; dot: string; icon: React.ReactNode }
 > = {
   healthy: {
-    label: "运行正常",
+    label: '运行正常',
     color:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
-    dot: "bg-emerald-500",
+      'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
+    dot: 'bg-emerald-500',
     icon: <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
   },
   degraded: {
-    label: "性能下降",
-    color:
-      "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
-    dot: "bg-amber-500",
+    label: '性能下降',
+    color: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
+    dot: 'bg-amber-500',
     icon: <AlertTriangle className="h-4 w-4 text-amber-500" />,
   },
   down: {
-    label: "服务中断",
-    color:
-      "bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300",
-    dot: "bg-rose-500",
+    label: '服务中断',
+    color: 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300',
+    dot: 'bg-rose-500',
     icon: <AlertTriangle className="h-4 w-4 text-rose-500" />,
   },
   unknown: {
-    label: "状态未知",
-    color:
-      "bg-slate-100 text-slate-700 dark:bg-slate-900/60 dark:text-slate-300",
-    dot: "bg-slate-400",
+    label: '状态未知',
+    color: 'bg-muted text-slate-700 dark:bg-card/60 dark:text-slate-300',
+    dot: 'bg-slate-400',
     icon: <CircleHelp className="h-4 w-4 text-slate-400" />,
   },
 };
 
-export function ServiceCard({ 
-  service, 
-  isLoading, 
-  error 
-}: { 
-  service: Service; 
+export function ServiceCard({
+  service,
+  isLoading,
+  error,
+}: {
+  service: Service;
   isLoading: boolean;
   error?: Error | null;
 }) {
@@ -256,24 +256,16 @@ export function ServiceCard({
                 <span
                   className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${meta.color}`}
                 >
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${meta.dot}`}
-                  ></span>
+                  <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`}></span>
                   {meta.label}
                 </span>
               )}
             </div>
-            <span className="text-xs text-muted-foreground">
-              {service.message}
-            </span>
+            <span className="text-xs text-muted-foreground">{service.message}</span>
             {error && !isLoading && (
-              <span className="text-xs text-destructive mt-1">
-                {error.message}
-              </span>
+              <span className="text-xs text-destructive mt-1">{error.message}</span>
             )}
-            <span className="text-xs text-muted-foreground">
-              {uptimeString}
-            </span>
+            <span className="text-xs text-muted-foreground">{uptimeString}</span>
           </div>
         </div>
       </div>

@@ -78,7 +78,7 @@ const CONDITION_STATUS_COLORS: Record<string, string> = {
   responded: 'bg-blue-100 text-blue-700',
   under_review: 'bg-violet-100 text-violet-700',
   cleared: 'bg-emerald-100 text-emerald-700',
-  waived: 'bg-slate-100 text-slate-600',
+  waived: 'bg-muted text-slate-600',
   escalated: 'bg-red-100 text-red-700',
 };
 
@@ -109,7 +109,7 @@ function CardShell({
   return (
     <div
       className={cn(
-        'rounded-xl border border-border bg-white p-6 shadow-sm dark:bg-slate-900',
+        'rounded-xl border border-border bg-card p-6 shadow-sm dark:bg-card',
         className,
       )}
     >
@@ -186,7 +186,7 @@ function DetailHeader({
     <CardShell>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#1e3a5f] text-sm font-bold text-white">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#C15F3C] text-sm font-bold text-white">
             {ini}
           </div>
           <div>
@@ -250,7 +250,7 @@ function DetailHeader({
                 `请查看申请 #${app.id} 目前缺少哪些材料，并生成中文补件清单。`,
               )
             }
-            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary dark:hover:bg-muted"
           >
             <Upload className="h-4 w-4" />
             请求补充材料
@@ -266,7 +266,7 @@ function DetailHeader({
                     ? undefined
                     : `当前处于“${APPLICATION_STAGE_LABELS[app.stage]}”阶段，暂不可提交`
                 }
-                className="flex items-center gap-1.5 rounded-lg bg-[#1e3a5f] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#152e42] disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex items-center gap-1.5 rounded-lg bg-[#C15F3C] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#8F402B] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Send className="h-4 w-4" />
                 提交授信审批
@@ -482,8 +482,8 @@ function DocumentUpload({ appId }: { appId: number }) {
         className={cn(
           'flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed py-6 transition-colors',
           upload.isPending
-            ? 'border-[#1e3a5f]/30 bg-[#1e3a5f]/5'
-            : 'border-slate-200 hover:border-[#1e3a5f]/40 hover:bg-slate-50 dark:border-slate-700 dark:hover:border-slate-500 dark:hover:bg-slate-800/50',
+            ? 'border-[#C15F3C]/30 bg-[#C15F3C]/5'
+            : 'border-border hover:border-[#C15F3C]/40 hover:bg-secondary dark:border-border dark:hover:border-slate-500 dark:hover:bg-muted/50',
         )}
       >
         <input
@@ -622,7 +622,7 @@ function DocumentsTab({ appId }: { appId: number }) {
       <CardShell className="overflow-x-auto p-0">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border bg-slate-50 dark:bg-slate-800/50">
+            <tr className="border-b border-border bg-secondary dark:bg-muted/50">
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                 材料
               </th>
@@ -645,7 +645,7 @@ function DocumentsTab({ appId }: { appId: number }) {
                   <React.Fragment key={doc.id}>
                     <tr
                       onClick={() => setExpandedDocId(isExpanded ? null : doc.id)}
-                      className="border-b border-border last:border-0 cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                      className="border-b border-border last:border-0 cursor-pointer transition-colors hover:bg-secondary dark:hover:bg-muted/50"
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
@@ -661,7 +661,7 @@ function DocumentsTab({ appId }: { appId: number }) {
                             className={cn(
                               'inline-block w-fit rounded-full px-2.5 py-0.5 text-xs font-medium',
                               DOC_STATUS_COLORS[doc.status] ??
-                                'bg-slate-100 text-slate-700',
+                                'bg-muted text-slate-700',
                             )}
                           >
                             {DOCUMENT_STATUS_LABELS[doc.status] ?? doc.status}
@@ -732,7 +732,7 @@ function DocumentsTab({ appId }: { appId: number }) {
                                   `请通知客户重新提交申请 #${appId} 的“${DOC_TYPE_LABELS[doc.doc_type] ?? doc.doc_type}”材料。`,
                                 );
                               }}
-                              className="text-xs font-medium text-[#1e3a5f] hover:underline"
+                              className="text-xs font-medium text-[#C15F3C] hover:underline"
                             >
                               请求重新提交
                             </button>
@@ -741,7 +741,7 @@ function DocumentsTab({ appId }: { appId: number }) {
                       </td>
                     </tr>
                     {isExpanded && (
-                      <tr className="border-b border-border bg-slate-50/50 dark:bg-slate-800/30">
+                      <tr className="border-b border-border bg-secondary/50 dark:bg-muted/30">
                         <td colSpan={4} className="px-6 py-3">
                           <ExtractionDetails appId={appId} documentId={doc.id} />
                         </td>
@@ -800,7 +800,7 @@ function ConditionsTab({ appId }: { appId: number }) {
     <CardShell className="overflow-hidden p-0">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-border bg-slate-50 dark:bg-slate-800/50">
+          <tr className="border-b border-border bg-secondary dark:bg-muted/50">
             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
               审批条件
             </th>
@@ -836,7 +836,7 @@ function ConditionsTab({ appId }: { appId: number }) {
                   <span
                     className={cn(
                       'rounded-full px-2.5 py-0.5 text-xs font-medium',
-                      SEVERITY_COLORS[cond.severity] ?? 'bg-slate-100 text-slate-600',
+                      SEVERITY_COLORS[cond.severity] ?? 'bg-muted text-slate-600',
                     )}
                   >
                     {CONDITION_SEVERITY_LABELS[cond.severity] ?? cond.severity}
@@ -848,8 +848,7 @@ function ConditionsTab({ appId }: { appId: number }) {
                   <span
                     className={cn(
                       'rounded-full px-2.5 py-0.5 text-xs font-medium',
-                      CONDITION_STATUS_COLORS[cond.status] ??
-                        'bg-slate-100 text-slate-600',
+                      CONDITION_STATUS_COLORS[cond.status] ?? 'bg-muted text-slate-600',
                     )}
                   >
                     {CONDITION_STATUS_LABELS[cond.status] ?? cond.status}
@@ -867,7 +866,7 @@ function ConditionsTab({ appId }: { appId: number }) {
                         `请处理申请 #${appId} 的审批条件：${conditionDescription(cond.description)}。`,
                       )
                     }
-                    className="text-xs font-medium text-[#1e3a5f] hover:underline"
+                    className="text-xs font-medium text-[#C15F3C] hover:underline"
                   >
                     去处理
                   </button>
@@ -909,7 +908,7 @@ function LoanDetail() {
         <CardShell className="flex flex-col items-center gap-3 py-12">
           <AlertTriangle className="h-8 w-8 text-amber-500" />
           <p className="text-foreground font-medium">未找到该申请</p>
-          <Link to="/loan-officer" className="text-sm text-[#1e3a5f] hover:underline">
+          <Link to="/loan-officer" className="text-sm text-[#C15F3C] hover:underline">
             返回客户经理看板
           </Link>
         </CardShell>
@@ -950,7 +949,7 @@ function LoanDetail() {
               className={cn(
                 'flex items-center gap-1.5 whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
                 isActive
-                  ? 'border-[#1e3a5f] text-[#1e3a5f]'
+                  ? 'border-[#C15F3C] text-[#C15F3C]'
                   : 'border-transparent text-muted-foreground hover:text-foreground',
               )}
             >

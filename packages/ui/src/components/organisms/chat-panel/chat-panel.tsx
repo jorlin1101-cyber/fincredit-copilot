@@ -52,7 +52,7 @@ export function ChatPanel() {
   return (
     <aside
       className={cn(
-        'fixed bottom-0 right-0 top-0 z-50 flex w-full max-w-md flex-col border-l border-border bg-white shadow-2xl transition-transform duration-300 dark:bg-slate-900',
+        'fixed bottom-0 right-0 top-0 z-50 flex w-full max-w-md flex-col border-l border-border bg-card/98 shadow-2xl backdrop-blur transition-transform duration-300',
         isOpen ? 'translate-x-0' : 'translate-x-full',
       )}
       aria-label="智能助手"
@@ -61,7 +61,7 @@ export function ChatPanel() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1e3a5f]">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#C15F3C]">
             <MessageSquare className="h-4 w-4 text-white" aria-hidden="true" />
           </div>
           <div>
@@ -73,7 +73,7 @@ export function ChatPanel() {
         </div>
         <button
           onClick={closeChat}
-          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-slate-100 hover:text-foreground dark:hover:bg-slate-800"
+          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground dark:hover:bg-muted"
           aria-label="关闭智能助手"
         >
           <X className="h-5 w-5" />
@@ -84,8 +84,8 @@ export function ChatPanel() {
       <div ref={messagesRef} className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
         {messages.length === 0 && !isStreaming && (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#1e3a5f]/10">
-              <MessageSquare className="h-6 w-6 text-[#1e3a5f]" aria-hidden="true" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#C15F3C]/10">
+              <MessageSquare className="h-6 w-6 text-[#C15F3C]" aria-hidden="true" />
             </div>
             <div>
               <p className="text-sm font-medium text-foreground">
@@ -108,7 +108,7 @@ export function ChatPanel() {
                 <button
                   key={suggestion}
                   onClick={() => sendMessage(suggestion)}
-                  className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-[#1e3a5f] hover:text-[#1e3a5f]"
+                  className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-[#C15F3C] hover:text-[#C15F3C]"
                 >
                   {suggestion}
                 </button>
@@ -124,7 +124,7 @@ export function ChatPanel() {
 
       {/* Input */}
       <div className="border-t border-border p-3">
-        <div className="flex items-center gap-2 rounded-xl border border-border bg-slate-50 px-3 py-2 focus-within:border-[#1e3a5f] focus-within:ring-1 focus-within:ring-[#1e3a5f] dark:bg-slate-800">
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2 focus-within:border-[#C15F3C] focus-within:ring-1 focus-within:ring-[#C15F3C] dark:bg-muted">
           <input
             ref={inputRef}
             type="text"
@@ -137,7 +137,7 @@ export function ChatPanel() {
           <button
             onClick={handleSend}
             disabled={!input.trim() || isStreaming}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1e3a5f] text-white transition-colors hover:bg-[#1e3a5f]/90 disabled:opacity-40"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#C15F3C] text-white transition-colors hover:bg-[#C15F3C]/90 disabled:opacity-40"
             aria-label="发送消息"
           >
             {isStreaming ? (
@@ -184,16 +184,16 @@ export function ChatFab({ onClick }: { onClick: () => void }) {
       {showPrompt && (
         <button
           onClick={handleClick}
-          className="relative mb-2 animate-fade-in rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-[#1e3a5f] shadow-lg transition-transform hover:scale-105 dark:bg-slate-800 dark:text-blue-300"
+          className="relative mb-2 animate-fade-in rounded-xl bg-card px-4 py-2.5 text-sm font-medium text-[#C15F3C] shadow-lg transition-transform hover:scale-105 dark:bg-muted dark:text-orange-200"
         >
           {AGENT_NAME ? `您好，我是${AGENT_NAME}` : '有什么可以帮您？'}
-          <span className="absolute -right-1.5 bottom-2.5 h-3 w-3 rotate-45 bg-white shadow-lg dark:bg-slate-800" />
+          <span className="absolute -right-1.5 bottom-2.5 h-3 w-3 rotate-45 bg-card shadow-lg dark:bg-muted" />
         </button>
       )}
       <button
         onClick={handleClick}
         className={cn(
-          'flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#cc0000] text-white shadow-lg transition-all hover:scale-105 hover:bg-[#990000] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cc0000] focus-visible:ring-offset-2',
+          'flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#D97757] text-white shadow-lg transition-all hover:scale-105 hover:bg-[#B85C3D] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D97757] focus-visible:ring-offset-2',
           isBouncing && 'animate-bounce',
         )}
         aria-label="打开智能助手"

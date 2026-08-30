@@ -175,8 +175,9 @@ export function formatExtractionValue(
 }
 
 export const STAGE_BADGE: Record<string, string> = {
-  inquiry: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-  prequalification: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  inquiry: 'bg-muted text-slate-700 dark:bg-muted dark:text-slate-300',
+  prequalification:
+    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-orange-200',
   application:
     'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
   processing:

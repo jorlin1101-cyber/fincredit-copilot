@@ -1,6 +1,13 @@
 // This project was developed with assistance from AI tools.
 
-import { Home, Calendar, Percent, Shield, DollarSign, TrendingDown } from 'lucide-react';
+import {
+  Home,
+  Calendar,
+  Percent,
+  Shield,
+  DollarSign,
+  TrendingDown,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useProducts } from '@/hooks/use-products';
 import { Skeleton } from '@/components/atoms/skeleton/skeleton';
@@ -10,146 +17,142 @@ import type { ProductInfo } from '@/schemas/products';
 
 // Map Chinese product names to icons by business meaning.
 function getProductIcon(name: string): LucideIcon {
-    const lower = name.toLowerCase();
-    if (lower.includes('15')) return Calendar;
-    if (lower.includes('公积金') || lower.includes('组合')) return Shield;
-    if (lower.includes('县域')) return TrendingDown;
-    if (lower.includes('大额')) return DollarSign;
-    if (lower.includes('浮动') || lower.includes('lpr')) return Percent;
-    return Home;
+  const lower = name.toLowerCase();
+  if (lower.includes('15')) return Calendar;
+  if (lower.includes('公积金') || lower.includes('组合')) return Shield;
+  if (lower.includes('县域')) return TrendingDown;
+  if (lower.includes('大额')) return DollarSign;
+  if (lower.includes('浮动') || lower.includes('lpr')) return Percent;
+  return Home;
 }
 
 interface ProductCardProps {
-    product: ProductInfo;
-    isPopular?: boolean;
+  product: ProductInfo;
+  isPopular?: boolean;
 }
 
 function ProductCard({ product, isPopular = false }: ProductCardProps) {
-    const Icon = getProductIcon(product.name);
-    // API returns rates as whole numbers like 6.5; divide by 100 for formatPercent
-    const rateDisplay = formatPercent(product.typical_rate / 100);
+  const Icon = getProductIcon(product.name);
+  // API returns rates as whole numbers like 6.5; divide by 100 for formatPercent
+  const rateDisplay = formatPercent(product.typical_rate / 100);
 
-    return (
-        <article className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-white shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl dark:bg-card">
-            {/* Colored top border accent */}
-            <div className="h-1 w-full bg-[#1e3a5f]" aria-hidden="true" />
+  return (
+    <article className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl dark:bg-card">
+      {/* Colored top border accent */}
+      <div className="h-1 w-full bg-[#C15F3C]" aria-hidden="true" />
 
-            <div className="flex flex-1 flex-col gap-4 p-6">
-                {/* Icon + badge row */}
-                <div className="flex items-start justify-between">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1e3a5f]/10 text-[#1e3a5f] dark:bg-[#1e3a5f]/20">
-                        <Icon className="h-5 w-5" aria-hidden="true" />
-                    </div>
-                    {isPopular && (
-                        <Badge className="bg-[#cc0000] text-white hover:bg-[#990000]">
-                            常用
-                        </Badge>
-                    )}
-                </div>
+      <div className="flex flex-1 flex-col gap-4 p-6">
+        {/* Icon + badge row */}
+        <div className="flex items-start justify-between">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#C15F3C]/10 text-[#C15F3C] dark:bg-[#C15F3C]/20">
+            <Icon className="h-5 w-5" aria-hidden="true" />
+          </div>
+          {isPopular && (
+            <Badge className="bg-[#D97757] text-white hover:bg-[#B85C3D]">常用</Badge>
+          )}
+        </div>
 
-                {/* Name and description */}
-                <div className="flex flex-1 flex-col gap-1.5">
-                    <h3 className="font-display text-base font-bold text-foreground">
-                        {product.name}
-                    </h3>
-                    <p className="text-sm leading-6 text-muted-foreground">
-                        {product.description}
-                    </p>
-                </div>
+        {/* Name and description */}
+        <div className="flex flex-1 flex-col gap-1.5">
+          <h3 className="font-display text-base font-bold text-foreground">
+            {product.name}
+          </h3>
+          <p className="text-sm leading-6 text-muted-foreground">
+            {product.description}
+          </p>
+        </div>
 
-                {/* Rate footer */}
-                <div className="flex items-end justify-between border-t border-border pt-4">
-                    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        测算参考利率
-                    </span>
-                    <div className="flex items-baseline gap-1">
-                        <span className="font-display text-2xl font-bold text-[#cc0000]">
-                            {rateDisplay}
-                        </span>
-                        <span className="text-xs text-muted-foreground">年利率</span>
-                    </div>
-                </div>
-                <p className="text-xs leading-5 text-muted-foreground">
-                    {product.rate_note}
-                </p>
-                <a
-                    href={product.source_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs font-medium text-[#1e3a5f] hover:underline dark:text-blue-300"
-                >
-                    查看数据来源（{product.data_as_of}）
-                </a>
-            </div>
-        </article>
-    );
+        {/* Rate footer */}
+        <div className="flex items-end justify-between border-t border-border pt-4">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            测算参考利率
+          </span>
+          <div className="flex items-baseline gap-1">
+            <span className="font-display text-2xl font-bold text-[#D97757]">
+              {rateDisplay}
+            </span>
+            <span className="text-xs text-muted-foreground">年利率</span>
+          </div>
+        </div>
+        <p className="text-xs leading-5 text-muted-foreground">{product.rate_note}</p>
+        <a
+          href={product.source_url}
+          target="_blank"
+          rel="noreferrer"
+          className="text-xs font-medium text-[#C15F3C] hover:underline dark:text-orange-200"
+        >
+          查看数据来源（{product.data_as_of}）
+        </a>
+      </div>
+    </article>
+  );
 }
 
 function ProductCardSkeleton() {
-    return (
-        <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-white shadow-sm dark:bg-card">
-            <div className="h-1 w-full bg-muted" />
-            <div className="flex flex-col gap-4 p-6">
-                <Skeleton className="h-10 w-10 rounded-lg" />
-                <div className="flex flex-col gap-2">
-                    <Skeleton className="h-5 w-2/3" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-4/5" />
-                </div>
-                <div className="border-t border-border pt-4">
-                    <Skeleton className="h-8 w-1/3 ml-auto" />
-                </div>
-            </div>
+  return (
+    <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm dark:bg-card">
+      <div className="h-1 w-full bg-muted" />
+      <div className="flex flex-col gap-4 p-6">
+        <Skeleton className="h-10 w-10 rounded-lg" />
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-4/5" />
         </div>
-    );
+        <div className="border-t border-border pt-4">
+          <Skeleton className="h-8 w-1/3 ml-auto" />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function ProductGrid() {
-    const { data: products, isLoading, isError } = useProducts();
+  const { data: products, isLoading, isError } = useProducts();
 
-    return (
-        <section id="products" className="w-full py-16 lg:py-24">
-            <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
-                {/* Section header */}
-                <div className="mb-12 flex flex-col items-center gap-3 text-center">
-                    <span className="text-xs font-semibold uppercase tracking-widest text-[#cc0000]">
-                        贷款产品
-                    </span>
-                    <h2 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
-                        了解适合您的住房贷款方案
-                    </h2>
-                    <p className="max-w-2xl text-base text-muted-foreground">
-                        产品资格、实际利率和额度以贷款机构及住房公积金中心审核结果为准。
-                    </p>
-                </div>
+  return (
+    <section id="products" className="w-full py-16 lg:py-24">
+      <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
+        {/* Section header */}
+        <div className="mb-12 flex flex-col items-center gap-3 text-center">
+          <span className="text-xs font-semibold uppercase tracking-widest text-[#D97757]">
+            贷款产品
+          </span>
+          <h2 className="font-display text-3xl font-bold text-foreground sm:text-4xl">
+            了解适合您的住房贷款方案
+          </h2>
+          <p className="max-w-2xl text-base text-muted-foreground">
+            产品资格、实际利率和额度以贷款机构及住房公积金中心审核结果为准。
+          </p>
+        </div>
 
-                {/* Error state */}
-                {isError && (
-                    <div
-                        role="alert"
-                        className="rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center text-sm text-destructive"
-                    >
-                        暂时无法加载贷款产品，请稍后重试。
-                    </div>
-                )}
+        {/* Error state */}
+        {isError && (
+          <div
+            role="alert"
+            className="rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center text-sm text-destructive"
+          >
+            暂时无法加载贷款产品，请稍后重试。
+          </div>
+        )}
 
-                {/* Grid */}
-                {!isError && (
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {isLoading
-                            ? Array.from({ length: 3 }).map((_, i) => (
-                                  <ProductCardSkeleton key={i} />
-                              ))
-                            : products?.slice(0, 3).map((product, index) => (
-                                  <ProductCard
-                                      key={product.id}
-                                      product={product}
-                                      isPopular={index === 0}
-                                  />
-                              ))}
-                    </div>
-                )}
-            </div>
-        </section>
-    );
+        {/* Grid */}
+        {!isError && (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {isLoading
+              ? Array.from({ length: 3 }).map((_, i) => <ProductCardSkeleton key={i} />)
+              : products
+                  ?.slice(0, 3)
+                  .map((product, index) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      isPopular={index === 0}
+                    />
+                  ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
 }

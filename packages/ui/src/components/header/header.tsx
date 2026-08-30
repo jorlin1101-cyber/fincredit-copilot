@@ -10,11 +10,11 @@ import { cn } from '@/lib/utils';
 import { COMPANY_NAME } from '@/lib/company';
 
 const ROLE_BADGE_STYLES: Record<UserRole, string> = {
-  prospect: 'bg-slate-100 text-slate-700',
+  prospect: 'bg-muted text-slate-700',
   borrower: 'bg-emerald-100 text-emerald-700',
   loan_officer: 'bg-purple-100 text-purple-700',
   underwriter: 'bg-orange-100 text-orange-700',
-  ceo: 'bg-[#1e3a5f]/10 text-[#1e3a5f]',
+  ceo: 'bg-[#C15F3C]/10 text-[#C15F3C]',
 };
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -36,12 +36,12 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-white shadow-sm dark:bg-background">
+    <header className="sticky top-0 z-30 border-b border-border/80 bg-card/92 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo + Brand */}
         <Link to="/" className="flex items-center gap-2">
           <Logo />
-          <span className="font-display text-base font-bold text-[#1e3a5f] dark:text-foreground">
+          <span className="font-display text-base font-semibold tracking-tight text-foreground">
             {COMPANY_NAME}
           </span>
         </Link>
@@ -61,7 +61,7 @@ export function Header() {
               </span>
               <button
                 onClick={handleSignOut}
-                className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-slate-100 hover:text-foreground dark:hover:bg-white/10"
+                className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground dark:hover:bg-white/10"
                 aria-label="退出登录"
               >
                 <LogOut className="h-4 w-4" />
@@ -72,7 +72,7 @@ export function Header() {
             <div className="hidden items-center gap-2 md:flex">
               <Button
                 asChild
-                className="bg-[#1e3a5f] text-white hover:bg-[#2b5a8f]"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
                 size="sm"
               >
                 <Link to={'/sign-in' as never}>进入演示</Link>
@@ -99,7 +99,7 @@ export function Header() {
 
       {/* Mobile menu panel */}
       {isMobileMenuOpen && (
-        <div className="border-t border-border bg-white px-4 pb-4 dark:bg-background md:hidden">
+        <div className="border-t border-border bg-card px-4 pb-4 md:hidden">
           <nav className="flex flex-col gap-1 pt-2" aria-label="Mobile navigation">
             <div className="mt-2 flex flex-col gap-2">
               {isAuthenticated && user ? (
@@ -122,7 +122,7 @@ export function Header() {
                       handleSignOut();
                       setIsMobileMenuOpen(false);
                     }}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-slate-100 hover:text-foreground"
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   >
                     <LogOut className="h-4 w-4" />
                     退出
@@ -131,7 +131,7 @@ export function Header() {
               ) : (
                 <Button
                   asChild
-                  className="w-full bg-[#1e3a5f] text-white hover:bg-[#2b5a8f]"
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                   size="sm"
                 >
                   <Link to={'/sign-in' as never}>进入演示</Link>

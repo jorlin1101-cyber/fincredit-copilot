@@ -72,7 +72,7 @@ function CardShell({
   return (
     <div
       className={cn(
-        'rounded-xl border border-border bg-white p-6 shadow-sm dark:bg-slate-900',
+        'rounded-xl border border-border bg-card p-6 shadow-sm dark:bg-card',
         className,
       )}
     >
@@ -100,8 +100,8 @@ function PipelineMetrics({ applications }: { applications: ApplicationResponse[]
       label: '在途申请',
       value: active.length,
       icon: Briefcase,
-      color: 'text-[#1e3a5f]',
-      bg: 'bg-[#1e3a5f]/10',
+      color: 'text-[#C15F3C]',
+      bg: 'bg-[#C15F3C]/10',
     },
     {
       label: '授信审批中',
@@ -371,13 +371,13 @@ function LoanOfficerPipeline() {
               placeholder="按借款人姓名或申请编号搜索…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-border bg-transparent py-2 pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/30"
+              className="w-full rounded-lg border border-border bg-transparent py-2 pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#C15F3C]/30"
             />
           </div>
           <select
             value={filterStage}
             onChange={(e) => setFilterStage(e.target.value as ApplicationStage | '')}
-            className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/30"
+            className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#C15F3C]/30"
           >
             {FILTER_STAGES.map((s) => (
               <option key={s.value} value={s.value}>
@@ -388,7 +388,7 @@ function LoanOfficerPipeline() {
           <select
             value={filterUrgency}
             onChange={(e) => setFilterUrgency(e.target.value as UrgencyLevel | '')}
-            className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/30"
+            className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#C15F3C]/30"
           >
             {URGENCY_FILTER.map((u) => (
               <option key={u.value} value={u.value}>
@@ -401,7 +401,7 @@ function LoanOfficerPipeline() {
               type="checkbox"
               checked={filterStalled}
               onChange={(e) => setFilterStalled(e.target.checked)}
-              className="h-4 w-4 rounded border-border text-[#1e3a5f] focus:ring-[#1e3a5f]/30"
+              className="h-4 w-4 rounded border-border text-[#C15F3C] focus:ring-[#C15F3C]/30"
             />
             仅看停滞申请
           </label>
@@ -413,7 +413,7 @@ function LoanOfficerPipeline() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-slate-50 dark:bg-slate-800/50">
+              <tr className="border-b border-border bg-secondary dark:bg-muted/50">
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground w-8"></th>
                 <th
                   className="px-4 py-3 text-left font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground"
@@ -508,7 +508,7 @@ function PipelineRow({ app }: { app: ApplicationResponse }) {
           goToDetail();
         }
       }}
-      className="border-b border-border transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1e3a5f]"
+      className="border-b border-border transition-colors hover:bg-secondary dark:hover:bg-muted/50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#C15F3C]"
     >
       <td className="px-4 py-4">
         <span

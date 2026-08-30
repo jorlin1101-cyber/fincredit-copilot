@@ -54,7 +54,7 @@ function CardShell({
   return (
     <div
       className={cn(
-        'rounded-xl border border-border bg-white p-6 shadow-sm dark:bg-slate-900',
+        'rounded-xl border border-border bg-card p-6 shadow-sm dark:bg-card',
         className,
       )}
     >
@@ -66,8 +66,8 @@ function CardShell({
 function CardHeader({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
   return (
     <div className="mb-4 flex items-center gap-2">
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1e3a5f]/10">
-        <Icon className="h-4 w-4 text-[#1e3a5f]" />
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#C15F3C]/10">
+        <Icon className="h-4 w-4 text-[#C15F3C]" />
       </div>
       <h2 className="text-lg font-semibold text-foreground">{title}</h2>
     </div>
@@ -173,9 +173,9 @@ function PipelineOverviewCard({ data }: { data: PipelineSummary }) {
               </span>
               <span className="font-medium text-foreground">{stage.count}</span>
             </div>
-            <div className="h-2.5 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+            <div className="h-2.5 w-full rounded-full bg-muted dark:bg-muted">
               <div
-                className="h-2.5 rounded-full bg-[#1e3a5f]"
+                className="h-2.5 rounded-full bg-[#C15F3C]"
                 style={{ width: `${(stage.count / maxCount) * 100}%` }}
               />
             </div>
@@ -268,7 +268,7 @@ function DenialAnalysisCard({ data }: { data: DenialTrends }) {
                 className="group relative flex h-full flex-1 items-end"
               >
                 <div
-                  className="w-full rounded-t bg-[#1e3a5f] transition-colors hover:bg-[#152e42]"
+                  className="w-full rounded-t bg-[#C15F3C] transition-colors hover:bg-[#8F402B]"
                   style={{
                     height: `${(point.denial_rate / maxRate) * 100}%`,
                     minHeight: 4,
@@ -307,7 +307,7 @@ function DenialAnalysisCard({ data }: { data: DenialTrends }) {
                   {reason.percentage.toFixed(1)}%
                 </span>
               </div>
-              <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+              <div className="h-1.5 w-full rounded-full bg-muted dark:bg-muted">
                 <div
                   className="h-1.5 rounded-full bg-red-400 dark:bg-red-500"
                   style={{ width: `${(reason.percentage / maxReasonPct) * 100}%` }}
@@ -359,7 +359,7 @@ function LOPerformanceCard({ data }: { data: LOPerformanceSummary }) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border bg-slate-50 dark:bg-slate-800/50">
+            <tr className="border-b border-border bg-secondary dark:bg-muted/50">
               <th className="px-6 py-3 text-left font-semibold text-muted-foreground">
                 客户经理
               </th>
@@ -403,7 +403,7 @@ function LOPerformanceCard({ data }: { data: LOPerformanceSummary }) {
                   >
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1e3a5f] text-xs font-bold text-white">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#C15F3C] text-xs font-bold text-white">
                           {initials(name)}
                         </div>
                         <span className="font-medium text-foreground">
@@ -443,7 +443,7 @@ function LOPerformanceSkeleton() {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border bg-slate-50 dark:bg-slate-800/50">
+            <tr className="border-b border-border bg-secondary dark:bg-muted/50">
               <th className="px-6 py-3 text-left font-semibold text-muted-foreground">
                 客户经理
               </th>
@@ -484,7 +484,7 @@ function LOPerformanceSkeleton() {
 
 const EVENT_TYPE_BADGE: Record<string, string> = {
   application_created:
-    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-orange-300',
   application_updated: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400',
   stage_transition:
     'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
@@ -541,7 +541,7 @@ function AuditEventsCard({ data }: { data: AuditSearchResponse }) {
         <CardHeader icon={Shield} title="最近操作记录" />
         <button
           onClick={() => setIsExpanded((v) => !v)}
-          className="rounded-md p-1 text-muted-foreground hover:bg-slate-100 hover:text-foreground dark:hover:bg-slate-800"
+          className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-muted"
         >
           {isExpanded ? (
             <ChevronUp className="h-4 w-4" />
@@ -555,7 +555,7 @@ function AuditEventsCard({ data }: { data: AuditSearchResponse }) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border bg-slate-50 dark:bg-slate-800/50">
+                <tr className="border-b border-border bg-secondary dark:bg-muted/50">
                   <th className="px-6 py-3 text-left font-semibold text-muted-foreground">
                     时间
                   </th>
@@ -584,7 +584,7 @@ function AuditEventsCard({ data }: { data: AuditSearchResponse }) {
                   data.events.map((event) => {
                     const badgeClass =
                       EVENT_TYPE_BADGE[event.event_type] ??
-                      'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-400';
+                      'bg-muted text-slate-700 dark:bg-slate-700 dark:text-slate-400';
                     return (
                       <tr key={event.id} className="border-b border-border">
                         <td className="whitespace-nowrap px-6 py-3 text-muted-foreground">
@@ -618,10 +618,10 @@ function AuditEventsCard({ data }: { data: AuditSearchResponse }) {
               </tbody>
             </table>
           </div>
-          <div className="border-t border-border bg-slate-50 px-6 py-3 text-xs text-muted-foreground dark:bg-slate-800/50">
+          <div className="border-t border-border bg-secondary px-6 py-3 text-xs text-muted-foreground dark:bg-muted/50">
             <Link
               to="/ceo/audit"
-              className="text-[#1e3a5f] hover:underline dark:text-sky-400"
+              className="text-[#C15F3C] hover:underline dark:text-sky-400"
             >
               查看全部操作记录
             </Link>
@@ -641,7 +641,7 @@ function AuditEventsSkeleton() {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border bg-slate-50 dark:bg-slate-800/50">
+            <tr className="border-b border-border bg-secondary dark:bg-muted/50">
               <th className="px-6 py-3 text-left font-semibold text-muted-foreground">
                 时间
               </th>
