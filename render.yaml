@@ -1,0 +1,109 @@
+databases:
+  - name: fincredit-demo-db
+    plan: free
+    region: singapore
+    databaseName: fincredit
+    user: fincredit
+
+services:
+  - type: web
+    name: fincredit-demo-minio
+    runtime: image
+    plan: free
+    region: singapore
+    image:
+      url: docker.io/minio/minio:latest
+    dockerCommand: server /data --address :10000
+    healthCheckPath: /minio/health/live
+    envVars:
+      - key: MINIO_ROOT_USER
+        value: fincredit-demo
+      - key: MINIO_ROOT_PASSWORD
+        generateValue: true
+
+  - type: web
+    name: fincredit-demo-mcp
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./packages/api/Containerfile
+    dockerContext: .
+    dockerCommand: python -m src.mcp_server
+    healthCheckPath: /health
+
+  - type: web
+    name: fincredit-demo-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./packages/api/Containerfile
+    dockerContext: .
+    dockerCommand: >-
+      sh -c 'DB_ASYNC_URL=$(printf "%s" "$DATABASE_CONNECTION_STRING" | sed "s|^postgresql://|postgresql+asyncpg://|");
+      export DATABASE_URL="$DB_ASYNC_URL" COMPLIANCE_DATABASE_URL="$DB_ASYNC_URL"
+      S3_ENDPOINT="http://$S3_HOSTPORT" MCP_RISK_SERVER_URL="http://$MCP_HOSTPORT/mcp";
+      cd /app/packages/db && alembic upgrade head &&
+      cd /app/packages/api && exec uvicorn src.main:app --host 0.0.0.0 --port "$PORT"'
+    healthCheckPath: /health/
+    envVars:
+      - key: DATABASE_CONNECTION_STRING
+        fromDatabase:
+          name: fincredit-demo-db
+          property: connectionString
+      - key: S3_HOSTPORT
+        fromService:
+          type: web
+          name: fincredit-demo-minio
+          property: hostport
+      - key: S3_ACCESS_KEY
+        fromService:
+          type: web
+          name: fincredit-demo-minio
+          envVarKey: MINIO_ROOT_USER
+      - key: S3_SECRET_KEY
+        fromService:
+          type: web
+          name: fincredit-demo-minio
+          envVarKey: MINIO_ROOT_PASSWORD
+      - key: MCP_HOSTPORT
+        fromService:
+          type: web
+          name: fincredit-demo-mcp
+          property: hostport
+      - key: AUTH_DISABLED
+        value: "true"
+      - key: DASHSCOPE_API_KEY
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+      - key: VISION_API_KEY
+        sync: false
+      - key: EMBEDDING_API_KEY
+        sync: false
+      - key: COMPANY_NAME
+        value: 融安住房金融（虚构演示机构）
+      - key: AGENT_NAME
+        value: 小融
+      - key: MLFLOW_TRACKING_URI
+        value: ""
+
+  - type: web
+    name: fincredit-copilot-demo
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./packages/ui/Containerfile
+    dockerContext: .
+    healthCheckPath: /
+    envVars:
+      - key: API_UPSTREAM
+        fromService:
+          type: web
+          name: fincredit-demo-api
+          property: hostport
+      - key: KEYCLOAK_EXTERNAL
+        value: ""
+      - key: COMPANY_NAME
+        value: 融安住房金融（虚构演示机构）
+      - key: AGENT_NAME
+        value: 小融
