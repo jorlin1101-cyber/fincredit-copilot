@@ -17,6 +17,17 @@ branch_labels = None
 depends_on = None
 
 
+def _execute_if_role_exists(sql: str, role: str) -> None:
+    """Run optional-role grants without breaking managed database setup."""
+    escaped_sql = sql.replace("'", "''")
+    op.execute(
+        sa.text(
+            f"DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{role}') "
+            f"THEN EXECUTE '{escaped_sql}'; END IF; END $$;"
+        )
+    )
+
+
 def upgrade() -> None:
     # 1. Create hmda schema
     op.execute("CREATE SCHEMA IF NOT EXISTS hmda")
@@ -45,42 +56,42 @@ def upgrade() -> None:
     )
 
     # 3. Grant lending_app full CRUD on public schema (existing + future tables)
-    op.execute("GRANT USAGE ON SCHEMA public TO lending_app")
-    op.execute("GRANT ALL ON ALL TABLES IN SCHEMA public TO lending_app")
-    op.execute("GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO lending_app")
-    op.execute(
-        "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO lending_app"
+    _execute_if_role_exists("GRANT USAGE ON SCHEMA public TO lending_app", "lending_app")
+    _execute_if_role_exists("GRANT ALL ON ALL TABLES IN SCHEMA public TO lending_app", "lending_app")
+    _execute_if_role_exists("GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO lending_app", "lending_app")
+    _execute_if_role_exists(
+        "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO lending_app", "lending_app"
     )
-    op.execute(
-        "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO lending_app"
+    _execute_if_role_exists(
+        "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO lending_app", "lending_app"
     )
 
     # 4. Grant compliance_app SELECT-only on public schema
-    op.execute("GRANT USAGE ON SCHEMA public TO compliance_app")
-    op.execute("GRANT SELECT ON ALL TABLES IN SCHEMA public TO compliance_app")
-    op.execute(
-        "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO compliance_app"
+    _execute_if_role_exists("GRANT USAGE ON SCHEMA public TO compliance_app", "compliance_app")
+    _execute_if_role_exists("GRANT SELECT ON ALL TABLES IN SCHEMA public TO compliance_app", "compliance_app")
+    _execute_if_role_exists(
+        "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO compliance_app", "compliance_app"
     )
 
     # 5. Grant compliance_app full CRUD on hmda schema
-    op.execute("GRANT ALL ON SCHEMA hmda TO compliance_app")
-    op.execute("GRANT ALL ON ALL TABLES IN SCHEMA hmda TO compliance_app")
-    op.execute("GRANT ALL ON ALL SEQUENCES IN SCHEMA hmda TO compliance_app")
-    op.execute(
-        "ALTER DEFAULT PRIVILEGES IN SCHEMA hmda GRANT ALL ON TABLES TO compliance_app"
+    _execute_if_role_exists("GRANT ALL ON SCHEMA hmda TO compliance_app", "compliance_app")
+    _execute_if_role_exists("GRANT ALL ON ALL TABLES IN SCHEMA hmda TO compliance_app", "compliance_app")
+    _execute_if_role_exists("GRANT ALL ON ALL SEQUENCES IN SCHEMA hmda TO compliance_app", "compliance_app")
+    _execute_if_role_exists(
+        "ALTER DEFAULT PRIVILEGES IN SCHEMA hmda GRANT ALL ON TABLES TO compliance_app", "compliance_app"
     )
-    op.execute(
-        "ALTER DEFAULT PRIVILEGES IN SCHEMA hmda GRANT ALL ON SEQUENCES TO compliance_app"
+    _execute_if_role_exists(
+        "ALTER DEFAULT PRIVILEGES IN SCHEMA hmda GRANT ALL ON SEQUENCES TO compliance_app", "compliance_app"
     )
 
     # 6. Explicitly deny lending_app access to hmda schema
-    op.execute("REVOKE ALL ON SCHEMA hmda FROM lending_app")
+    _execute_if_role_exists("REVOKE ALL ON SCHEMA hmda FROM lending_app", "lending_app")
 
     # 7. Both roles can INSERT+SELECT on audit_events (+ sequence for autoincrement)
-    op.execute("GRANT INSERT, SELECT ON audit_events TO lending_app")
-    op.execute("GRANT INSERT, SELECT ON audit_events TO compliance_app")
-    op.execute("GRANT USAGE ON SEQUENCE audit_events_id_seq TO lending_app")
-    op.execute("GRANT USAGE ON SEQUENCE audit_events_id_seq TO compliance_app")
+    _execute_if_role_exists("GRANT INSERT, SELECT ON audit_events TO lending_app", "lending_app")
+    _execute_if_role_exists("GRANT INSERT, SELECT ON audit_events TO compliance_app", "compliance_app")
+    _execute_if_role_exists("GRANT USAGE ON SEQUENCE audit_events_id_seq TO lending_app", "lending_app")
+    _execute_if_role_exists("GRANT USAGE ON SEQUENCE audit_events_id_seq TO compliance_app", "compliance_app")
 
 
 def downgrade() -> None:
