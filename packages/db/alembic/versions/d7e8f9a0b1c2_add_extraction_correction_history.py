@@ -16,6 +16,16 @@ branch_labels = None
 depends_on = None
 
 
+def _execute_if_role_exists(sql: str, role: str) -> None:
+    escaped_sql = sql.replace("'", "''")
+    op.execute(
+        sa.text(
+            f"DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{role}') "
+            f"THEN EXECUTE '{escaped_sql}'; END IF; END $$;"
+        )
+    )
+
+
 def upgrade() -> None:
     op.create_table(
         "extraction_corrections",
@@ -50,13 +60,15 @@ def upgrade() -> None:
         "extraction_corrections",
         ["corrected_by"],
     )
-    op.execute(
-        "GRANT SELECT, INSERT ON extraction_corrections TO lending_app"
+    _execute_if_role_exists(
+        "GRANT SELECT, INSERT ON extraction_corrections TO lending_app", "lending_app"
     )
-    op.execute(
-        "GRANT USAGE, SELECT ON SEQUENCE extraction_corrections_id_seq TO lending_app"
+    _execute_if_role_exists(
+        "GRANT USAGE, SELECT ON SEQUENCE extraction_corrections_id_seq TO lending_app", "lending_app"
     )
-    op.execute("GRANT SELECT ON extraction_corrections TO compliance_app")
+    _execute_if_role_exists(
+        "GRANT SELECT ON extraction_corrections TO compliance_app", "compliance_app"
+    )
 
 
 def downgrade() -> None:
