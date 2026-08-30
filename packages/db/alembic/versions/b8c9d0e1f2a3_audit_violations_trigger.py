@@ -14,6 +14,17 @@ down_revision = "a7b8c9d0e1f2"
 branch_labels = None
 depends_on = None
 
+
+def _execute_if_role_exists(sql: str, role: str) -> None:
+    escaped_sql = sql.replace("'", "''")
+    op.execute(
+        sa.text(
+            f"DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{role}') "
+            f"THEN EXECUTE '{escaped_sql}'; END IF; END $$;"
+        )
+    )
+
+
 TRIGGER_FUNCTION = """
 CREATE OR REPLACE FUNCTION audit_events_prevent_mutation()
 RETURNS TRIGGER AS $$
@@ -63,13 +74,13 @@ def upgrade() -> None:
 
     # Grant SELECT + INSERT on audit_violations to app roles so the trigger
     # can insert rows when running as lending_app or compliance_app.
-    op.execute("GRANT SELECT, INSERT ON audit_violations TO lending_app")
-    op.execute("GRANT SELECT, INSERT ON audit_violations TO compliance_app")
-    op.execute(
-        "GRANT USAGE, SELECT ON SEQUENCE audit_violations_id_seq TO lending_app"
+    _execute_if_role_exists("GRANT SELECT, INSERT ON audit_violations TO lending_app", "lending_app")
+    _execute_if_role_exists("GRANT SELECT, INSERT ON audit_violations TO compliance_app", "compliance_app")
+    _execute_if_role_exists(
+        "GRANT USAGE, SELECT ON SEQUENCE audit_violations_id_seq TO lending_app", "lending_app"
     )
-    op.execute(
-        "GRANT USAGE, SELECT ON SEQUENCE audit_violations_id_seq TO compliance_app"
+    _execute_if_role_exists(
+        "GRANT USAGE, SELECT ON SEQUENCE audit_violations_id_seq TO compliance_app", "compliance_app"
     )
 
 
