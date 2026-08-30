@@ -1,8 +1,8 @@
 <!-- This project was developed with assistance from AI tools. -->
 
-# Mortgage AI API
+# FinCredit Copilot API
 
-FastAPI backend for a multi-agent mortgage loan origination system. This is the core backend for the Mortgage AI demo application (Red Hat AI Quickstart).
+FinCredit Copilot 的 FastAPI 后端，负责角色化智能助手、申请流程、材料识别、政策检索、风险计算和审计记录。
 
 ## Overview
 

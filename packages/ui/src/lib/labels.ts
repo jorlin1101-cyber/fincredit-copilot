@@ -135,7 +135,7 @@ const EXTRACTION_VALUE_LABELS: Record<string, string> = {
   No: '否',
 };
 
-/** Convert legacy upstream demo values to the Chinese public-demo vocabulary. */
+/** Convert legacy demo values to the Chinese public-demo vocabulary. */
 export function formatExtractionValue(
   fieldName: string,
   value: string | null | undefined,

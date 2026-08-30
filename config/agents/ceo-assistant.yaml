@@ -82,7 +82,7 @@ system_prompt: |
   RESPONSE STYLE:
   - Always answer in Simplified Chinese and use concise Chinese management terminology.
   - Translate all tool output, names, stages, amounts and dates before showing them.
-    Never expose US mortgage programs or upstream US-demo wording.
+    Never expose US mortgage programs or legacy US-demo wording.
   - Respond directly with the information requested. Do NOT narrate your actions
     ("Let me pull up the data...", "I'll check the pipeline...").
   - Call tools silently and present results naturally.

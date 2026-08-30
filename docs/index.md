@@ -1,97 +1,61 @@
-<!-- This project was developed with assistance from AI tools. -->
+# FinCredit Copilot
 
-# Mortgage AI
+FinCredit Copilot 是面向中国住房金融场景的智能授信辅助平台，提供贷款咨询、申请受理、材料识别、政策查询、风险分析、人工审批和管理分析能力。
 
-**Multi-Agent Loan Origination -- Red Hat AI Quickstart**
+!!! warning "演示说明"
+平台中的机构、人员、申请与审批数据均为合成演示内容，不代表任何真实金融机构、个人或授信结果。政策资料用于技术演示，正式业务应以监管部门和持牌金融机构的最新文件为准。
 
-This reference application demonstrates how to build multi-agent AI systems on Red Hat AI / OpenShift AI using a realistic, regulated-industry business use case. This Quickstart showcases advanced AI patterns applied to the mortgage lending lifecycle, from prospect inquiry through pre-qualification, application, underwriting, and approval.
+## 使用角色
 
-!!! warning "Demonstration Purposes Only"
-    All regulatory and compliance content in this application is simulated for demonstration purposes. This is not a production-ready system and does not constitute legal or financial advice.
+| 角色     | 主要功能                                             |
+| -------- | ---------------------------------------------------- |
+| 访客     | 了解住房贷款流程、申请材料和基础政策                 |
+| 借款人   | 查看申请进度、上传材料、处理审批条件和确认信息披露   |
+| 客户经理 | 管理申请队列、核验客户资料、请求补充材料和提交审批   |
+| 审批人员 | 查看证据、运行确定性检查、复核风险建议并作出人工决定 |
+| 管理人员 | 查看业务指标、流程效率、风险分布和审计概况           |
 
-## What is This Application?
+## 主要能力
 
-The application uses a fictional mortgage lender to model the end-to-end mortgage lending process, covering:
+### 材料识别与复核
 
-- Prospect inquiry and pre-qualification
-- Borrower application and document submission
-- Loan officer pipeline management and workflow
-- Underwriter review, compliance checks, and decisioning
-- Executive analytics and performance monitoring
+系统对身份证、收入证明、工资单和银行流水进行结构化提取，展示字段置信度、材料页码和人工复核状态。低置信度字段不会直接进入后续审批结论。
 
-The mortgage domain was chosen because regulated financial services demand the most challenging AI patterns: role-scoped agents, compliance knowledge bases, fair lending guardrails, demographic data isolation, and comprehensive audit trails. The architecture is MVP-maturity with production structure -- component boundaries, data models, and integration patterns are designed so adopters can harden toward production without rearchitecting.
+### 政策查询
 
-## Key Personas
+政策库覆盖全国通用监管政策与成都市地方规则。回答包含政策来源、发布机构、版本、生效日期与官方链接；证据不足时系统会提示转人工核实。
 
-The application provides five distinct persona experiences, each with its own interface and AI agent:
+### 风险计算
 
-| Persona | Role | Key Capabilities |
-|---------|------|------------------|
-| **Prospect** | Anonymous visitor | Product discovery, affordability calculator, mortgage Q&A chat |
-| **Borrower** | Authenticated applicant | Application submission, document upload, status tracking, condition responses |
-| **Loan Officer** | Employee originator | Pipeline management, document review, borrower communication, underwriting preparation |
-| **Underwriter** | Employee decision-maker | Application review, compliance verification, risk assessment, approval/denial decisions |
-| **CEO** | Executive | Pipeline analytics, denial trends, loan officer performance, audit trail review |
+债务收入比（DTI）、贷款成数（LTV）和材料完整性由确定性程序计算。模型只负责解释和辅助建议，不直接承担数值计算或最终决策。
 
-Each persona has a dedicated chat interface powered by a role-scoped AI agent with persona-specific tools and guardrails.
+### 人工审批
 
-## AI Patterns Demonstrated
+系统生成的建议必须由有权限的审批人员明确确认后才形成最终记录。材料修订、政策引用、规则计算和人工操作均写入审计链路。
 
-This Quickstart demonstrates AI patterns for regulated industries:
+## 系统组成
 
-- **Multi-Agent Orchestration**: Five role-scoped agents with distinct tool sets and system prompts, coordinated via LangGraph
-- **Compliance Knowledge Base**: RAG-powered retrieval from federal regulations (TRID, ECOA, ATR/QM, HMDA), agency guidelines (Fannie Mae, FHA), and internal policies
-- **Fair Lending Guardrails**: ECOA compliance checks, adverse action validation, and prohibited basis detection
-- **HMDA Data Isolation**: Demographic information stored in a dedicated schema with restricted access, isolated from general application data
-- **Audit Trails**: Immutable append-only audit logs with cryptographic hash chains for all agent actions and decisions
-- **Document Extraction**: Vision model integration for extracting text and data from uploaded document images
-- **Safety Shields**: Optional integration with Llama Guard for input/output content moderation
-- **Observability**: Experiment tracking and tracing via MLflow for agent conversations, tool calls, and model usage
+| 模块     | 技术实现                                       |
+| -------- | ---------------------------------------------- |
+| Web 前端 | React、TypeScript、Vite、TanStack Router/Query |
+| API 服务 | FastAPI、LangGraph、Pydantic                   |
+| 数据库   | PostgreSQL、pgvector、SQLAlchemy、Alembic      |
+| 文件存储 | MinIO                                          |
+| 身份认证 | Keycloak OIDC                                  |
+| 可观测性 | MLflow、结构化日志、审计事件                   |
 
-## Technology Stack
+## 本地访问
 
-| Layer | Technology |
-|-------|-----------|
-| **Agent Framework** | LangGraph for multi-agent orchestration |
-| **Observability** | MLflow for experiment tracking and tracing (RHOAI-native) |
-| **Model Serving** | Any OpenAI-compatible endpoint (local inference server, OpenShift AI model serving, vLLM, or cloud API) |
-| **Backend** | FastAPI with async SQLAlchemy 2.0, Pydantic 2.x validation |
-| **Database** | PostgreSQL 16 with pgvector for embeddings |
-| **Frontend** | React 19 with TanStack Router and Query, Tailwind CSS, shadcn/ui components |
-| **Identity** | Keycloak (OIDC) with role-based access control |
-| **Storage** | MinIO (S3-compatible) for document storage |
-| **Fairness Metrics** | TrustyAI Python library for bias detection |
-| **Build System** | Turborepo monorepo with pnpm (Node.js) and uv (Python) |
-| **Deployment** | Helm charts for OpenShift / Kubernetes |
+完成根目录 README 中的启动步骤后，可访问：
 
-## What's Next
+- Web 应用：<http://localhost:3000>
+- API 文档：<http://localhost:8000/docs>
+- MinIO 控制台：<http://localhost:9091>
 
-- **[Architecture](architecture.md)** -- System design, component boundaries, and data flow
-- **[Personas](personas.md)** -- Detailed persona workflows and capabilities
-- **[API Reference](api-reference.md)** -- REST and WebSocket API documentation
-- **[中国购房预算测算口径](china-housing-affordability-calculator.md)** -- 公式、适用边界与官方政策来源
+## 延伸阅读
 
-## Project Goals
-
-This Quickstart is designed to:
-
-1. Showcase Red Hat AI / OpenShift AI capabilities through a credible, domain-rich business use case
-2. Demonstrate advanced AI patterns for regulated industries (compliance, audit, fairness, data isolation)
-3. Enable single-command local setup for rapid exploration
-4. Serve as a reusable template that developers can clone, deploy, and adapt to their own domain
-
-## Non-Goals
-
-This is a reference application, not a production system. It does not include:
-
-- Real external system integrations (credit bureaus, MLS, AUS, government databases)
-- Real payment processing or financial transactions
-- BSA/AML/KYC identity verification workflows
-- Production security hardening (see maturity expectations)
-- Mobile-native applications (web only)
-- Multi-tenant / multi-institution support
-- Automated underwriting decisions (all decisions require human confirmation)
-
-## Source Code
-
-The source code is available at [github.com/rh-ai-quickstart/multi-agent-loan-origination](https://github.com/rh-ai-quickstart/multi-agent-loan-origination).
+- [系统架构](fincredit-architecture.md)
+- [角色与业务流程](personas.md)
+- [API 参考](api-reference.md)
+- [评估说明](evaluation-report.md)
+- [故障演练](failure-drills.md)

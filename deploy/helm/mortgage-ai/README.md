@@ -104,13 +104,13 @@ before and after agent processing. NeMo applies Colang-defined rails:
 When NeMo blocks a message, the agent returns a refusal. When NeMo allows it,
 the agent processes normally with its own LLM call.
 
-### MLflow Observability (RHOAI 3.4+)
+### MLflow Observability
 
-Enable MLflow tracing when deploying with Red Hat OpenShift AI.
+Enable MLflow tracing when an MLflow tracking service is available in the deployment environment.
 
 #### Authentication: Kubernetes Plugin (recommended)
 
-On RHOAI 3.4+, set `MLFLOW_TRACKING_AUTH=kubernetes` for automatic authentication
+For Kubernetes-based MLflow authentication, set `MLFLOW_TRACKING_AUTH=kubernetes`
 via the mounted ServiceAccount token. No manual token generation needed:
 
 ```bash

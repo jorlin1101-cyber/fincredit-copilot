@@ -1,13 +1,13 @@
 # This project was developed with assistance from AI tools.
 #
-# MkDocs configuration for Mortgage AI documentation.
+# MkDocs configuration for FinCredit Copilot documentation.
 # Build locally: mkdocs serve
 # Deploy:        GitHub Actions (.github/workflows/docs.yml)
 
-site_name: Mortgage AI
-site_description: Multi-Agent Loan Origination - Red Hat AI Quickstart
-repo_url: https://github.com/rh-ai-quickstart/multi-agent-loan-origination
-repo_name: rh-ai-quickstart/multi-agent-loan-origination
+site_name: FinCredit Copilot
+site_description: 面向中国住房金融场景的智能授信辅助平台
+repo_url: https://github.com/jorlin1101-cyber/fincredit-copilot
+repo_name: jorlin1101-cyber/fincredit-copilot
 edit_uri: edit/main/docs/
 
 theme:
@@ -63,10 +63,10 @@ markdown_extensions:
 plugins:
   - search
 
-# Navigation structure -- agents will populate pages under each section.
-# Add new pages here as they are created.
 nav:
-  - Home: index.md
-  - Architecture: architecture.md
-  - Personas & Workflows: personas.md
-  - API Reference: api-reference.md
+  - 首页: index.md
+  - 系统架构: fincredit-architecture.md
+  - 角色与流程: personas.md
+  - API 参考: api-reference.md
+  - 评估说明: evaluation-report.md
+  - 故障演练: failure-drills.md

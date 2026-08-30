@@ -1,8 +1,8 @@
 <!-- This project was developed with assistance from AI tools. -->
 
-# Mortgage AI - Database Package
+# FinCredit Copilot 数据库模块
 
-PostgreSQL database layer for the Mortgage AI multi-agent mortgage lending demo application. Part of the Red Hat AI Quickstart catalog.
+FinCredit Copilot 的 PostgreSQL 数据层，负责住房贷款申请、材料、政策知识库、流程状态与审计数据。
 
 ## Technology Stack
 

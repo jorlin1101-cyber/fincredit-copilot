@@ -1,367 +1,162 @@
-<!-- This project was developed with assistance from AI tools. -->
-
 # FinCredit Copilot
 
-> 基于多角色 Agent 与受控型 Agentic RAG 的住房贷款授信辅助平台
+面向中国住房金融场景的智能授信辅助平台，覆盖贷前咨询、申请受理、材料核验、政策查询、风险分析、人工审批与管理分析。
 
-FinCredit Copilot 是面向中文金融科技面试与本地演示的住房贷款授信辅助系统。它以“融安住房金融（虚构演示机构）”为业务背景，把身份证、收入证明、银行流水的页级提取与人工纠错，跨材料一致性核验，全国通用监管政策与成都市地方规则检索，DTI/LTV 确定性计算，Agent 风险建议、人工审批确认以及 trace_id 审计串成一条完整闭环。
+项目以“融安住房金融（虚构演示机构）”为业务背景，使用合成申请数据和公开政策资料构建可本地运行的完整演示。系统只提供辅助分析，不自动批准或拒绝贷款，也不构成授信承诺、监管解释或法律意见。
 
-所有演示数据均为合成数据。系统不自动批准或拒绝贷款，不构成授信承诺、监管解释或法律意见。
+## 核心能力
 
-## P0 亮点
+- **全流程业务工作台**：为借款人、客户经理、审批人员和管理人员提供差异化页面与操作权限。
+- **申请材料智能核验**：识别身份证、收入证明、工资单和银行流水中的关键字段，展示置信度与人工复核入口。
+- **跨材料一致性检查**：核对姓名、收入、证件信息等关键数据，标记缺失项和冲突项。
+- **政策知识服务**：检索全国通用监管政策与成都市地方规则，回答中附带来源、版本、生效日期和官方链接。
+- **风险辅助分析**：使用确定性程序计算债务收入比（DTI）和贷款成数（LTV），生成可解释的风险提示。
+- **人工审批闭环**：系统生成待确认建议，最终授信决定必须由有权限的审批人员明确确认。
+- **过程审计**：记录材料修订、政策检索、规则计算、模型调用与人工决策，支持问题追踪和流程复盘。
 
-- **多角色 Agent**：借款人、客户经理、审批人员和管理驾驶舱按角色隔离工具与数据权限。
-- **受控型 Agentic RAG**：向量 + 关键词混合检索与 RRF 融合；证据不足时最多进行一次受控查询改写，仍不足则转人工。
-- **中国住房贷款材料链路**：身份证、收入证明、银行流水的逐页文本/视觉提取、严格 JSON 校验、证据坐标、置信度和人工修订审计。
-- **全国 + 成都政策库**：政策具有来源、发布主体、版本、生效/失效日期、辖区、内容哈希和可点击官方链接。
-- **确定性风险计算**：DTI 与 LTV 使用固定公式和版本化内部演示阈值；LLM 不参与算术。
-- **人工最终决策**：Agent 先生成带 UUID 的待确认提案，只有有权限人员明确确认后才写入最终决策。
-- **端到端可追溯**：模型调用、检索轮次、引用、确定性计算、人工修订与工作流事件统一关联到 trace_id，并可接入 MLflow。
+## 业务流程
 
-## 5 分钟本地启动（Docker Desktop）
+```mermaid
+flowchart LR
+    A[贷款咨询] --> B[提交申请]
+    B --> C[上传与识别材料]
+    C --> D[完整性和一致性核验]
+    D --> E[政策查询与风险计算]
+    E --> F[客户经理补充材料]
+    F --> G[审批人员复核]
+    G --> H[人工确认决策]
+    H --> I[审计记录与管理分析]
+```
 
-1. 安装并启动 Docker Desktop。
-2. 复制 `.env.example` 为 `.env`，只填写 `DASHSCOPE_API_KEY`，不要提交 `.env`。
-3. 在项目根目录执行：
+## 技术架构
+
+| 层级     | 主要技术                                          |
+| -------- | ------------------------------------------------- |
+| 前端     | React 19、TypeScript、Vite、TanStack Router/Query |
+| 后端     | FastAPI、Python 3.11、LangGraph、Pydantic         |
+| 数据     | PostgreSQL 16、pgvector、SQLAlchemy、Alembic      |
+| 模型     | 阿里云百炼兼容接口、Qwen 文本模型与向量模型       |
+| 文件     | MinIO（S3 兼容对象存储）                          |
+| 身份认证 | Keycloak OIDC（本地演示可关闭）                   |
+| 可观测性 | MLflow、结构化日志、审计事件                      |
+| 工程化   | Docker Compose、pnpm、uv、Turborepo               |
+
+## 项目结构
+
+```text
+multi-agent-loan-origination/
+├── config/                 # Agent 配置与身份认证配置
+├── data/                   # 合成材料与政策数据
+├── docs/                   # 架构、接口、评估与故障演练文档
+├── evaluations/            # 政策检索评测集与评测脚本
+├── packages/
+│   ├── api/                # FastAPI 服务、Agent、检索和规则引擎
+│   ├── db/                 # 数据模型与数据库迁移
+│   ├── e2e/                # Playwright 端到端测试
+│   └── ui/                 # React 前端
+├── compose.yml             # 本地容器编排
+└── .env.example            # 环境变量模板
+```
+
+## 快速启动
+
+### 环境要求
+
+- Docker Desktop
+- Git
+- 至少 16 GB 可用内存
+- 阿里云百炼 API Key
+
+### 1. 配置环境变量
+
+将 `.env.example` 复制为 `.env`，填写模型服务密钥：
+
+```powershell
+Copy-Item .env.example .env
+```
+
+```dotenv
+DASHSCOPE_API_KEY=你的_API_Key
+```
+
+`.env` 已被 Git 忽略，请勿将真实密钥提交到仓库。
+
+### 2. 启动服务
 
 ```powershell
 docker compose up -d --build
 ```
 
-4. 打开 `http://localhost:3000`，点击“进入角色演示”，选择“审批人员”。
-5. API 文档位于 `http://localhost:8000/docs`；MinIO 位于 `http://localhost:9091`。
-
-若需要 Keycloak 和 MLflow：
+需要同时启动身份认证和可观测性服务时：
 
 ```powershell
 docker compose --profile auth --profile observability up -d --build
 ```
 
-更多内容见 [二次开发架构](docs/fincredit-architecture.md)、[评估说明](docs/evaluation-report.md) 与 [上游归属](UPSTREAM.md)。
+### 3. 访问系统
 
----
+| 服务         | 地址                         |
+| ------------ | ---------------------------- |
+| Web 应用     | <http://localhost:3000>      |
+| API 文档     | <http://localhost:8000/docs> |
+| MinIO 控制台 | <http://localhost:9091>      |
 
-## Upstream reference application
+进入 Web 应用后点击“进入角色演示”，即可分别体验借款人、客户经理、审批人员和管理驾驶舱。
 
-The sections below are retained from the Apache-2.0 upstream reference project for technical background and attribution.
+### 4. 停止服务
 
-Red Hat AI reference application demonstrating agentic AI orchestration across the mortgage lending lifecycle, from prospect inquiry to underwriting approval.
-
-## Table of contents
-
-- [Detailed description](#detailed-description)
-  - [See it in action](#see-it-in-action)
-  - [Architecture diagrams](#architecture-diagrams)
-- [Requirements](#requirements)
-  - [Minimum hardware requirements](#minimum-hardware-requirements)
-  - [Minimum software requirements](#minimum-software-requirements)
-- [Deploy](#deploy)
-  - [Delete](#delete)
-- [References](#references)
-- [Technical details](#technical-details)
-  - [Personas](#personas)
-  - [Key AI patterns](#key-ai-patterns)
-  - [Project structure](#project-structure)
-  - [Technology stack](#technology-stack)
-  - [Testing](#testing)
-  - [Environment configuration](#environment-configuration)
-  - [MLflow observability](#mlflow-observability-rhoai-34)
-  - [Predictive model integration](#predictive-model-integration-optional)
-- [Tags](#tags)
-
-## Detailed description
-
-This Red Hat AI reference application showcases multi-agent AI systems on Red Hat OpenShift AI through a realistic, regulated-industry use case. Built for Red Hat Summit, this application uses a fictional mortgage lender to demonstrate how AI can orchestrate complex, multi-persona workflows in financial services.
-
-![web application ui](docs/images/web-application-ui.png)
-
-The application covers the complete mortgage lending lifecycle with five distinct persona experiences: prospect inquiry, borrower application intake, loan officer pipeline management, underwriter compliance checks and risk assessment, and executive analytics. Each persona interacts with a specialized LangGraph agent backed by role-scoped tools, compliance knowledge retrieval, and comprehensive audit trails.
-
-This quickstart demonstrates AI patterns for regulated industries including role-based access control (RBAC) scoped agent routing, pgvector-based compliance knowledge base with regulatory source tiering, HMDA demographic data isolation, fair lending safeguards, personally identifiable information (PII) masking, vision-based document extraction, and hash-chained audit events. The architecture deploys to OpenShift AI but also runs locally for development and exploration.
-
-> **Regulatory disclaimer:** All compliance content (HMDA, ECOA, TRID, ATR/QM, FCRA) is simulated for demonstration purposes and does not constitute legal or regulatory advice.
-
-### See it in action
-
-[Interactive walkthrough](https://interact.redhat.com/share/UgvwvL982CGksrFdjHT1)
-
-### Architecture diagrams
-
-#### System architecture
-
-![System architecture](docs/images/system-architecture.png)
-
-#### Agent request flow
-
-![Agent request flow](docs/images/agent-request-flow.png)
-
-## Requirements
-
-### Minimum hardware requirements
-
-**For local development:**
-
-- 16GB RAM minimum (32GB recommended for running all services + LLM locally)
-- 20GB available disk space for container images and model files
-- Multi-core CPU (4+ cores recommended)
-
-**For OpenShift deployment (tested with OpenShift 4.21):**
-
-- OpenShift cluster with Red Hat OpenShift AI installed
-- LLM access via either:
-  - Model-as-a-Service (MaaS) endpoint (no GPU required on cluster), or
-  - GPU node for on-cluster model serving (sized for your chosen model)
-- Persistent volume claims: 10Gi for PostgreSQL, 10Gi for MinIO object storage
-
-### Minimum software requirements
-
-- Node.js 22+ and pnpm 9+ (tested with Node.js 22 LTS, pnpm 9.15)
-- Python 3.11+ and [uv](https://docs.astral.sh/uv/) (tested with Python 3.13, uv 0.11)
-- Podman 4+ and podman-compose (tested with Podman 4.9)
-- PostgreSQL 16 with pgvector (provided via compose for local development)
-- An OpenAI-compatible LLM endpoint (local inference server, OpenShift AI model serving, or any compatible API)
-
-## Deploy
-
-### Local development deployment
-
-Clone the repository and install dependencies:
-
-```bash
-make setup                # Install all dependencies
-cp .env.example .env      # Configure LLM endpoint and model names
+```powershell
+docker compose down
 ```
 
-Edit `.env` to point to your LLM endpoint. For a local inference server:
+## 本地开发
 
-```env
-LLM_BASE_URL=http://localhost:1234/v1
-LLM_API_KEY=not-needed
-LLM_MODEL=qwen3-30b-a3b
+安装 Node.js 22、pnpm 9、Python 3.11 和 uv 后，可使用以下命令：
+
+```powershell
+pnpm install
+pnpm build
+pnpm dev
 ```
 
-Start the development environment:
+后端依赖和数据库迁移说明请参阅 [API 文档](packages/api/README.md) 与 [数据库文档](packages/db/README.md)。
 
-```bash
-make db-start             # Start PostgreSQL and MinIO
-make db-upgrade           # Run database migrations
-make dev                  # Start API and UI dev servers
+## 测试与评估
+
+```powershell
+# 全部工作区测试
+pnpm test
+
+# 前端单元测试
+pnpm --filter @mortgage-ai/ui test
+
+# 后端测试
+Set-Location packages/api
+$env:AUTH_DISABLED="true"
+uv run pytest -v
+
+# 端到端测试
+pnpm test:e2e
 ```
 
-The application will be available at the following URLs:
+政策检索评测集位于 `evaluations/datasets/fincredit_policy_pilot.json`，覆盖直接问题、跨段组合问题、政策冲突与无答案问题。评测指标包括 Recall@5、MRR、引用正确率、无答案 F1、延迟和检索轮次。
 
-| Service | URL |
-|---------|-----|
-| Frontend (Vite) | http://localhost:3000 |
-| API Server | http://localhost:8000 |
-| API Docs (Swagger) | http://localhost:8000/docs |
-| Database | postgresql://localhost:5433 |
-| MinIO Console | http://localhost:9091 |
+## 设计边界
 
-### Container deployment
+- 演示材料和申请数据均为合成数据，不对应真实个人或金融机构。
+- 政策内容用于技术演示，正式业务应以监管部门和持牌金融机构的最新文件为准。
+- DTI、LTV 与材料门禁由确定性程序计算，大模型不承担规则计算。
+- 模型输出属于辅助建议，最终结论必须经过人工复核。
+- 当前版本不包含真实征信、电子签章、银行流水验真和生产级灾备能力。
 
-To run the full stack including Keycloak:
+## 项目文档
 
-```bash
-make run      # Start all containers
-make stop     # Stop all containers
-```
+- [系统架构](docs/fincredit-architecture.md)
+- [评估说明](docs/evaluation-report.md)
+- [故障演练](docs/failure-drills.md)
+- [中国住房贷款测算说明](docs/china-housing-affordability-calculator.md)
+- [许可证与归属说明](ATTRIBUTION.md)
 
-To build and push container images, use the Docker CLI to avoid podman compatibility issues with certain dependencies:
+## 许可证
 
-```bash
-make build-images CONTAINER_CLI=docker
-make push-images CONTAINER_CLI=docker
-```
-
-Run `make help` for additional container targets including individual service profiles, image builds, and log streaming.
-
-### OpenShift deployment
-
-Deploy to Red Hat OpenShift AI using Helm:
-
-```bash
-make deploy      # Deploy via Helm charts
-make status      # Show deployment status
-make undeploy    # Remove deployment
-```
-
-### Delete
-
-To tear down the local development environment:
-
-```bash
-make stop       # Stop all containers
-make clean      # Remove build artifacts and dependencies
-```
-
-For OpenShift:
-
-```bash
-make undeploy   # Remove Helm deployment
-```
-
-## References
-
-- [API Documentation](http://localhost:8000/docs) (available when running locally)
-- [Red Hat AI Quickstart Catalog](https://github.com/rh-ai-quickstart)
-- Package READMEs:
-  - [API](packages/api/README.md) - Routes, agents, schemas, WebSocket protocol, testing
-  - [UI](packages/ui/README.md) - Components, routing, state management
-  - [DB](packages/db/README.md) - Models, migrations, connection management
-
-## Technical details
-
-### Personas
-
-The application implements five distinct persona experiences, each with a specialized LangGraph agent:
-
-| Persona | Role | Agent | Key Capabilities |
-|---------|------|-------|-----------------|
-| Prospect | Unauthenticated | Public Assistant | Product info, affordability estimates |
-| Borrower | `borrower` | Borrower Assistant | Application intake, document upload, status tracking, condition response |
-| Loan Officer | `loan_officer` | LO Assistant | Pipeline management, application review, communication drafting, knowledge base search |
-| Underwriter | `underwriter` | Underwriter Assistant | Risk assessment, compliance checks, condition management, decisions |
-| CEO | `ceo` | CEO Assistant | Pipeline analytics, audit trail, decision trace, model monitoring |
-
-### Key AI patterns
-
-This quickstart demonstrates AI patterns for regulated industries:
-
-- **Multi-agent orchestration** - Five LangGraph agents with role-scoped tools and RBAC enforcement
-- **Compliance knowledge base** - pgvector retrieval-augmented generation (RAG) with tiered boosting (federal regulations > agency guidelines > internal policies)
-- **Fair lending safeguards** - HMDA demographic data isolation in separate database schema with access controls
-- **Document extraction** - Vision model integration for extracting text and data from uploaded document images
-- **Comprehensive audit trail** - Hash-chained, append-only audit events with MLflow trace correlation
-- **PII masking** - Middleware-based masking for executive roles (SSN, DOB, account numbers)
-- **Safety shields** - Input and output content filters with escalation pattern detection
-
-### Project structure
-
-```
-mortgage-ai/
-├── packages/
-│   ├── ui/              # React frontend (pnpm, Vite)
-│   ├── api/             # FastAPI backend + LangGraph agents (uv)
-│   ├── db/              # SQLAlchemy models + Alembic migrations (uv)
-│   ├── e2e/             # Playwright end-to-end tests (pnpm)
-│   └── configs/         # Shared TypeScript configs
-├── config/
-│   ├── agents/          # Agent YAML configurations (system prompts, tools, routing)
-│   └── keycloak/        # Keycloak realm export
-├── data/                # Compliance KB source documents (YAML)
-├── deploy/helm/         # Helm charts for OpenShift
-├── docs/                # MkDocs documentation site source
-├── evaluations/         # Agent evaluation notebooks (MLflow)
-├── scripts/             # Utility scripts (DB seeding, KB ingestion)
-├── compose.yml          # Local development services (profile-based)
-├── Makefile             # Development commands
-└── turbo.json           # Turborepo pipeline config
-```
-
-### Technology stack
-
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 19, Vite, TanStack Router/Query, Tailwind CSS, shadcn/ui |
-| Backend | FastAPI, LangGraph, SQLAlchemy 2.0 (async), Pydantic 2.x |
-| Database | PostgreSQL 16 + pgvector |
-| Identity | Keycloak (OpenID Connect) |
-| Observability | MLflow (RHOAI) |
-| Object Storage | MinIO (S3-compatible) |
-| Deployment | Helm, OpenShift / Kubernetes |
-| Build | Turborepo, uv (Python), pnpm (Node.js) |
-
-### Testing
-
-Run tests across all packages:
-
-```bash
-make test               # Run all tests
-make lint               # Lint all packages
-```
-
-Package-specific test commands:
-
-```bash
-cd packages/api && uv run pytest -v          # Run API tests
-cd packages/ui && pnpm test:run              # Run UI tests
-```
-
-| Package | Framework | Location |
-|---------|-----------|----------|
-| API | pytest | `packages/api/tests/` |
-| UI | Vitest + React Testing Library | `packages/ui/src/**/*.test.tsx` |
-| E2E | Playwright | `packages/e2e/tests/` |
-
-### Environment configuration
-
-Copy `.env.example` to `.env` and configure for your environment. Key settings to adjust:
-
-```env
-# LLM endpoint (any OpenAI-compatible server or OpenShift AI model serving)
-LLM_BASE_URL=http://localhost:1234/v1
-LLM_API_KEY=not-needed
-LLM_MODEL=qwen3-30b-a3b
-```
-
-See `.env.example` for all available settings including database connection, authentication, safety shields, and MLflow observability.
-
-### MLflow observability (RHOAI 3.4+)
-
-When deploying to Red Hat OpenShift AI with MLflow, enable RBAC resources and configure the MLflow connection:
-
-```bash
-helm upgrade --install mortgage-ai ./deploy/helm/mortgage-ai \
-  --set mlflow.rbac.enabled=true \
-  --set secrets.MLFLOW_TRACKING_URI=https://<mlflow-route>/mlflow \
-  --set secrets.MLFLOW_EXPERIMENT_NAME=multi-agent-loan-origination \
-  --set secrets.MLFLOW_WORKSPACE=<workspace-name> \
-  --set secrets.MLFLOW_TRACKING_INSECURE_TLS=true
-```
-
-After deployment, generate a token for the MLflow ServiceAccount:
-
-```bash
-# Generate a 30-day token
-oc create token mortgage-ai-mlflow-client --duration=720h -n <namespace>
-
-# Update the secret with the token
-oc patch secret mortgage-ai-secret -n <namespace> \
-  --type='json' -p='[{"op":"replace","path":"/data/MLFLOW_TRACKING_TOKEN","value":"'$(echo -n "<token>" | base64)'"}]'
-```
-
-The Helm chart creates:
-- `ClusterRole` with `mlflow.kubeflow.org` API permissions (experiments, datasets, models, gateway)
-- `ServiceAccount` for MLflow client authentication
-- `ClusterRoleBinding` connecting the ServiceAccount to the ClusterRole
-
-### Predictive model integration (optional)
-
-An external predictive ML model can optionally augment the underwriter's risk assessment. When configured, the model classifies loan approval likelihood and its result appears alongside the rule-based risk factors as a sixth input to the recommendation.
-
-The predictive model runs as a separate MCP server deployment. To enable it, set the `PREDICTIVE_MODEL_MCP_URL` environment variable to the MCP server's Streamable HTTP endpoint:
-
-```env
-# Local development (.env)
-PREDICTIVE_MODEL_MCP_URL=http://localhost:8002/mcp
-
-# OpenShift (Helm)
-helm upgrade --install mortgage-ai ./deploy/helm/mortgage-ai \
-  --set secrets.PREDICTIVE_MODEL_MCP_URL=http://mcp-server.<namespace>.svc.cluster.local:8000/mcp
-```
-
-When the variable is unset or empty, the feature is disabled and the underwriter workflow operates with the five standard risk factors only. If the predictive model server is unreachable at startup, the API logs a warning and continues without it.
-
-| Component | Behavior when enabled | Behavior when disabled |
-|-----------|----------------------|----------------------|
-| API | Calls `check_loan_approval` MCP tool during risk assessment | Skips predictive step, no error |
-| UI | Shows 4th "Auto U/W" card in risk assessment grid | Shows 3-column grid (Credit, Capacity, Collateral) |
-| Database | Stores `predictive_model_result` and `predictive_model_available` on risk assessment records | Columns remain null |
-
-## Tags
-
-- **Industry**: Banking and securities
-- **Product**: Red Hat OpenShift AI
-- **Use case**: Multi-agent orchestration
-- **Contributor org**: Red Hat
+本项目按照 Apache License 2.0 提供，详见 [LICENSE](LICENSE)。第三方代码来源及本项目修改范围见 [ATTRIBUTION.md](ATTRIBUTION.md)。

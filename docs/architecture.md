@@ -1,7 +1,7 @@
 <!-- This project was developed with assistance from AI tools. -->
 # Architecture
 
-This multi-agent AI reference application is built to demonstrate production-grade patterns in a regulated domain. The architecture balances MVP maturity (rapid iteration, focused scope) with production structure (clear boundaries, extensible patterns, hardening paths). This document describes the system design for developers and architects evaluating or adapting this Quickstart.
+FinCredit Copilot demonstrates multi-agent AI patterns for a regulated housing-finance scenario. The architecture balances MVP maturity (rapid iteration and focused scope) with clear component boundaries, extensible patterns and practical hardening paths. This document describes the system design for developers and architects.
 
 ## System Overview
 
@@ -426,7 +426,7 @@ The **PII masking middleware** (`packages/api/src/middleware/pii.py`) masks sens
 
 ### MLflow Integration
 
-The application uses **MLflow** for LLM observability and experiment tracking. On Red Hat OpenShift AI (RHOAI 3.4+), MLflow is the native experiment tracking service.
+The application uses **MLflow** for LLM observability and experiment tracking. It can run locally or connect to a compatible MLflow tracking service in a Kubernetes environment.
 
 - **Traces:** Agent invocations are traced with LLM calls, tool executions, token counts, and latencies.
 - **Experiments:** Agent evaluation runs are tracked as MLflow experiments for comparison across model versions.
@@ -579,4 +579,4 @@ This application demonstrates how to architect a multi-agent AI system for a reg
 - **Compliance patterns:** Vector KB with tiered boosting, compliance check tools, audit hash chain.
 - **Production structure:** Clear package boundaries, configuration-driven extensibility, observability hooks.
 
-The architecture is designed for **learning and adaptation** — not as a production mortgage system, but as a reference for building your own domain-specific multi-agent application on Red Hat AI.
+The architecture is designed for **learning and adaptation**. It is a demonstrator rather than a production mortgage system, and production adoption requires additional security, compliance, reliability and operational validation.

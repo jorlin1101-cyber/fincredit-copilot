@@ -4,7 +4,7 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## Project Overview
 
-Multi-agent loan origination system demonstrating agentic AI on Red Hat OpenShift AI. A fictional mortgage lender with 5 personas (prospect, borrower, loan officer, underwriter, CEO), each served by a dedicated LangGraph agent with role-scoped tools.
+China-oriented housing-loan origination demo with five role-specific experiences (prospect, borrower, loan officer, underwriter and executive), each served by a dedicated LangGraph agent with scoped tools.
 
 **Maturity:** MVP (architected for production growth)
 

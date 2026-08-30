@@ -1,21 +1,14 @@
-# FinCredit Copilot 二次开发架构
+# FinCredit Copilot 系统架构
 
 ## 设计目标
 
 P0 聚焦“材料可信、政策有据、计算确定、结论人工、过程可追溯”。系统辅助住房贷款受理和审批，不把大模型当作规则计算器，也不允许 Agent 直接写入最终授信结论。
 
-## 从上游原型到 FinCredit Copilot
+## 核心能力链路
 
 ```mermaid
 flowchart LR
-    subgraph U[上游参考原型]
-        U1[英文住房贷款流程] --> U2[美国合规模拟知识库]
-        U2 --> U3[单路向量检索]
-        U3 --> U4[Agent 风险工具]
-        U4 --> U5[角色工作台]
-    end
-
-    subgraph F[FinCredit Copilot P0]
+    subgraph F[FinCredit Copilot]
         F1[中文身份证/收入证明/银行流水] --> F2[逐页文本+视觉提取]
         F2 --> F3[证据坐标/置信度/人工修订]
         F3 --> F4[姓名与收入跨材料核验]
@@ -32,7 +25,6 @@ flowchart LR
         F12 --> F13[trace_id + 哈希链 + MLflow]
     end
 
-    U5 -->|Apache-2.0 二次开发| F1
 ```
 
 ## 运行时主链路
@@ -75,4 +67,4 @@ sequenceDiagram
 
 ## P0 外范围
 
-P0 不承诺生产级灾备、真实征信接入、电子签章、真实银行流水验真、正式监管法律意见、付费模型压测结果或 OpenShift 生产验收。Helm/OpenShift 配置保留兼容性，但本次验收以 Windows + Docker Desktop 本地演示为准。
+P0 不承诺生产级灾备、真实征信接入、电子签章、真实银行流水验真、正式监管法律意见、付费模型压测结果或生产环境验收。本次验收以 Windows + Docker Desktop 本地演示为准。

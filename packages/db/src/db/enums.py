@@ -69,7 +69,7 @@ class LoanType(str, enum.Enum):
 
 class DocumentType(str, enum.Enum):
     # Chinese P0 document types. Existing US document types remain for
-    # backwards compatibility with the upstream demo and seeded fixtures.
+    # Backwards compatibility with legacy seeded fixtures.
     ID_CARD = "id_card"
     INCOME_CERTIFICATE = "income_certificate"
     W2 = "w2"

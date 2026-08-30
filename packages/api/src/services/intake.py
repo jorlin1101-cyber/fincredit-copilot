@@ -121,7 +121,7 @@ REQUIRED_FIELDS: dict[str, tuple[str, str, Callable]] = {
     "first_name": ("borrower", "first_name", _identity),
     "last_name": ("borrower", "last_name", _identity),
     "email": ("borrower", "email", _identity),
-    # The persisted column keeps its upstream name for migration compatibility;
+    # The persisted column keeps its legacy name for migration compatibility;
     # all user-facing collection uses the China-scenario ``id_number`` field.
     "id_number": ("borrower", "ssn", _identity),
     "date_of_birth": ("borrower", "dob", _date),
@@ -195,7 +195,7 @@ async def update_application_fields(
         dict with keys: updated (list of field names), errors (dict of field->msg),
         remaining (list of still-empty field names)
     """
-    # Accept the upstream field name without exposing it back to the user.
+    # Accept the legacy field name without exposing it back to the user.
     fields = {
         ("id_number" if field_name == "ssn" else field_name): value
         for field_name, value in fields.items()

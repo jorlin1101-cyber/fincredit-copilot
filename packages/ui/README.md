@@ -1,10 +1,8 @@
 <!-- This project was developed with assistance from AI tools. -->
 
-# Mortgage AI UI
+# FinCredit Copilot UI
 
 React frontend for the Mortgage AI multi-agent loan origination system. This package provides 5 persona-specific interfaces (prospect, borrower, loan officer, underwriter, CEO) with real-time WebSocket chat, Keycloak OIDC authentication, and comprehensive loan workflow management.
-
-Part of the [rh-ai-quickstart](https://github.com/rh-ai-quickstart) catalog demonstrating multi-agent AI systems on Red Hat AI / OpenShift AI.
 
 ## Technology Stack
 
@@ -108,12 +106,12 @@ pnpm type-check         # TypeScript type checking
 
 Routes are automatically generated from `src/routes/` file structure:
 
-| File | Route |
-|------|-------|
-| `index.tsx` | `/` |
-| `sign-in.tsx` | `/sign-in` |
-| `_authenticated.tsx` | Layout for protected routes |
-| `_authenticated/borrower/index.tsx` | `/borrower` |
+| File                                             | Route                          |
+| ------------------------------------------------ | ------------------------------ |
+| `index.tsx`                                      | `/`                            |
+| `sign-in.tsx`                                    | `/sign-in`                     |
+| `_authenticated.tsx`                             | Layout for protected routes    |
+| `_authenticated/borrower/index.tsx`              | `/borrower`                    |
 | `_authenticated/loan-officer/$applicationId.tsx` | `/loan-officer/:applicationId` |
 
 Route tree regenerates automatically during development. See `routeTree.gen.ts` (do not edit manually).
@@ -126,35 +124,36 @@ The UI follows a strict layered pattern: **Component → Hook → TanStack Query
 // 1. Define Zod schema
 // schemas/applications.ts
 export const applicationSchema = z.object({
-    id: z.number(),
-    applicant_name: z.string(),
-    status: z.string(),
+  id: z.number(),
+  applicant_name: z.string(),
+  status: z.string(),
 });
 
 // 2. Create service function
 // services/applications.ts
 export async function fetchApplications() {
-    const response = await apiClient.get('/api/applications/');
-    return z.array(applicationSchema).parse(response);
+  const response = await apiClient.get('/api/applications/');
+  return z.array(applicationSchema).parse(response);
 }
 
 // 3. Create hook
 // hooks/use-applications.ts
 export function useApplications() {
-    return useQuery({
-        queryKey: ['applications'],
-        queryFn: fetchApplications,
-    });
+  return useQuery({
+    queryKey: ['applications'],
+    queryFn: fetchApplications,
+  });
 }
 
 // 4. Use in component
 function ApplicationList() {
-    const { data, isLoading } = useApplications();
-    // ...
+  const { data, isLoading } = useApplications();
+  // ...
 }
 ```
 
 **Rules:**
+
 - Components call hooks, never services directly
 - Services handle HTTP + validation, hooks handle React state
 - All API responses validated with Zod schemas at service layer
@@ -185,6 +184,7 @@ function ChatPanel() {
 ```
 
 WebSocket endpoints:
+
 - `ws://localhost:8000/api/chat` (unauthenticated)
 - `ws://localhost:8000/api/borrower/chat` (requires JWT)
 - `ws://localhost:8000/api/loan-officer/chat` (requires JWT)
@@ -244,18 +244,18 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { Button } from './button';
 
 const meta: Meta<typeof Button> = {
-    title: 'Atoms/Button',
-    component: Button,
+  title: 'Atoms/Button',
+  component: Button,
 };
 
 export default meta;
 type Story = StoryObj<typeof Button>;
 
 export const Primary: Story = {
-    args: {
-        variant: 'default',
-        children: 'Click me',
-    },
+  args: {
+    variant: 'default',
+    children: 'Click me',
+  },
 };
 ```
 
@@ -322,6 +322,7 @@ podman run -p 8080:8080 mortgage-ai-ui:latest
 ```
 
 The Containerfile uses multi-stage build:
+
 1. **Builder stage**: Install deps + build Vite assets
 2. **Runtime stage**: Serve static files with nginx on port 8080
 
@@ -342,11 +343,13 @@ UI service exposes port 8080 and connects to API via cluster DNS.
 ## Key Features by Persona
 
 ### Prospect (Public)
+
 - Product catalog with mortgage offerings
 - Affordability calculator
 - Public chat with pre-qualification agent
 
 ### Borrower
+
 - Real-time chat with borrower assistant
 - Application status tracking
 - Document upload
@@ -355,6 +358,7 @@ UI service exposes port 8080 and connects to API via cluster DNS.
 - Condition response
 
 ### Loan Officer
+
 - Pipeline dashboard with urgency scoring
 - Application detail view with timeline
 - Document management (request resubmission)
@@ -362,12 +366,14 @@ UI service exposes port 8080 and connects to API via cluster DNS.
 - Submit to underwriting
 
 ### Underwriter
+
 - Application detail with compliance checks
 - Risk assessment tools
 - Preliminary recommendation
 - Decision workflow (approve/deny/conditions)
 
 ### CEO
+
 - Analytics dashboard (pipeline summary, denial trends, LO performance)
 - Model monitoring (latency, token usage, errors, routing)
 - Audit trail search

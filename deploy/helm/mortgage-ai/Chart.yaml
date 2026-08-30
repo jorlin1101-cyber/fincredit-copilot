@@ -1,6 +1,6 @@
 apiVersion: v2
 name: mortgage-ai
-description: Multi-agent loan origination system - Red Hat AI Quickstart
+description: FinCredit Copilot housing-loan origination assistant
 type: application
 version: 0.1.0
 appVersion: "latest"
@@ -8,9 +8,9 @@ keywords:
   - mortgage-ai
   - red-hat-ai
   - quickstart
-home: https://github.com/rh-ai-quickstart/mortgage-ai
+home: https://github.com/jorlin1101-cyber/fincredit-copilot
 sources:
-  - https://github.com/rh-ai-quickstart/mortgage-ai
+  - https://github.com/jorlin1101-cyber/fincredit-copilot
 maintainers:
-  - name: Red Hat AI Quickstart Team
+  - name: FinCredit Copilot Maintainers
     email: dev@example.com

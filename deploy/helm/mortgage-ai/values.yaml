@@ -26,7 +26,7 @@ secrets:
   COMPLIANCE_DATABASE_URL: "postgresql+asyncpg://compliance_app:compliance_pass@mortgage-ai-db:5432/mortgage-ai"
   DEBUG: "false"
   ALLOWED_HOSTS: '["*"]'
-  COMPANY_NAME: "Red Hat AI Quickstart Demo"
+  COMPANY_NAME: "融安住房金融（虚构演示机构）"
   AGENT_NAME: ""
 
   # Auth (Keycloak) -- set AUTH_DISABLED=true to bypass for demo
@@ -100,15 +100,15 @@ secrets:
 routes:
   enabled: true
   annotations: {}
-  sharedHost: ""  # Set custom hostname or leave empty (will use ui.host fallback)
+  sharedHost: "" # Set custom hostname or leave empty (will use ui.host fallback)
   ui:
-    host: ""  # Used as fallback if sharedHost is empty
+    host: "" # Used as fallback if sharedHost is empty
     tls:
       enabled: true
       termination: edge
       insecureEdgeTerminationPolicy: Redirect
   api:
-    host: ""  # Ignored - uses sharedHost or ui.host
+    host: "" # Ignored - uses sharedHost or ui.host
     tls:
       enabled: true
       termination: edge
@@ -226,12 +226,12 @@ minio:
 mlflow:
   # RBAC resources for MLflow server access (skipped when kagenti.mlflow.autoManaged=true)
   rbac:
-    enabled: true  # Enable when deploying with RHOAI MLflow
+    enabled: true # Enable when deploying with RHOAI MLflow
     # Creates: ClusterRole, ServiceAccount, ClusterRoleBinding
     # The ServiceAccount can be used to generate tokens for MLflow auth
     pipelineRunner:
-      enabled: false  # Enable when DSPA is deployed in this namespace
-      serviceAccountName: pipeline-runner-dspa  # SA created by DSPA operator
+      enabled: false # Enable when DSPA is deployed in this namespace
+      serviceAccountName: pipeline-runner-dspa # SA created by DSPA operator
 
 # MCP Risk Server (optional)
 mcpRiskServer:
@@ -324,13 +324,13 @@ nemoGuardrails:
 
   # Main LLM that NeMo uses for response generation
   llm:
-    baseUrl: ""              # e.g. https://maas.apps.example.com/prelude-maas/llama-4-scout/v1
-    modelName: ""            # e.g. llama-4-scout-17b-16e-w4a16
-    apiKey: ""               # API key for the main LLM endpoint
+    baseUrl: "" # e.g. https://maas.apps.example.com/prelude-maas/llama-4-scout/v1
+    modelName: "" # e.g. llama-4-scout-17b-16e-w4a16
+    apiKey: "" # API key for the main LLM endpoint
 
   # Content safety detector model (NemoGuard 8B via vLLM)
   contentSafety:
-    deploy: true             # Deploy ServingRuntime + InferenceService in this namespace
+    deploy: true # Deploy ServingRuntime + InferenceService in this namespace
     modelPath: "llama-3.1-nemoguard-8b-content-safety-merged"
     runtime:
       image: "registry.redhat.io/rhaiis/vllm-cuda-rhel9@sha256:ec799bb5eeb7e25b4b25a8917ab5161da6b6f1ab830cbba61bba371cffb0c34d"
@@ -339,7 +339,7 @@ nemoGuardrails:
       count: "1"
     # S3 storage for model weights (must contain the model at modelPath)
     storage:
-      endpoint: ""           # e.g. http://minio-llms.voice-agents.svc.cluster.local:9000
+      endpoint: "" # e.g. http://minio-llms.voice-agents.svc.cluster.local:9000
       bucket: "llms"
       accessKey: ""
       secretKey: ""
@@ -351,8 +351,8 @@ nemoGuardrails:
     image: "registry.redhat.io/ubi10/nginx-126:10.1"
     # MaaS LLM proxy: rewrites /v1/* to /<pathPrefix>/v1/*
     maas:
-      upstream: ""           # e.g. https://maas.apps.example.com
-      pathPrefix: ""         # e.g. prelude-maas/llama-4-scout-17b-16e-w4a16
+      upstream: "" # e.g. https://maas.apps.example.com
+      pathPrefix: "" # e.g. prelude-maas/llama-4-scout-17b-16e-w4a16
     resources:
       requests:
         cpu: "100m"
@@ -391,7 +391,7 @@ securityContext:
   allowPrivilegeEscalation: false
   capabilities:
     drop:
-    - ALL
+      - ALL
   readOnlyRootFilesystem: false
   runAsNonRoot: true
   seccompProfile:

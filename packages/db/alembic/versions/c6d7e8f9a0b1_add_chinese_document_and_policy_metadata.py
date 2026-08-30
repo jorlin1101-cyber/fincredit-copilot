@@ -57,7 +57,7 @@ def upgrade() -> None:
     op.create_index("ix_kb_documents_source_type", "kb_documents", ["source_type"])
 
     # Existing tier-2/3 rows receive honest provenance defaults until the
-    # versioned Chinese corpus replaces the upstream sample content in D6.
+    # The versioned Chinese corpus replaces the legacy sample content in D6.
     op.execute("UPDATE kb_documents SET jurisdiction = 'chengdu' WHERE tier = 2")
     op.execute(
         "UPDATE kb_documents SET jurisdiction = 'internal_demo', "

@@ -1,6 +1,6 @@
-# FinCredit Copilot 二次开发贡献
+# FinCredit Copilot 功能贡献说明
 
-相对上游参考项目，本分支新增或重构：
+FinCredit Copilot 当前版本的主要功能与工程贡献包括：
 
 - 阿里云百炼 Qwen 文本、视觉与 embedding 三链路配置，并校验 768 维向量契约。
 - 中文身份证、收入证明和银行流水领域模型、数据库迁移、页级文本/视觉提取、严格 JSON 与证据校验。
