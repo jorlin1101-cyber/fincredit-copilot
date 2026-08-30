@@ -38,7 +38,7 @@ services:
     region: singapore
     dockerfilePath: ./packages/api/Containerfile
     dockerContext: .
-    dockerCommand: /bin/sh /app/deploy/render-api-start.sh
+    dockerCommand: /bin/sh /app/packages/api/render-start.sh
     healthCheckPath: /health/
     envVars:
       - key: DATABASE_CONNECTION_STRING
