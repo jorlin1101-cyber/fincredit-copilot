@@ -7,7 +7,8 @@
 # for the chat endpoints under /api/chat/*.
 #
 # The following variables are substituted at container start via envsubst:
-#   API_UPSTREAM        - API backend host:port (default: mortgage-ai-api:8000)
+#   API_UPSTREAM        - API backend host[:port] (default: mortgage-ai-api:8000)
+#   API_UPSTREAM_SCHEME - API backend scheme (default: http)
 #   KEYCLOAK_EXTERNAL   - Browser-reachable Keycloak URL (empty = auth disabled in UI)
 
 server {
@@ -15,14 +16,16 @@ server {
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
+    proxy_ssl_server_name on;
+    proxy_ssl_name ${API_UPSTREAM};
 
     # --- API reverse proxy (REST + WebSocket) ---
     location /api/ {
-        proxy_pass http://${API_UPSTREAM}/api/;
+        proxy_pass ${API_UPSTREAM_SCHEME}://${API_UPSTREAM}/api/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $connection_upgrade;
-        proxy_set_header Host $host;
+        proxy_set_header Host ${API_UPSTREAM};
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
@@ -32,33 +35,33 @@ server {
 
     # --- Health endpoint proxy ---
     location /health/ {
-        proxy_pass http://${API_UPSTREAM}/health/;
-        proxy_set_header Host $host;
+        proxy_pass ${API_UPSTREAM_SCHEME}://${API_UPSTREAM}/health/;
+        proxy_set_header Host ${API_UPSTREAM};
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
     # --- OpenAPI docs proxy ---
     location /docs {
-        proxy_pass http://${API_UPSTREAM}/docs;
-        proxy_set_header Host $host;
+        proxy_pass ${API_UPSTREAM_SCHEME}://${API_UPSTREAM}/docs;
+        proxy_set_header Host ${API_UPSTREAM};
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
     location /redoc {
-        proxy_pass http://${API_UPSTREAM}/redoc;
-        proxy_set_header Host $host;
+        proxy_pass ${API_UPSTREAM_SCHEME}://${API_UPSTREAM}/redoc;
+        proxy_set_header Host ${API_UPSTREAM};
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
     location /openapi.json {
-        proxy_pass http://${API_UPSTREAM}/openapi.json;
-        proxy_set_header Host $host;
+        proxy_pass ${API_UPSTREAM_SCHEME}://${API_UPSTREAM}/openapi.json;
+        proxy_set_header Host ${API_UPSTREAM};
     }
 
     # --- Admin panel proxy ---
     location /admin/ {
-        proxy_pass http://${API_UPSTREAM}/admin/;
-        proxy_set_header Host $host;
+        proxy_pass ${API_UPSTREAM_SCHEME}://${API_UPSTREAM}/admin/;
+        proxy_set_header Host ${API_UPSTREAM};
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
