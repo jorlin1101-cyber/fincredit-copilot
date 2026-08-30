@@ -155,8 +155,7 @@ pnpm test:e2e
 - [评估说明](docs/evaluation-report.md)
 - [故障演练](docs/failure-drills.md)
 - [中国住房贷款测算说明](docs/china-housing-affordability-calculator.md)
-- [许可证与归属说明](ATTRIBUTION.md)
 
 ## 许可证
 
-本项目按照 Apache License 2.0 提供，详见 [LICENSE](LICENSE)。第三方代码来源及本项目修改范围见 [ATTRIBUTION.md](ATTRIBUTION.md)。
+本项目按照 Apache License 2.0 提供，详见 [LICENSE](LICENSE)。
