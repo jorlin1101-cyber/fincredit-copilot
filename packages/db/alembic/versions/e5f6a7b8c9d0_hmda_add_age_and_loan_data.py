@@ -21,6 +21,16 @@ branch_labels = None
 depends_on = None
 
 
+def _execute_if_role_exists(sql: str, role: str) -> None:
+    escaped_sql = sql.replace("'", "''")
+    op.execute(
+        sa.text(
+            f"DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{role}') "
+            f"THEN EXECUTE '{escaped_sql}'; END IF; END $$;"
+        )
+    )
+
+
 def upgrade() -> None:
     # 1. Add age column to hmda.demographics
     op.add_column(
@@ -58,12 +68,16 @@ def upgrade() -> None:
     )
 
     # 3. Grant compliance_app full access to the new table
-    op.execute("GRANT INSERT, SELECT, UPDATE ON hmda.loan_data TO compliance_app")
-    op.execute("GRANT USAGE ON SEQUENCE hmda.loan_data_id_seq TO compliance_app")
+    _execute_if_role_exists(
+        "GRANT INSERT, SELECT, UPDATE ON hmda.loan_data TO compliance_app", "compliance_app"
+    )
+    _execute_if_role_exists(
+        "GRANT USAGE ON SEQUENCE hmda.loan_data_id_seq TO compliance_app", "compliance_app"
+    )
 
     # 4. Deny lending_app access (consistent with hmda.demographics)
     # lending_app already has REVOKE ALL ON SCHEMA hmda, but explicit for clarity
-    op.execute("REVOKE ALL ON hmda.loan_data FROM lending_app")
+    _execute_if_role_exists("REVOKE ALL ON hmda.loan_data FROM lending_app", "lending_app")
 
 
 def downgrade() -> None:
