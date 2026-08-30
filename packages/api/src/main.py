@@ -89,10 +89,19 @@ async def lifespan(_app: FastAPI):
             exc,
         )
     init_extraction_service()
-    await init_mcp_client(
-        settings.MCP_RISK_SERVER_URL,
-        predictive_model_url=settings.PREDICTIVE_MODEL_MCP_URL,
-    )
+    try:
+        await init_mcp_client(
+            settings.MCP_RISK_SERVER_URL,
+            predictive_model_url=settings.PREDICTIVE_MODEL_MCP_URL,
+        )
+    except Exception as exc:  # pragma: no cover - depends on external MCP
+        # Render's free MCP service may be cold or temporarily unavailable.
+        # Keep the API usable for health, application, and non-tool flows;
+        # tool-backed risk actions become available after the next restart.
+        logger.warning(
+            "MCP service unavailable; continuing without MCP tools: %s",
+            exc,
+        )
     await _auto_seed()
 
     a2a_task = None
