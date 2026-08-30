@@ -13,7 +13,7 @@ services:
     region: singapore
     image:
       url: docker.io/minio/minio:latest
-    dockerCommand: server /data --address :10000
+    dockerCommand: minio server /tmp/fincredit-data --address :10000
     healthCheckPath: /minio/health/live
     envVars:
       - key: MINIO_ROOT_USER
@@ -38,12 +38,7 @@ services:
     region: singapore
     dockerfilePath: ./packages/api/Containerfile
     dockerContext: .
-    dockerCommand: >-
-      sh -c 'DB_ASYNC_URL=$(printf "%s" "$DATABASE_CONNECTION_STRING" | sed "s|^postgresql://|postgresql+asyncpg://|");
-      export DATABASE_URL="$DB_ASYNC_URL" COMPLIANCE_DATABASE_URL="$DB_ASYNC_URL"
-      export S3_ENDPOINT="http://$S3_HOSTPORT" MCP_RISK_SERVER_URL="http://$MCP_HOSTPORT/mcp";
-      cd /app/packages/db && alembic upgrade head &&
-      cd /app/packages/api && exec uvicorn src.main:app --host 0.0.0.0 --port "$PORT"'
+    dockerCommand: /bin/sh /app/deploy/render-api-start.sh
     healthCheckPath: /health/
     envVars:
       - key: DATABASE_CONNECTION_STRING
