@@ -76,7 +76,18 @@ async def lifespan(_app: FastAPI):
 
     conversation_service = get_conversation_service()
     await conversation_service.initialize(settings.DATABASE_URL)
-    init_storage_service(settings)
+    # Object storage is needed for document upload/extraction, but it should
+    # not prevent the API from coming up when the optional MinIO service is
+    # still waking up (or temporarily unavailable on a free demo instance).
+    # The document endpoints will return a clear service error until storage
+    # is restored, while health checks and the rest of the demo remain usable.
+    try:
+        init_storage_service(settings)
+    except Exception as exc:  # pragma: no cover - depends on external S3
+        logger.warning(
+            "Object storage unavailable; continuing without document storage: %s",
+            exc,
+        )
     init_extraction_service()
     await init_mcp_client(
         settings.MCP_RISK_SERVER_URL,
