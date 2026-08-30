@@ -55,6 +55,10 @@ COPY config/ ./config/
 # Copy compliance KB data for seeding
 COPY data/ ./data/
 
+# Render startup script (kept separate so the platform does not have to parse
+# a long shell expression as a Docker command override).
+COPY deploy/render-api-start.sh /app/deploy/render-api-start.sh
+
 # Set working directory to API package
 WORKDIR /app/packages/api
 
