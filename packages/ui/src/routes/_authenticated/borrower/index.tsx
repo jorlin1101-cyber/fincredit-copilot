@@ -26,6 +26,8 @@ import {
   Loader2,
   Award,
   X,
+  RefreshCw,
+  ServerCog,
 } from 'lucide-react';
 import { CameraCapture } from '@/components/camera-capture';
 import { useApplications } from '@/hooks/use-applications';
@@ -85,6 +87,50 @@ function CardShell({
     >
       {children}
     </div>
+  );
+}
+
+function ServiceWakeCard({
+  isRetrying,
+  onRetry,
+}: {
+  isRetrying: boolean;
+  onRetry: () => void;
+}) {
+  return (
+    <CardShell className="border-amber-200 bg-amber-50/70 p-8 dark:border-amber-900/60 dark:bg-amber-950/20">
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+          <ServerCog className="h-6 w-6" aria-hidden="true" />
+        </div>
+        <div className="max-w-2xl flex-1">
+          <p className="mb-2 text-xs font-semibold tracking-[0.16em] text-amber-700 dark:text-amber-300">
+            免费演示环境
+          </p>
+          <h1 className="text-xl font-semibold text-foreground">演示服务正在唤醒</h1>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            云端服务闲置后会暂时休眠，恢复通常需要约一分钟。当前无法加载申请数据，并不代表借款人没有申请；系统会自动重试，您也可以稍后手动重试。
+          </p>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={onRetry}
+              disabled={isRetrying}
+              className="inline-flex items-center gap-2 rounded-lg bg-[#C15F3C] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#A94E30] disabled:cursor-wait disabled:opacity-70"
+            >
+              <RefreshCw
+                className={cn('h-4 w-4', isRetrying && 'animate-spin')}
+                aria-hidden="true"
+              />
+              {isRetrying ? '正在重新连接…' : '重新连接'}
+            </button>
+            <span className="text-xs text-muted-foreground">
+              恢复后页面会自动显示预置演示申请。
+            </span>
+          </div>
+        </div>
+      </div>
+    </CardShell>
   );
 }
 
@@ -1043,6 +1089,22 @@ function BorrowerDashboard() {
   const rateLockQuery = useRateLock(appId);
 
   const isInitialLoading = applicationsQuery.isLoading;
+  const isServiceUnavailable =
+    !applicationsQuery.data &&
+    (applicationsQuery.isError || applicationsQuery.failureCount > 0);
+
+  if (isServiceUnavailable) {
+    return (
+      <div className="mx-auto max-w-[1280px] p-6 md:p-8">
+        <ServiceWakeCard
+          isRetrying={applicationsQuery.isFetching}
+          onRetry={() => {
+            void applicationsQuery.refetch();
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-[1280px] p-6 md:p-8">
