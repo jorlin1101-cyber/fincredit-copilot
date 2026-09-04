@@ -63,7 +63,7 @@ class LocalEmbeddingProvider(EmbeddingProvider):
     def __init__(self, model_name: str, dimensions: int = 768) -> None:
         self._model_name = model_name
         self._dimensions = dimensions
-        self._model: "SentenceTransformer | None" = None
+        self._model: SentenceTransformer | None = None
 
     def _load_model(self) -> "SentenceTransformer":
         if self._model is None:

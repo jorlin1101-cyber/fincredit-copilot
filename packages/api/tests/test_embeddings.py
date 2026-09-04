@@ -59,7 +59,7 @@ class TestLocalEmbeddingProvider:
         fake_model.encode.return_value = np.array([[0.1] * 768])
 
         with patch(
-            "src.inference.embeddings.SentenceTransformer", return_value=fake_model
+            "sentence_transformers.SentenceTransformer", return_value=fake_model
         ) as mock_cls:
             await provider.embed(["test"])
             mock_cls.assert_called_once_with("test-model", trust_remote_code=True)
