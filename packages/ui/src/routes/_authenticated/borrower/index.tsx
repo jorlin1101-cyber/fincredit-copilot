@@ -107,9 +107,11 @@ function ServiceWakeCard({
           <p className="mb-2 text-xs font-semibold tracking-[0.16em] text-amber-700 dark:text-amber-300">
             免费演示环境
           </p>
-          <h1 className="text-xl font-semibold text-foreground">演示服务正在唤醒</h1>
+          <h1 className="text-xl font-semibold text-foreground">
+            暂时无法连接演示服务
+          </h1>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            云端服务闲置后会暂时休眠，恢复通常需要约一分钟。当前无法加载申请数据，并不代表借款人没有申请；系统会自动重试，您也可以稍后手动重试。
+            当前无法加载申请数据，并不代表借款人没有申请。可能是免费服务正在启动、请求受限或网络暂时异常。系统会有限次自动重试；若仍未恢复，请稍后点击重新连接。
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <button

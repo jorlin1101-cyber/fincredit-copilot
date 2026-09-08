@@ -90,7 +90,12 @@ export function useChat({ path, historyPath, wsOptions }: UseChatOptions) {
       setIsConnected(false);
     }
 
-    if (wsRef.current && wsRef.current.readyState() === WebSocket.OPEN) return;
+    if (
+      wsRef.current &&
+      (wsRef.current.readyState() === WebSocket.OPEN ||
+        wsRef.current.readyState() === WebSocket.CONNECTING)
+    )
+      return;
 
     if (wsRef.current) {
       wsRef.current.close();
@@ -221,6 +226,19 @@ export function useChat({ path, historyPath, wsOptions }: UseChatOptions) {
     }, 100);
     connectCheckRef.current = check;
   }, [path, wsOptions, loadHistory]);
+
+  // Recover after a cold start or temporary outage without resending messages.
+  // The ref prevents unstable option objects from continually resetting the timer.
+  const reconnectRef = useRef(connect);
+  reconnectRef.current = connect;
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (mountedRef.current && wsRef.current?.readyState() === WebSocket.CLOSED) {
+        reconnectRef.current();
+      }
+    }, 15_000);
+    return () => clearInterval(timer);
+  }, []);
 
   const disconnect = useCallback(() => {
     wsRef.current?.close();
