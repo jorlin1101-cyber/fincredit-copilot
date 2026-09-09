@@ -28,7 +28,7 @@ export function wakeDemoService(): void {
     mode: 'no-cors',
     credentials: 'omit',
     referrerPolicy: 'no-referrer',
-    redirect: 'error',
+    redirect: 'follow',
     signal: AbortSignal.timeout(90_000),
   }).catch(() => {});
 }
