@@ -10,6 +10,8 @@ import { Header } from '../components/header/header';
 import { Footer } from '../components/footer/footer';
 import { ChatPanel, ChatFab } from '../components/organisms/chat-panel/chat-panel';
 import { ChatProvider, useChatContext } from '../contexts/chat-context';
+import { useEffect } from 'react';
+import { wakeDemoService } from '../lib/wake-service';
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -46,6 +48,9 @@ function RootLayoutInner() {
 }
 
 function RootLayout() {
+  useEffect(() => {
+    wakeDemoService();
+  }, []);
   return (
     <ChatProvider>
       <RootLayoutInner />
