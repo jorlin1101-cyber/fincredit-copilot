@@ -1,8 +1,14 @@
 # FinCredit Copilot
 
+[在线 Demo](https://fincredit-copilot-demo.onrender.com/) · [中文项目案例](https://jorlinshi.cn/projects/fincredit-copilot?lang=zh) · [作者作品集](https://jorlinshi.cn/?lang=zh)
+
+个人项目主要开发周期：2026.07 - 2026.09，后续持续维护。作者：石卓灵（Jorlin Shi）；联系邮箱：jorlin1101@163.com。
+
 面向中国住房金融场景的智能授信辅助平台，覆盖贷前咨询、申请受理、材料核验、政策查询、风险分析、人工审批与管理分析。
 
 项目以“融安住房金融（虚构演示机构）”为业务背景，使用合成申请数据和公开政策资料构建可本地运行的完整演示。系统只提供辅助分析，不自动批准或拒绝贷款，也不构成授信承诺、监管解释或法律意见。
+
+评测口径以 [2026-08-26 本地 P0 报告](docs/evaluation-report.md)为准：30 条政策问答中，受控 Agentic RAG 的 Recall@5 与无答案 F1 均为 100%。引用元数据检查不等同于最终生成答案的事实准确率；这是历史本地报告，本次文档同步没有重新运行模型评测。
 
 ## 核心能力
 
@@ -139,7 +145,7 @@ uv run pytest -v
 pnpm test:e2e
 ```
 
-政策检索评测集位于 `evaluations/datasets/fincredit_policy_pilot.json`，覆盖直接问题、跨段组合问题、政策冲突与无答案问题。评测指标包括 Recall@5、MRR、引用正确率、无答案 F1、延迟和检索轮次。
+政策检索评测集位于 `evaluations/datasets/fincredit_policy_pilot.json`，覆盖直接问题、跨段组合问题、政策冲突与无答案问题。评测指标包括 Recall@5、MRR、引用元数据检查通过率、无答案 F1、延迟和检索轮次。
 
 ## 设计边界
 
@@ -159,3 +165,4 @@ pnpm test:e2e
 ## 许可证
 
 本项目按照 Apache License 2.0 提供，详见 [LICENSE](LICENSE)。
+
