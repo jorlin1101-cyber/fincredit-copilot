@@ -5,18 +5,19 @@
 
 ## 统计摘要
 
-以 `804da87`（上游快照，645 个文件）为基线：
+以 `804da87`（上游快照，645 个文件）为基线，**统计截至提交 `072aa08`**：
 
 | 分类 | 文件数 |
 | --- | ---: |
 | 与上游逐字节相同 | 392 |
 | 已修改 | 229 |
 | 已删除 | 24 |
-| 新增 | 99 |
+| 新增 | 100 |
 
-行级差异：`352 files changed, 25,573 insertions(+), 15,070 deletions(-)`
+行级差异：`353 files changed, 25,708 insertions(+), 15,070 deletions(-)`
 
-复现命令：`git diff --name-status 804da87 HEAD`、`git diff --shortstat 804da87 HEAD`
+复现命令：`git diff --name-status 804da87 072aa08`、`git diff --shortstat 804da87 072aa08`
+（把 `072aa08` 换成任意提交即可得到该提交的口径。）
 
 ## 逐能力对照矩阵
 
