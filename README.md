@@ -8,6 +8,12 @@
 
 项目以“融安住房金融（虚构演示机构）”为业务背景，使用合成申请数据和公开政策资料构建可本地运行的完整演示。系统只提供辅助分析，不自动批准或拒绝贷款，也不构成授信承诺、监管解释或法律意见。
 
+> **项目来源**：本项目是 Red Hat AI Quickstart 开源项目
+> [`rh-ai-quickstart/multi-agent-loan-origination`](https://github.com/rh-ai-quickstart/multi-agent-loan-origination)
+> （Apache License 2.0）的二次开发。上游提供基础住房贷款流程与平台架构；中国的业务场景、中文材料处理、
+> 通义千问接入、受控 Agentic RAG、确定性风控与评测体系为本项目新增或改造。
+> 上游基线提交与可复现的贡献边界见 [UPSTREAM.md](UPSTREAM.md)。
+
 评测口径以 [2026-08-26 本地 P0 报告](docs/evaluation-report.md)为准：30 条政策问答中，受控 Agentic RAG 的 Recall@5 与无答案 F1 均为 100%。引用元数据检查不等同于最终生成答案的事实准确率；这是历史本地报告，本次文档同步没有重新运行模型评测。
 
 ## 核心能力
@@ -50,7 +56,7 @@ flowchart LR
 ## 项目结构
 
 ```text
-multi-agent-loan-origination/
+fincredit-copilot/
 ├── config/                 # Agent 配置与身份认证配置
 ├── data/                   # 合成材料与政策数据
 ├── docs/                   # 架构、接口、评估与故障演练文档
@@ -157,6 +163,8 @@ pnpm test:e2e
 
 ## 项目文档
 
+- [上游来源与贡献边界](UPSTREAM.md)
+- [功能贡献说明](CONTRIBUTIONS.md)
 - [系统架构](docs/fincredit-architecture.md)
 - [评估说明](docs/evaluation-report.md)
 - [故障演练](docs/failure-drills.md)
@@ -164,5 +172,4 @@ pnpm test:e2e
 
 ## 许可证
 
-本项目按照 Apache License 2.0 提供，详见 [LICENSE](LICENSE)。
-
+本项目按照 Apache License 2.0 提供，详见 [LICENSE](LICENSE)。第三方代码来源、上游基线提交及本项目修改范围见 [UPSTREAM.md](UPSTREAM.md)，逐项功能对照见 [CONTRIBUTIONS.md](CONTRIBUTIONS.md)。

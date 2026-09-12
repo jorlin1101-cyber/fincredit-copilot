@@ -6,6 +6,6 @@
 - `tier2-chengdu`：成都市住房公积金及住房贷款地方规则；
 - `tier3-internal-demo`：明确标注为虚构演示内容的机构内部规则。
 
-`tier1-federal`、`tier2-agency` 和 `tier3-internal` 来自上游美国房贷演示项目，仅保留用于历史兼容和溯源，不会被默认数据导入器加载，也不得用于中国场景的政策结论。
+`tier3-internal` 来自上游美国房贷演示项目，仅保留用于历史兼容和溯源，不会被默认数据导入器加载，也不得用于中国场景的政策结论。原 `tier1-federal`（ATR/QM、ECOA、FCRA、HMDA、TRID）与 `tier2-agency`（Fannie Mae、FHA）两个美国监管目录已移除，其内容仍保留在上游基线提交 `804da87` 中，说明见 [UPSTREAM.md](../../UPSTREAM.md)。
 
 每份有效政策材料必须注明发布机构、来源网址、版本、发布日期、适用日期和检索日期。`official` 表示官方页面，`public_report` 表示可独立访问的可靠公开报道，`internal_demo` 表示非监管政策的虚构演示规则。检索证据不足或存在冲突时，系统应停止生成政策结论并转人工复核。
