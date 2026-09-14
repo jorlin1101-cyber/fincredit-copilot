@@ -20,7 +20,7 @@
 - 无答案 F1：比较标注的可回答性与系统的证据充分性判断；不评估最终回答的逐句事实准确性。
 - 表中的输入/输出 Token 仅统计查询改写，未覆盖嵌入或完整对话的总成本。
 
-定义依据：[评测脚本](../evaluations/run_policy_rag_eval.py)。下表保留历史本地结果；本次文档同步未重新运行模型评测。原始逐题 JSON 未公开提交，公开仓库提供数据集、脚本与汇总报告。
+定义依据：[评测脚本](https://github.com/jorlin1101-cyber/fincredit-copilot/blob/main/evaluations/run_policy_rag_eval.py)。下表保留历史本地结果；本次文档同步未重新运行模型评测。原始逐题 JSON 未公开提交，公开仓库提供数据集、脚本与汇总报告。
 
 ## 2026-08-26 本地 P0 基线
 
