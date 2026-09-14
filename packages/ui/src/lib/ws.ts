@@ -1,7 +1,7 @@
 // This project was developed with assistance from AI tools.
 
 export interface WsMessage {
-  type: 'done' | 'error' | 'tool_start' | 'tool_result' | string;
+  type: 'token' | 'reset' | 'done' | 'error' | 'tool_start' | 'tool_result' | string;
   content?: string;
   tool_name?: string;
   tool_input?: Record<string, unknown>;

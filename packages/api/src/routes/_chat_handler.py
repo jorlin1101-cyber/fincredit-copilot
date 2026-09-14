@@ -21,6 +21,7 @@ from ..agents.registry import get_agent
 from ..core.auth import build_data_scope
 from ..core.config import settings
 from ..core.metrics import active_chat_sessions, chat_messages_total
+from ..inference.safety import get_safety_checker
 from ..middleware.auth import CurrentUser, _decode_token, _resolve_role, require_roles
 from ..middleware.pii import _mask_pii_recursive
 from ..observability import set_trace_context
@@ -32,6 +33,32 @@ from ..services.conversation import ConversationService, get_conversation_servic
 logger = logging.getLogger(__name__)
 CHAT_RESPONSE_TIMEOUT_SECONDS = settings.CHAT_RESPONSE_TIMEOUT_SECONDS
 CHAT_AGENT_RECURSION_LIMIT = settings.CHAT_AGENT_RECURSION_LIMIT
+
+
+def _clean_response(raw: str) -> str:
+    """Apply the same cleanup to streamed previews and the final answer."""
+    raw = re.sub(r"<think>.*?(?:</think>|$)", "", raw, flags=re.DOTALL)
+    raw = raw.replace("</think>", "")
+    raw = raw.replace("**", "")
+    raw = re.sub(r"\[[^\]]*\w+\(.*?\)[^\]]*\]", "", raw)
+    return raw.strip()
+
+
+def _streamable_text(raw: str) -> str:
+    """Hold incomplete markup so a preview never exposes thinking or tool text."""
+    limit = len(raw)
+    for tag in ("<think>", "</think>"):
+        for size in range(1, len(tag)):
+            if raw.endswith(tag[:size]):
+                limit = min(limit, len(raw) - size)
+    stable = raw[:limit]
+    if stable.rfind("<think>") > stable.rfind("</think>"):
+        stable = stable[: stable.rfind("<think>")]
+    if stable.rfind("[") > stable.rfind("]"):
+        stable = stable[: stable.rfind("[")]
+    if stable.endswith("*"):
+        stable = stable[:-1]
+    return _clean_response(stable)
 
 
 async def authenticate_websocket(
@@ -162,13 +189,7 @@ async def run_agent_stream(
     agent_task: asyncio.Task | None = None
 
     async def _run_agent(user_text: str, input_messages: list) -> str:
-        """Run the agent graph, buffering until the output shield completes.
-
-        No messages are sent to the client from here -- the caller handles
-        cleanup and sends a single ``done`` message with the final content.
-
-        Returns the raw response text (caller applies cleanup).
-        """
+        """Stream model deltas when whole-response guards are inactive."""
         # Set MLFlow trace context for correlation (autolog handles callbacks)
         set_trace_context(session_id=session_id, user_id=user_id)
         config = {
@@ -176,7 +197,13 @@ async def run_agent_stream(
             "recursion_limit": CHAT_AGENT_RECURSION_LIMIT,
         }
 
+        # A configured output shield or PII masker must see the entire answer
+        # before any of its text reaches the browser.
+        stream_live = not pii_mask and (
+            settings.OUTPUT_SHIELD_DISABLED or get_safety_checker() is None
+        )
         full_response = ""
+        sent_visible = ""
         safety_blocked = False
         safety_override_content = ""
         async for event in graph.astream_events(
@@ -199,8 +226,36 @@ async def run_agent_stream(
                 "agent_capable",
             ):
                 chunk = event.get("data", {}).get("chunk")
-                if isinstance(chunk, AIMessageChunk) and chunk.content:
+                if isinstance(chunk, AIMessageChunk) and isinstance(chunk.content, str):
                     full_response += chunk.content
+                    if stream_live:
+                        visible = _streamable_text(full_response)
+                        if visible.startswith(sent_visible) and len(visible) > len(sent_visible):
+                            await _send({"type": "token", "content": visible[len(sent_visible) :]})
+                            sent_visible = visible
+
+            elif kind == "on_chain_end" and node in (
+                "agent",
+                "agent_fast",
+                "agent_capable",
+            ):
+                output = event.get("data", {}).get("output")
+                if isinstance(output, dict):
+                    agent_msgs = output.get("messages", [])
+                    last_msg = agent_msgs[-1] if agent_msgs else None
+                    if isinstance(last_msg, AIMessage):
+                        if last_msg.tool_calls:
+                            full_response = ""
+                            if sent_visible:
+                                await _send({"type": "reset"})
+                                sent_visible = ""
+                        elif isinstance(last_msg.content, str):
+                            full_response = last_msg.content
+                            if stream_live:
+                                visible = _streamable_text(full_response)
+                                if visible.startswith(sent_visible) and len(visible) > len(sent_visible):
+                                    await _send({"type": "token", "content": visible[len(sent_visible) :]})
+                                    sent_visible = visible
 
             elif kind == "on_chain_end" and node == "input_shield":
                 output = event.get("data", {}).get("output")
@@ -381,13 +436,7 @@ async def run_agent_stream(
             except Exception:
                 pass
 
-            # Strip think tags, markdown bold markers, and stray tool-call
-            # text that small models (e.g. Llama) sometimes emit inline
-            # instead of using the structured tool-calling format.
-            full_response = re.sub(r"<think>.*?</think>", "", full_response, flags=re.DOTALL)
-            full_response = full_response.replace("**", "")
-            full_response = re.sub(r"\[[^\]]*\w+\(.*?\)[^\]]*\]", "", full_response)
-            full_response = full_response.strip()
+            full_response = _clean_response(full_response)
             if not full_response:
                 full_response = "本次查询暂未生成有效结果，请稍后重试。"
 

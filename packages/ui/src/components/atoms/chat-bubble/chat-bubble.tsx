@@ -23,7 +23,15 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
             <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:300ms]" />
           </div>
         ) : (
-          <p className="whitespace-pre-wrap">{message.content}</p>
+          <p className="whitespace-pre-wrap">
+            {message.content}
+            {!isUser && message._streaming && (
+              <span
+                className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-current align-middle"
+                aria-hidden="true"
+              />
+            )}
+          </p>
         )}
         {message.toolCalls && message.toolCalls.length > 0 && (
           <div className="mt-2 flex flex-col gap-1">

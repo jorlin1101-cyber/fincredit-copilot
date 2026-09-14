@@ -3,7 +3,9 @@
 
 Protocol:
   Client sends:  {"type": "message", "content": "user text"}
-  Server sends:  {"type": "done", "content": "..."} (complete response after safety check)
+  Server sends:  {"type": "token", "content": "..."} (response delta)
+                 {"type": "reset"} (discard draft before a tool call)
+                 {"type": "done", "content": "..."} (complete response after safety check)
                  {"type": "error", "content": "..."} (on failure)
 
 Audit events are written with the same session_id used for LangFuse traces,

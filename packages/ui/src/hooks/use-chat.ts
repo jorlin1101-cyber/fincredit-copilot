@@ -110,6 +110,27 @@ export function useChat({ path, historyPath, wsOptions }: UseChatOptions) {
         if (!mountedRef.current) return;
 
         switch (msg.type) {
+          case 'token':
+            if (msg.content) {
+              setMessages((prev) => {
+                const last = prev[prev.length - 1];
+                if (last?.role !== 'assistant' || !isStreamingMsg(last)) return prev;
+                return [
+                  ...prev.slice(0, -1),
+                  { ...last, content: last.content + msg.content },
+                ];
+              });
+            }
+            break;
+
+          case 'reset':
+            setMessages((prev) => {
+              const last = prev[prev.length - 1];
+              if (last?.role !== 'assistant' || !isStreamingMsg(last)) return prev;
+              return [...prev.slice(0, -1), { ...last, content: '' }];
+            });
+            break;
+
           case 'tool_start':
             if (msg.tool_name) {
               currentToolCallsRef.current.push({
@@ -129,10 +150,7 @@ export function useChat({ path, historyPath, wsOptions }: UseChatOptions) {
             break;
 
           case 'done': {
-            // The server sends a single done message with the
-            // complete, cleaned response (no preceding token
-            // messages). This eliminates the Firefox microtask
-            // race that caused blank responses.
+            // The final, cleaned answer replaces any streamed draft.
             const doneContent = msg.content ?? '';
             setMessages((prev) => {
               const last = prev[prev.length - 1];

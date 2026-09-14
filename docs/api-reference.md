@@ -405,10 +405,12 @@ Tokens arrive in order and should be concatenated to assemble the full response.
 **Done (end of response):**
 
 ```json
-{"type": "done"}
+{"type": "done", "content": "complete checked answer"}
 ```
 
-Signals that the current response is complete. The connection stays open. The client may send the next message.
+Signals that the current response is complete. Its `content` replaces any streamed draft after cleanup and safety checks. The connection stays open. The client may send the next message.
+
+If a draft precedes a tool call, the server sends `{"type": "reset"}` before streaming the final response. When output safety checking or PII masking is active, the server waits for the checked answer and sends only `done`.
 
 **Error:**
 
@@ -418,13 +420,7 @@ Signals that the current response is complete. The connection stays open. The cl
 
 Errors caused by invalid client messages (malformed JSON, wrong `type`) keep the connection open. Errors caused by agent failures also keep the connection open, though a retry may be warranted. In both cases, `done` is not sent — `error` replaces it as the terminal event for that turn.
 
-**Safety override:**
-
-```json
-{"type": "safety_override", "content": "I can only assist with mortgage-related questions."}
-```
-
-Sent when the output safety shield replaces the agent's response. The `content` is the safe replacement text and should be rendered in place of any tokens already received for that turn. After a `safety_override`, the server sends `done` to close the turn normally.
+An output safety refusal is delivered as `done.content`, with no draft tokens.
 
 ### Typical Message Sequence
 
@@ -437,11 +433,11 @@ Client                              Server
   |                                   |-- {"type":"token","content":"Sure"}
   |                                   |-- {"type":"token","content":", here"}
   |                                   |-- {"type":"token","content":" are..."}
-  |                                   |-- {"type":"done"}
+  |                                   |-- {"type":"done","content":"Sure, here are..."}
   |                                   |
   |-- {"type":"message","content":"?"}|
   |                                   |-- {"type":"token","content":"..."}
-  |                                   |-- {"type":"done"}
+  |                                   |-- {"type":"done","content":"..."}
 ```
 
 When the output safety shield fires:
@@ -450,13 +446,12 @@ When the output safety shield fires:
 Client                              Server
   |                                   |
   |-- {"type":"message","content":"?"}|
-  |                                   |-- {"type":"safety_override","content":"..."}
-  |                                   |-- {"type":"done"}
+  |                                   |-- {"type":"done","content":"safe refusal"}
 ```
 
 ### PII Masking
 
-The CEO role has PII masking enabled at the data scope level. All WebSocket messages sent to CEO connections — including `token`, `error`, and `safety_override` payloads — are automatically masked before transmission. Names, SSNs, phone numbers, email addresses, and other PII fields are replaced with redacted placeholders.
+The CEO role has PII masking enabled at the data scope level. The server waits for the complete answer before sending it to CEO connections; `done` and `error` payloads are masked before transmission. Names, SSNs, phone numbers, email addresses, and other PII fields are replaced with redacted placeholders.
 
 No other role has PII masking enabled. The masking is server-side and transparent to the client.
 

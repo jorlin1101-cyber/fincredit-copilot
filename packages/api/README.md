@@ -123,12 +123,15 @@ All agent chat endpoints use WebSocket with streaming token delivery. Authentica
 **Message formats (server -> client):**
 ```json
 {"type": "token", "content": "partial text"}
-{"type": "tool_start", "content": "tool_name"}
-{"type": "tool_end", "content": "tool result summary"}
-{"type": "safety_override", "content": "refusal reason"}
-{"type": "done"}
+{"type": "reset"}
+{"type": "done", "content": "complete cleaned response"}
 {"type": "error", "content": "error message"}
 ```
+
+The UI appends `token` deltas, clears a draft on `reset` before a tool call, and
+replaces the draft with the authoritative `done.content`. When an output safety
+shield or PII masking is active, the server waits for the complete checked
+answer instead of streaming unreviewed content.
 
 **Conversation persistence:**
 - Public chat: ephemeral (UUID session, no persistence)
