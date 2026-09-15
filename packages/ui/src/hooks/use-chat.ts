@@ -9,6 +9,10 @@ import {
   type ConnectChatOptions,
 } from '@/lib/ws';
 
+const CONNECT_ATTEMPT_TIMEOUT_MS = 15_000;
+const RESPONSE_WAIT_TIMEOUT_MS = 105_000;
+const SERVICE_STARTING_MESSAGE = '演示服务正在启动，连接成功后会自动回复，请稍候…';
+
 /** crypto.randomUUID() requires a secure context (HTTPS). Fall back for plain HTTP. */
 function uuid(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -52,7 +56,50 @@ export function useChat({ path, historyPath, wsOptions }: UseChatOptions) {
   const mountedRef = useRef(true);
   const prevOptionsRef = useRef<string>('');
   const connectCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const responseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingMessageRef = useRef<string | null>(null);
+  const isStreamingRef = useRef(false);
+
+  const clearConnectTimers = useCallback(() => {
+    if (connectCheckRef.current) {
+      clearInterval(connectCheckRef.current);
+      connectCheckRef.current = null;
+    }
+    if (connectTimeoutRef.current) {
+      clearTimeout(connectTimeoutRef.current);
+      connectTimeoutRef.current = null;
+    }
+  }, []);
+
+  const clearResponseTimeout = useCallback(() => {
+    if (responseTimeoutRef.current) {
+      clearTimeout(responseTimeoutRef.current);
+      responseTimeoutRef.current = null;
+    }
+  }, []);
+
+  const finishWithError = useCallback(
+    (content: string) => {
+      if (!mountedRef.current || !isStreamingRef.current) return;
+      pendingMessageRef.current = null;
+      isStreamingRef.current = false;
+      clearResponseTimeout();
+      currentToolCallsRef.current = [];
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === 'assistant' && isStreamingMsg(last)) {
+          const updated = { ...last, content };
+          delete (updated as Record<string, unknown>)['_streaming'];
+          return [...prev.slice(0, -1), updated];
+        }
+        return prev;
+      });
+      setConnectionError(content);
+      setIsStreaming(false);
+    },
+    [clearResponseTimeout],
+  );
 
   const loadHistory = useCallback(async () => {
     if (!historyPath) return;
@@ -104,13 +151,15 @@ export function useChat({ path, historyPath, wsOptions }: UseChatOptions) {
 
     setConnectionError(null);
 
-    const ws = connectChat(
+    let ws: ChatWs;
+    ws = connectChat(
       path,
       (msg: WsMessage) => {
         if (!mountedRef.current) return;
 
         switch (msg.type) {
           case 'token':
+            setConnectionError(null);
             if (msg.content) {
               setMessages((prev) => {
                 const last = prev[prev.length - 1];
@@ -124,6 +173,7 @@ export function useChat({ path, historyPath, wsOptions }: UseChatOptions) {
             break;
 
           case 'reset':
+            setConnectionError(null);
             setMessages((prev) => {
               const last = prev[prev.length - 1];
               if (last?.role !== 'assistant' || !isStreamingMsg(last)) return prev;
@@ -132,6 +182,7 @@ export function useChat({ path, historyPath, wsOptions }: UseChatOptions) {
             break;
 
           case 'tool_start':
+            setConnectionError(null);
             if (msg.tool_name) {
               currentToolCallsRef.current.push({
                 name: msg.tool_name,
@@ -141,6 +192,7 @@ export function useChat({ path, historyPath, wsOptions }: UseChatOptions) {
             break;
 
           case 'tool_result':
+            setConnectionError(null);
             if (msg.tool_name) {
               const tc = currentToolCallsRef.current.find(
                 (t) => t.name === msg.tool_name && !t.output,
@@ -150,6 +202,7 @@ export function useChat({ path, historyPath, wsOptions }: UseChatOptions) {
             break;
 
           case 'done': {
+            clearResponseTimeout();
             // The final, cleaned answer replaces any streamed draft.
             const doneContent = msg.content ?? '';
             setMessages((prev) => {
@@ -173,79 +226,84 @@ export function useChat({ path, historyPath, wsOptions }: UseChatOptions) {
               ];
             });
             currentToolCallsRef.current = [];
+            isStreamingRef.current = false;
             setIsStreaming(false);
+            setConnectionError(null);
             window.dispatchEvent(new Event('chat-done'));
             break;
           }
 
           case 'error':
             if (msg.content === '智能助手连接失败') {
-              setConnectionError(msg.content);
+              if (pendingMessageRef.current) {
+                setConnectionError(SERVICE_STARTING_MESSAGE);
+              } else if (isStreamingRef.current) {
+                finishWithError('连接中断，本次回复未能完成，请重新发送。');
+              } else {
+                setConnectionError('暂时无法连接小融，请稍后重试。');
+              }
             } else {
-              setMessages((prev) => {
-                const last = prev[prev.length - 1];
-                // Update the placeholder if it exists
-                if (last?.role === 'assistant' && isStreamingMsg(last)) {
-                  return [
-                    ...prev.slice(0, -1),
-                    {
-                      ...last,
-                      content: msg.content ?? '暂时无法完成本次查询，请稍后重试。',
-                      _streaming: undefined,
-                    },
-                  ];
-                }
-                return [
-                  ...prev,
-                  {
-                    id: uuid(),
-                    role: 'assistant',
-                    content: msg.content ?? '暂时无法完成本次查询，请稍后重试。',
-                    timestamp: new Date(),
-                  },
-                ];
-              });
+              finishWithError(msg.content ?? '暂时无法完成本次查询，请稍后重试。');
             }
-            currentToolCallsRef.current = [];
-            setIsStreaming(false);
             break;
         }
       },
       () => {
-        if (mountedRef.current) {
-          setIsConnected(false);
+        if (!mountedRef.current || wsRef.current !== ws) return;
+        clearConnectTimers();
+        setIsConnected(false);
+        if (pendingMessageRef.current && isStreamingRef.current) {
+          setConnectionError(SERVICE_STARTING_MESSAGE);
+        } else if (isStreamingRef.current) {
+          finishWithError('连接中断，本次回复未能完成，请重新发送。');
         }
       },
       wsOptions,
     );
 
     wsRef.current = ws;
-    if (connectCheckRef.current) clearInterval(connectCheckRef.current);
+    clearConnectTimers();
     const check = setInterval(() => {
       if (ws.readyState() === WebSocket.OPEN) {
         setIsConnected(true);
         setConnectionError(null);
-        clearInterval(check);
-        connectCheckRef.current = null;
+        clearConnectTimers();
         // Load history once connected
         if (optionsChanged) {
           loadHistory();
         }
         // Send any message queued while connecting
         if (pendingMessageRef.current) {
+          setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            if (last?.role !== 'assistant' || !isStreamingMsg(last)) return prev;
+            return [...prev.slice(0, -1), { ...last, content: '' }];
+          });
           ws.send(pendingMessageRef.current);
           pendingMessageRef.current = null;
         }
       }
       if (ws.readyState() === WebSocket.CLOSED) {
-        clearInterval(check);
-        connectCheckRef.current = null;
+        clearConnectTimers();
       }
     }, 100);
     connectCheckRef.current = check;
-  }, [path, wsOptions, loadHistory]);
+    connectTimeoutRef.current = setTimeout(() => {
+      if (wsRef.current === ws && ws.readyState() === WebSocket.CONNECTING) {
+        clearConnectTimers();
+        ws.close();
+      }
+    }, CONNECT_ATTEMPT_TIMEOUT_MS);
+  }, [
+    path,
+    wsOptions,
+    loadHistory,
+    clearConnectTimers,
+    clearResponseTimeout,
+    finishWithError,
+  ]);
 
-  // Recover after a cold start or temporary outage without resending messages.
+  // Recover after a cold start and send a queued message exactly once.
   // The ref prevents unstable option objects from continually resetting the timer.
   const reconnectRef = useRef(connect);
   reconnectRef.current = connect;
@@ -261,17 +319,26 @@ export function useChat({ path, historyPath, wsOptions }: UseChatOptions) {
   const disconnect = useCallback(() => {
     wsRef.current?.close();
     wsRef.current = null;
+    pendingMessageRef.current = null;
+    isStreamingRef.current = false;
+    clearConnectTimers();
+    clearResponseTimeout();
     setIsConnected(false);
-  }, []);
+    setIsStreaming(false);
+  }, [clearConnectTimers, clearResponseTimeout]);
 
   const sendMessage = useCallback(
     (content: string, displayContent?: string) => {
       if (!content.trim()) return;
-      if (!wsRef.current || wsRef.current.readyState() !== WebSocket.OPEN) {
+      const socket = wsRef.current;
+      const needsConnection =
+        !socket || socket.readyState() !== WebSocket.OPEN;
+      if (needsConnection) {
         pendingMessageRef.current = content;
+        setConnectionError(SERVICE_STARTING_MESSAGE);
         connect();
       } else {
-        wsRef.current.send(content);
+        socket.send(content);
       }
 
       setMessages((prev) => [
@@ -285,15 +352,22 @@ export function useChat({ path, historyPath, wsOptions }: UseChatOptions) {
         {
           id: uuid(),
           role: 'assistant',
-          content: '',
+          content: needsConnection ? SERVICE_STARTING_MESSAGE : '',
           timestamp: new Date(),
           _streaming: true,
         },
       ]);
       currentToolCallsRef.current = [];
+      isStreamingRef.current = true;
       setIsStreaming(true);
+      clearResponseTimeout();
+      responseTimeoutRef.current = setTimeout(() => {
+        const socket = wsRef.current;
+        finishWithError('本次连接等待超时，请重新发送。');
+        socket?.close();
+      }, RESPONSE_WAIT_TIMEOUT_MS);
     },
-    [connect],
+    [connect, clearResponseTimeout, finishWithError],
   );
 
   const clearHistory = useCallback(async () => {
@@ -312,13 +386,11 @@ export function useChat({ path, historyPath, wsOptions }: UseChatOptions) {
     return () => {
       mountedRef.current = false;
       prevOptionsRef.current = '';
-      if (connectCheckRef.current) {
-        clearInterval(connectCheckRef.current);
-        connectCheckRef.current = null;
-      }
+      clearConnectTimers();
+      clearResponseTimeout();
       wsRef.current?.close();
     };
-  }, []);
+  }, [clearConnectTimers, clearResponseTimeout]);
 
   return {
     messages,

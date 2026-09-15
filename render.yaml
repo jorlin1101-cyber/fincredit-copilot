@@ -96,3 +96,5 @@ services:
         value: 融安住房金融（虚构演示机构）
       - key: AGENT_NAME
         value: 小融
+      - key: API_WAKE_URL
+        value: https://fincredit-demo-api.onrender.com/health/
