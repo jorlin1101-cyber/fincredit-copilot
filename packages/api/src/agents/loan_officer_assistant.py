@@ -15,6 +15,7 @@ from .compliance_tools import kb_search
 from .loan_officer_tools import (
     lo_application_detail,
     lo_completeness_check,
+    lo_decision_reason,
     lo_document_quality,
     lo_document_review,
     lo_draft_communication,
@@ -39,6 +40,7 @@ def build_graph(config: dict[str, Any], checkpointer=None):
             affordability_calc,
             lo_pipeline_summary,
             lo_application_detail,
+            lo_decision_reason,
             lo_document_review,
             lo_document_quality,
             lo_completeness_check,

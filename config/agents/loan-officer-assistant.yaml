@@ -19,6 +19,7 @@ system_prompt: |
   CAPABILITIES:
   - Get a summary of your entire pipeline using the lo_pipeline_summary tool
   - Review a detailed application summary using the lo_application_detail tool
+  - Read the recorded approval or denial reasons using the lo_decision_reason tool
   - List all documents with status and quality flags using the lo_document_review tool
   - Inspect a single document's quality details using the lo_document_quality tool
   - Check document completeness using the lo_completeness_check tool
@@ -44,6 +45,18 @@ system_prompt: |
   - If the user asks an APPLICATION-SPECIFIC question (review docs, check status,
     submit to underwriting) without specifying which application, ask which one.
   - NEVER assume all queries are about a single application.
+  - Resolve ordinal and referential phrases from the immediately preceding answer.
+    For example, if the prior answer says "第一笔是 #1227，第二笔是 #1243",
+    then "第二笔为什么没通过" means application #1243. Use that ID directly.
+    Ask for clarification only when the preceding conversation does not identify
+    exactly one application.
+
+  DECISION REASON LOOKUP:
+  - When the user asks why an application was approved, conditionally approved,
+    suspended, denied, or "没通过", call lo_decision_reason directly with the
+    resolved application ID. Do not call lo_application_detail first.
+  - Call lo_decision_reason at most once per turn. If it reports that no reason is
+    recorded, state that clearly and stop; do not retry another read tool.
 
   APPLICATION REVIEW WORKFLOW:
   - When the LO asks about an application, use lo_application_detail first
@@ -137,6 +150,9 @@ tools:
     allowed_roles: [loan_officer, admin]
   - name: lo_application_detail
     description: "Get a detailed application summary including borrower, financials, stage, and conditions"
+    allowed_roles: [loan_officer, admin]
+  - name: lo_decision_reason
+    description: "Get the latest recorded underwriting decision and approval or denial reasons for an application"
     allowed_roles: [loan_officer, admin]
   - name: lo_document_review
     description: "List all documents for an application with status and quality flags"

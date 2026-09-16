@@ -14,6 +14,7 @@ from db.enums import ApplicationStage, UserRole
 from src.agents.loan_officer_tools import (
     _user_context_from_state,
     lo_application_detail,
+    lo_decision_reason,
     lo_draft_communication,
     lo_mark_resubmission,
     lo_send_communication,
@@ -102,6 +103,96 @@ class TestLoApplicationDetail:
         assert "3/4" in result  # doc counts
         mock_get_app.assert_awaited_once()
         mock_get_status.assert_awaited_once()
+
+
+class TestLoDecisionReason:
+    """Decision-reason lookup should terminate with a concrete answer."""
+
+    @pytest.mark.asyncio
+    async def test_returns_recorded_denial_reasons(self):
+        state = {"user_id": "lo-james", "user_role": "loan_officer"}
+        decisions = [
+            {
+                "application_id": 1243,
+                "decision_type": "denied",
+                "denial_reasons": ["债务收入比超过内部复核线", "可验证资产不足"],
+                "rationale": "综合现有材料，本次申请未达到演示授信规则。",
+            }
+        ]
+
+        with (
+            patch(
+                "src.agents.loan_officer_tools.get_decisions",
+                new_callable=AsyncMock,
+                return_value=decisions,
+            ) as mock_get_decisions,
+            patch("src.agents.loan_officer_tools.SessionLocal") as mock_session_cls,
+        ):
+            session = AsyncMock()
+            mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=session)
+            mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+
+            result = await lo_decision_reason.ainvoke(
+                {"application_id": 1243, "state": state}
+            )
+
+        assert "申请 #1243 最近一次审批结果：未通过" in result
+        assert "债务收入比超过内部复核线" in result
+        assert "可验证资产不足" in result
+        assert "综合现有材料" in result
+        mock_get_decisions.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_stops_when_reason_is_not_recorded(self):
+        state = {"user_id": "lo-james", "user_role": "loan_officer"}
+        decisions = [
+            {
+                "application_id": 1243,
+                "decision_type": "denied",
+                "denial_reasons": None,
+                "rationale": None,
+            }
+        ]
+
+        with (
+            patch(
+                "src.agents.loan_officer_tools.get_decisions",
+                new_callable=AsyncMock,
+                return_value=decisions,
+            ),
+            patch("src.agents.loan_officer_tools.SessionLocal") as mock_session_cls,
+        ):
+            session = AsyncMock()
+            mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=session)
+            mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+
+            result = await lo_decision_reason.ainvoke(
+                {"application_id": 1243, "state": state}
+            )
+
+        assert "系统中未记录更具体的审批原因" in result
+
+    @pytest.mark.asyncio
+    async def test_hides_out_of_scope_application(self):
+        state = {"user_id": "lo-james", "user_role": "loan_officer"}
+
+        with (
+            patch(
+                "src.agents.loan_officer_tools.get_decisions",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            patch("src.agents.loan_officer_tools.SessionLocal") as mock_session_cls,
+        ):
+            session = AsyncMock()
+            mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=session)
+            mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+
+            result = await lo_decision_reason.ainvoke(
+                {"application_id": 9999, "state": state}
+            )
+
+        assert result == "未找到申请 #9999，或您没有查看权限。"
 
 
 # ---------------------------------------------------------------------------

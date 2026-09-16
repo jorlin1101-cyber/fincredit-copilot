@@ -418,7 +418,10 @@ async def run_agent_stream(
                 await _send(
                     {
                         "type": "error",
-                        "content": "本次查询需要的步骤过多，已安全停止。请缩小查询范围后重试。",
+                        "content": (
+                            "小融在多次读取后仍未完成本次查询，系统已停止重复尝试。"
+                            "请稍后重试；如查询具体申请，可同时写明申请编号。"
+                        ),
                     }
                 )
                 continue

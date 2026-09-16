@@ -37,6 +37,7 @@ from ..services.calculator import compute_monthly_payment
 from ..services.completeness import check_completeness, check_underwriting_readiness
 from ..services.condition import get_conditions, parse_quality_flags
 from ..services.credit_bureau import get_credit_bureau_service
+from ..services.decision import get_decisions
 from ..services.document import get_document, list_documents, update_document_status
 from ..services.prequalification import evaluate_prequalification
 from ..services.products import PRODUCTS
@@ -245,6 +246,59 @@ async def lo_application_detail(
             lines.append("下一步事项：")
             for action in status.pending_actions:
                 lines.append(f"  - {action.description}")
+
+    return "\n".join(lines)
+
+
+@tool
+async def lo_decision_reason(
+    application_id: int,
+    state: Annotated[dict, InjectedState],
+) -> str:
+    """Get the latest recorded underwriting decision and its reasons.
+
+    Use this read-only tool when a loan officer asks why an application was
+    approved, conditionally approved, suspended, or denied.
+
+    Args:
+        application_id: The loan application ID to inspect.
+    """
+    user = _user_context_from_state(state)
+    async with SessionLocal() as session:
+        decisions = await get_decisions(session, user, application_id)
+
+    if decisions is None:
+        return f"未找到申请 #{application_id}，或您没有查看权限。"
+    if not decisions:
+        return (
+            f"申请 #{application_id} 暂无审批决定记录，系统中未记录具体通过或未通过原因。"
+        )
+
+    latest = decisions[-1]
+    decision_type = latest.get("decision_type") or "unknown"
+    decision_labels = {
+        "approved": "通过",
+        "conditional_approval": "有条件通过",
+        "denied": "未通过",
+        "suspended": "暂缓",
+    }
+    lines = [
+        f"申请 #{application_id} 最近一次审批结果："
+        f"{decision_labels.get(decision_type, decision_type)}。"
+    ]
+
+    reasons = latest.get("denial_reasons") or []
+    if reasons:
+        lines.append("记录的未通过原因：")
+        for index, reason in enumerate(reasons, 1):
+            lines.append(f"{index}. {reason}")
+
+    rationale = str(latest.get("rationale") or "").strip()
+    if rationale:
+        lines.append(f"审批说明：{rationale}")
+
+    if not reasons and not rationale:
+        lines.append("系统中未记录更具体的审批原因，请向有权审批人员核实。")
 
     return "\n".join(lines)
 
