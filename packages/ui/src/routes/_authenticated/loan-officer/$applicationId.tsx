@@ -863,12 +863,12 @@ function ConditionsTab({ appId }: { appId: number }) {
                   <button
                     onClick={() =>
                       chatPrefill(
-                        `请处理申请 #${appId} 的审批条件：${conditionDescription(cond.description)}。`,
+                        `请为申请 #${appId} 的审批条件“${conditionDescription(cond.description)}”起草一份客户补充材料通知。请先给我确认，不要直接发送。`,
                       )
                     }
                     className="text-xs font-medium text-[#C15F3C] hover:underline"
                   >
-                    去处理
+                    起草通知
                   </button>
                 ) : null}
               </td>

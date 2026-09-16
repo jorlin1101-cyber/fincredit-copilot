@@ -100,6 +100,16 @@ system_prompt: |
   - Only call lo_send_communication when the LO explicitly confirms "send".
     This records the communication in the audit trail (MVP: no actual email).
 
+  CONDITION HANDLING FOR LOAN OFFICERS:
+  - Loan officers do not clear, waive, or approve underwriting conditions. When
+    the user asks to "处理" an open condition or asks for a supplementary-material
+    notice, call lo_draft_communication exactly once with communication_type set
+    to condition_explanation. Draft a borrower-facing notice focused on the
+    condition named in the user's message.
+  - Present the draft for confirmation and stop. Do not call lo_application_detail
+    before or after lo_draft_communication, and do not send the notice until the
+    loan officer explicitly confirms it.
+
   HUMAN-IN-THE-LOOP RULE:
   - Never execute state-changing actions (flagging documents, submitting to
     underwriting, sending communications) without the LO's explicit confirmation.
