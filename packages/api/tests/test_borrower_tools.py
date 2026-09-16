@@ -2,7 +2,7 @@
 """Tests for borrower assistant LangGraph tools."""
 
 from datetime import date, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 from db.enums import DocumentType
 
@@ -13,6 +13,7 @@ from src.agents.borrower_tools import (
     disclosure_status,
     document_completeness,
     document_processing_status,
+    list_my_applications,
     regulatory_deadlines,
 )
 from src.schemas.completeness import CompletenessResponse, DocumentRequirement
@@ -43,6 +44,85 @@ def test_user_context_builds_admin_scope():
     ctx = _user_context_from_state(_state(role="admin"))
     assert ctx.data_scope.full_pipeline is True
     assert ctx.data_scope.own_data_only is False
+
+
+# ---------------------------------------------------------------------------
+# list_my_applications tool
+# ---------------------------------------------------------------------------
+
+
+@patch("src.agents.borrower_tools.SessionLocal")
+@patch("src.agents.borrower_tools.app_service")
+async def test_list_my_applications_defaults_to_current_page_application(
+    mock_app_service, mock_session_cls
+):
+    """A status question from the borrower dashboard must stay on its current app."""
+    current = MagicMock()
+    current.id = 1226
+    current.stage.value = "clear_to_close"
+    current.loan_amount = 2450000
+    current.property_address = "成都市高新区天府三街演示家园8栋1单元1204号"
+    mock_app_service.get_application = AsyncMock(return_value=current)
+    mock_app_service.list_applications = AsyncMock()
+
+    session = AsyncMock()
+    mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=session)
+    mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+
+    result = await list_my_applications.ainvoke(
+        {
+            "state": {
+                **_state(),
+                "application_id": 1226,
+            }
+        }
+    )
+
+    assert "当前页面对应的申请" in result
+    assert "申请 #1226" in result
+    assert "您共有" not in result
+    mock_app_service.get_application.assert_awaited_once_with(session, ANY, 1226)
+    mock_app_service.list_applications.assert_not_awaited()
+
+
+@patch("src.agents.borrower_tools.SessionLocal")
+@patch("src.agents.borrower_tools.app_service")
+async def test_list_my_applications_can_include_all_when_explicitly_requested(
+    mock_app_service, mock_session_cls
+):
+    """The full list remains available only through the explicit include_all flag."""
+    first = MagicMock()
+    first.id = 1217
+    first.stage.value = "application"
+    first.loan_amount = 1800000
+    first.property_address = "演示地址一"
+    second = MagicMock()
+    second.id = 1226
+    second.stage.value = "clear_to_close"
+    second.loan_amount = 2450000
+    second.property_address = "演示地址二"
+    mock_app_service.list_applications = AsyncMock(
+        return_value=([first, second], 2)
+    )
+
+    session = AsyncMock()
+    mock_session_cls.return_value.__aenter__ = AsyncMock(return_value=session)
+    mock_session_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+
+    result = await list_my_applications.ainvoke(
+        {
+            "include_all": True,
+            "state": {
+                **_state(),
+                "application_id": 1226,
+            },
+        }
+    )
+
+    assert "您共有 2 笔住房贷款申请" in result
+    assert "申请 #1217" in result
+    assert "申请 #1226" in result
+    mock_app_service.list_applications.assert_awaited_once()
 
 
 # ---------------------------------------------------------------------------

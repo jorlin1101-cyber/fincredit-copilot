@@ -45,6 +45,7 @@ class AgentState(MessagesState):
     user_id: str
     user_email: str
     user_name: str
+    application_id: int | None
     tool_allowed_roles: dict[str, list[str]]
     decision_proposals: dict
 

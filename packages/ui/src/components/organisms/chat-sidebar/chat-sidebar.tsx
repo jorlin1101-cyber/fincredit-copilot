@@ -149,10 +149,13 @@ export function ChatSidebar() {
     const match = window.location.pathname.match(
       /\/(?:loan-officer|underwriter)\/(\d+)/,
     );
-    if (!match) return msg;
-    const appId = match[1];
-    if (msg.includes(`#${appId}`) || msg.includes(`application ${appId}`)) return msg;
-    return `[关于申请编号 #${appId}] ${msg}`;
+    const currentAppId =
+      match?.[1] ??
+      (window.location.pathname.startsWith('/borrower') ? appId : undefined);
+    if (!currentAppId) return msg;
+    if (msg.includes(`#${currentAppId}`) || msg.includes(`application ${currentAppId}`))
+      return msg;
+    return `[关于申请编号 #${currentAppId}] ${msg}`;
   };
 
   const handleSend = () => {

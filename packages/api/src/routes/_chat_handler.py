@@ -135,6 +135,7 @@ async def run_agent_stream(
     user_id: str,
     user_email: str = "",
     user_name: str = "",
+    application_id: int | None = None,
     use_checkpointer: bool,
     messages_fallback: list | None,
     pii_mask: bool = False,
@@ -152,6 +153,7 @@ async def run_agent_stream(
         session_id: Session ID for audit + LangFuse correlation.
         user_role: Role string for the agent state.
         user_id: User ID string for the agent state.
+        application_id: Application currently open in the authenticated UI, if any.
         use_checkpointer: Whether checkpoint persistence is active.
         messages_fallback: Mutable list for local message tracking when
             checkpointer is unavailable. Pass ``None`` when using checkpointer.
@@ -213,6 +215,7 @@ async def run_agent_stream(
                 "user_id": user_id,
                 "user_email": user_email,
                 "user_name": user_name,
+                "application_id": application_id,
             },
             config=config,
             version="v2",
@@ -596,6 +599,7 @@ def create_authenticated_chat_router(
             user_id=user.user_id,
             user_email=user.email or "",
             user_name=user.name or "",
+            application_id=app_id,
             use_checkpointer=use_checkpointer,
             messages_fallback=messages_fallback,
             pii_mask=getattr(user.data_scope, "pii_mask", False),

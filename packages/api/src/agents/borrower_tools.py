@@ -108,16 +108,38 @@ def _user_context_from_state(state: dict):
 @tool
 async def list_my_applications(
     state: Annotated[dict, InjectedState],
+    include_all: bool = False,
 ) -> str:
-    """List the borrower's mortgage applications. Use this to discover the borrower's application IDs before calling other tools that require an application_id."""
+    """List the borrower's mortgage applications.
+
+    When the borrower is viewing an application page, the default result is
+    restricted to that application. Set ``include_all`` only when the borrower
+    explicitly asks to see every application linked to their account.
+
+    Args:
+        include_all: Whether to list every application owned by the borrower.
+    """
     user = _user_context_from_state(state)
+    current_application_id = state.get("application_id")
     async with SessionLocal() as session:
-        apps, total = await app_service.list_applications(session, user, limit=10)
+        if current_application_id is not None and not include_all:
+            current = await app_service.get_application(
+                session, user, int(current_application_id)
+            )
+            apps = [current] if current is not None else []
+            total = len(apps)
+        else:
+            apps, total = await app_service.list_applications(session, user, limit=10)
 
     if total == 0:
+        if current_application_id is not None and not include_all:
+            return "未找到当前页面对应的申请，或您没有查看权限。"
         return "您目前还没有住房贷款申请。需要我引导您开始填写吗？"
 
-    lines = [f"您共有 {total} 笔住房贷款申请："]
+    if current_application_id is not None and not include_all:
+        lines = ["当前页面对应的申请："]
+    else:
+        lines = [f"您共有 {total} 笔住房贷款申请："]
     for app in apps:
         stage = format_enum_label(app.stage.value)
         loan_amt = f"¥{app.loan_amount:,.0f}" if app.loan_amount else "金额待补充"
