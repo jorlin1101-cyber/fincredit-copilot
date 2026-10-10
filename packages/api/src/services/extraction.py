@@ -468,11 +468,16 @@ class ExtractionService:
     async def _request_validated_completion(self, messages: list[dict], tier: str) -> dict | None:
         """Request strict JSON and make at most one repair attempt."""
         request_messages = list(messages)
+        request_options = {}
+        if tier == "vision":
+            # Qwen3.6-Flash requires non-thinking mode for strict JSON output.
+            request_options["extra_body"] = {"enable_thinking": False}
         for attempt in range(2):
             raw = await get_completion(
                 request_messages,
                 tier=tier,
                 response_format={"type": "json_object"},
+                **request_options,
             )
             try:
                 validated = LLMExtractionResponse.model_validate_json(_strip_json_fences(raw))

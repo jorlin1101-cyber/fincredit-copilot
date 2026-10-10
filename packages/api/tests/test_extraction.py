@@ -336,18 +336,29 @@ class TestLlmExtraction:
         assert result["extractions"][0]["field_name"] == "employer_name"
 
     @pytest.mark.asyncio
-    async def test_invalid_schema_is_repaired_once(self):
+    @pytest.mark.parametrize("tier", ["llm", "vision"])
+    async def test_invalid_schema_is_repaired_once(self, tier):
         svc = ExtractionService()
         invalid = '{"extractions": [{"field_name": "wages"}]}'
         with patch("src.services.extraction.get_completion", new_callable=AsyncMock) as mock_llm:
             mock_llm.side_effect = [invalid, _llm_response()]
-            result = await svc._extract_via_llm(
-                "Acme Corp reported wages of 85000",
-                "w2",
-            )
+            if tier == "vision":
+                result = await svc._extract_image_via_llm(b"test-image", "image/png", "w2")
+            else:
+                result = await svc._extract_via_llm(
+                    "Acme Corp reported wages of 85000",
+                    "w2",
+                )
 
         assert result is not None
         assert mock_llm.call_count == 2
+        for call in mock_llm.call_args_list:
+            assert call.kwargs["tier"] == tier
+            assert call.kwargs["response_format"] == {"type": "json_object"}
+            if tier == "vision":
+                assert call.kwargs["extra_body"] == {"enable_thinking": False}
+            else:
+                assert "extra_body" not in call.kwargs
 
     @pytest.mark.asyncio
     async def test_text_page_provenance_overrides_model_page(self):

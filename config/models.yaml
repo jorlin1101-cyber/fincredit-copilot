@@ -17,8 +17,8 @@ models:
     api_key: "${LLM_API_KEY:-}"
   vision:
     provider: openai_compatible
-    model_name: "${VISION_MODEL:-qwen3-vl-flash}"
-    description: "Qwen-VL model for scanned Chinese document extraction"
+    model_name: "${VISION_MODEL:-qwen3.6-flash}"
+    description: "Qwen vision model for scanned Chinese document extraction"
     endpoint: "${VISION_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}"
     api_key: "${VISION_API_KEY:-}"
   embedding:

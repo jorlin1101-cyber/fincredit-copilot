@@ -139,7 +139,7 @@ class Settings(BaseSettings):
 
     # -- Vision model (optional, falls back to main LLM when unset) --
     VISION_MODEL: str | None = Field(
-        default="qwen3-vl-flash",
+        default="qwen3.6-flash",
         description="Vision-capable model name. Defaults to LLM_MODEL if not set.",
     )
     VISION_BASE_URL: str | None = Field(

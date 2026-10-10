@@ -47,6 +47,7 @@ async def check_text(model: dict) -> None:
         ],
         tool_choice={"type": "function", "function": {"name": "status"}},
         max_tokens=32,
+        extra_body={"enable_thinking": False},
     )
     if not response.choices[0].message.tool_calls:
         raise RuntimeError("Text model responded but did not return the forced tool call")
@@ -69,6 +70,7 @@ async def check_vision(model: dict) -> None:
             }
         ],
         max_tokens=16,
+        extra_body={"enable_thinking": False},
     )
     if not response.choices[0].message.content:
         raise RuntimeError("Vision model returned empty content")

@@ -74,7 +74,7 @@ services:
       LLM_MODEL: "${LLM_MODEL:-qwen3.7-plus}"
       CHAT_RESPONSE_TIMEOUT_SECONDS: "${CHAT_RESPONSE_TIMEOUT_SECONDS:-120}"
       CHAT_AGENT_RECURSION_LIMIT: "${CHAT_AGENT_RECURSION_LIMIT:-12}"
-      VISION_MODEL: "${VISION_MODEL:-qwen3-vl-flash}"
+      VISION_MODEL: "${VISION_MODEL:-qwen3.6-flash}"
       VISION_BASE_URL: "${VISION_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}"
       VISION_API_KEY: "${VISION_API_KEY:-}"
       EMBEDDING_PROVIDER: "${EMBEDDING_PROVIDER:-openai_compatible}"
