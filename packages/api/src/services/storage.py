@@ -7,6 +7,8 @@ via ``init_storage_service()``.
 """
 
 import asyncio
+import base64
+import hashlib
 import logging
 import os
 from functools import partial
@@ -72,6 +74,8 @@ class StorageService:
                 Key=object_key,
                 Body=file_data,
                 ContentType=content_type,
+                # Send the checksum in a header, avoiding proxy-incompatible trailers.
+                ChecksumSHA256=base64.b64encode(hashlib.sha256(file_data).digest()).decode("ascii"),
             ),
         )
         return object_key
