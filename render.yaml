@@ -8,13 +8,12 @@ databases:
 
 services:
   - type: web
-    name: fincredit-demo-minio
-    runtime: image
+    name: fincredit-demo-storage
+    runtime: docker
     plan: free
     region: singapore
-    image:
-      url: docker.io/minio/minio:latest
-    dockerCommand: minio server /tmp/fincredit-data --address :10000
+    dockerfilePath: ./packages/storage/Containerfile
+    dockerContext: .
     healthCheckPath: /minio/health/live
     envVars:
       - key: MINIO_ROOT_USER
@@ -46,20 +45,20 @@ services:
         fromDatabase:
           name: fincredit-demo-db-20261010
           property: connectionString
+      # Free web services accept public HTTPS traffic, not private inbound traffic.
       - key: S3_HOSTPORT
-        fromService:
-          type: web
-          name: fincredit-demo-minio
-          property: hostport
+        value: ""
+      - key: S3_ENDPOINT
+        value: https://fincredit-demo-storage.onrender.com
       - key: S3_ACCESS_KEY
         fromService:
           type: web
-          name: fincredit-demo-minio
+          name: fincredit-demo-storage
           envVarKey: MINIO_ROOT_USER
       - key: S3_SECRET_KEY
         fromService:
           type: web
-          name: fincredit-demo-minio
+          name: fincredit-demo-storage
           envVarKey: MINIO_ROOT_PASSWORD
       - key: MCP_HOSTPORT
         fromService:
