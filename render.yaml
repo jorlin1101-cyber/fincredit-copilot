@@ -1,9 +1,10 @@
 databases:
-  - name: fincredit-demo-db
+  - name: fincredit-demo-db-20261010
     plan: free
     region: singapore
-    databaseName: fincredit
-    user: fincredit
+    databaseName: fincredit_demo_db_20261010
+    user: fincredit_demo_db_20261010_user
+    postgresMajorVersion: "18"
 
 services:
   - type: web
@@ -43,7 +44,7 @@ services:
     envVars:
       - key: DATABASE_CONNECTION_STRING
         fromDatabase:
-          name: fincredit-demo-db
+          name: fincredit-demo-db-20261010
           property: connectionString
       - key: S3_HOSTPORT
         fromService:
