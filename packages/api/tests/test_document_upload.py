@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from src.middleware.auth import get_current_user
 from src.routes.documents import router
 from src.schemas.auth import DataScope, UserContext
+from src.services.storage import StorageUnavailableError
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -103,6 +104,36 @@ def _upload_file(client, content_type="application/pdf", filename="test.pdf", da
         files={"file": (filename, BytesIO(data), content_type)},
         data={"doc_type": "w2"},
     )
+
+
+def test_upload_storage_failure_returns_503_and_schedules_recovery():
+    user = _make_user(UserRole.BORROWER)
+    app, session = _make_upload_app(user)
+    session.add = MagicMock()
+    app.state.dependency_recovery = MagicMock()
+    with patch("src.services.document.get_storage_service", side_effect=StorageUnavailableError("offline")):
+        response = _upload_file(TestClient(app))
+    assert response.status_code == 503
+    session.rollback.assert_awaited_once()
+    app.state.dependency_recovery.request_recovery.assert_called_once_with("Object storage", failed=True)
+
+
+def test_upload_existing_client_missing_bucket_also_requests_recovery():
+    from botocore.exceptions import ClientError
+
+    user = _make_user(UserRole.BORROWER)
+    app, session = _make_upload_app(user)
+    session.add = MagicMock()
+    app.state.dependency_recovery = MagicMock()
+    storage = MagicMock()
+    storage.upload_file = AsyncMock(
+        side_effect=ClientError({"Error": {"Code": "NoSuchBucket"}}, "PutObject")
+    )
+    with patch("src.services.document.get_storage_service", return_value=storage):
+        response = _upload_file(TestClient(app))
+    assert response.status_code == 503
+    session.rollback.assert_awaited_once()
+    app.state.dependency_recovery.request_recovery.assert_called_once_with("Object storage", failed=True)
 
 
 # ---------------------------------------------------------------------------

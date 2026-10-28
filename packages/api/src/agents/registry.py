@@ -115,6 +115,12 @@ def clear_agent_cache() -> None:
     _last_check.clear()
 
 
+def invalidate_agent_cache(agent_name: str) -> None:
+    """Rebuild one graph on its next use after its dependencies change."""
+    _graphs.pop(agent_name, None)
+    _last_check.pop(agent_name, None)
+
+
 def list_agents() -> list[str]:
     """Return names of all available agents (based on YAML files on disk)."""
     if not _AGENTS_CONFIG_DIR.exists():
