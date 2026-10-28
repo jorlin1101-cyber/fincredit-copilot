@@ -1,6 +1,7 @@
 # This project was developed with assistance from AI tools.
 """FastAPI application entry point."""
 
+import asyncio
 import logging
 import uuid
 from contextlib import asynccontextmanager
@@ -71,8 +72,9 @@ async def lifespan(_app: FastAPI):
     init_mlflow_tracing()
     log_observability_status()
     from .services.conversation import get_conversation_service
+    from .services.dependency_recovery import DependencyRecovery
     from .services.extraction import init_extraction_service
-    from .services.storage import init_storage_service
+    from .services.storage import async_init_storage_service, set_storage_failure_callback
 
     conversation_service = get_conversation_service()
     await conversation_service.initialize(settings.DATABASE_URL)
@@ -81,49 +83,76 @@ async def lifespan(_app: FastAPI):
     # still waking up (or temporarily unavailable on a free demo instance).
     # The document endpoints will return a clear service error until storage
     # is restored, while health checks and the rest of the demo remain usable.
+    storage_unavailable = False
+    mcp_unavailable = False
+
+    async def initialize_storage() -> object:
+        return await async_init_storage_service(settings)
+
+    async def initialize_mcp() -> None:
+        await init_mcp_client(
+            settings.MCP_RISK_SERVER_URL,
+            predictive_model_url=settings.PREDICTIVE_MODEL_MCP_URL,
+        )
+        # The graph captures its tools at build time and may have been built
+        # while MCP was unavailable. Rebuild it on the next request.
+        from .agents.registry import invalidate_agent_cache
+
+        invalidate_agent_cache("underwriter-assistant")
+
     try:
-        init_storage_service(settings)
+        await initialize_storage()
     except Exception as exc:  # pragma: no cover - depends on external S3
         logger.warning(
             "Object storage unavailable; continuing without document storage: %s",
             exc,
         )
+        storage_unavailable = True
     init_extraction_service()
     try:
-        await init_mcp_client(
-            settings.MCP_RISK_SERVER_URL,
-            predictive_model_url=settings.PREDICTIVE_MODEL_MCP_URL,
-        )
+        await asyncio.wait_for(initialize_mcp(), timeout=45.0)
     except Exception as exc:  # pragma: no cover - depends on external MCP
         # Render's free MCP service may be cold or temporarily unavailable.
         # Keep the API usable for health, application, and non-tool flows;
-        # tool-backed risk actions become available after the next restart.
+        # Retry in the background so tool-backed actions can recover.
         logger.warning(
             "MCP service unavailable; continuing without MCP tools: %s",
             exc,
         )
+        mcp_unavailable = True
     await _auto_seed()
+
+    recovery = DependencyRecovery()
+    # A timed-out worker thread cannot be stopped. Let each bounded boto
+    # attempt finish before starting another to avoid overlapping writes.
+    recovery.register("Object storage", initialize_storage, failed=storage_unavailable, timeout=None)
+    recovery.register("MCP", initialize_mcp, failed=mcp_unavailable)
+    _app.state.dependency_recovery = recovery
+    set_storage_failure_callback(lambda: recovery.request_recovery("Object storage", failed=True))
+    recovery.request_recovery("Object storage")
+    recovery.request_recovery("MCP")
 
     a2a_task = None
     if settings.KAGENTI_ENABLED:
-        import asyncio
-
         from .a2a_server import run_all_a2a_servers
 
         logger.info("Kagenti A2A integration enabled -- starting A2A servers")
         a2a_task = asyncio.create_task(run_all_a2a_servers(), name="a2a-servers")
 
-    yield
-
-    if a2a_task and not a2a_task.done():
-        a2a_task.cancel()
-        try:
-            await a2a_task
-        except asyncio.CancelledError:
-            pass
-    await shutdown_mcp_client()
-    await conversation_service.shutdown()
-    logger.info("Shutdown complete")
+    try:
+        yield
+    finally:
+        set_storage_failure_callback(None)
+        await recovery.shutdown()
+        if a2a_task and not a2a_task.done():
+            a2a_task.cancel()
+            try:
+                await a2a_task
+            except asyncio.CancelledError:
+                pass
+        await shutdown_mcp_client()
+        await conversation_service.shutdown()
+        logger.info("Shutdown complete")
 
 
 app = FastAPI(

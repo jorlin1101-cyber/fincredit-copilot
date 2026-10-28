@@ -7,6 +7,7 @@ Group related settings together; each group becomes a section future PRs extend.
 """
 
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -176,12 +177,14 @@ class Settings(BaseSettings):
         description="Relative difference that triggers an income consistency issue.",
     )
 
-    # -- Storage (S3 / MinIO) --
+    # -- Storage (S3 / MinIO / Cloudflare R2) --
     S3_ENDPOINT: str = "http://localhost:9090"
     S3_ACCESS_KEY: str = "minio"
     S3_SECRET_KEY: str = "miniosecret"
     S3_BUCKET: str = "documents"
     S3_REGION: str = "us-east-1"
+    S3_UPLOAD_CHECKSUM: Literal["sha256", "md5"] = "sha256"
+    S3_AUTO_CREATE_BUCKET: bool = True
     UPLOAD_MAX_SIZE_MB: int = 50
 
     # -- MCP --

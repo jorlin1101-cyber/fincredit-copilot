@@ -4,9 +4,20 @@
 import asyncio
 import logging
 
+from botocore.exceptions import BotoCoreError, ClientError
 from db import Document, get_db
 from db.enums import DocumentType, UserRole
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    status,
+)
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -32,6 +43,7 @@ from ..services.completeness import check_completeness
 from ..services.document import DocumentAccessDenied, DocumentUploadError
 from ..services.extraction import get_extraction_service
 from ..services.extraction_review import correct_extraction, list_corrections
+from ..services.storage import StorageUnavailableError
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +84,7 @@ _UPLOAD_ROLES = (
 async def upload_document(
     application_id: int,
     user: CurrentUser,
+    request: Request,
     file: UploadFile = File(...),
     doc_type: DocumentType = Form(...),
     session: AsyncSession = Depends(get_db),
@@ -103,6 +116,15 @@ async def upload_document(
             status_code=413,
             detail=str(exc),
         ) from exc
+    except (StorageUnavailableError, BotoCoreError, ClientError) as exc:
+        # Preserve the underlying S3 error in logs and roll back the document
+        # record before scheduling a bounded recovery attempt.
+        logger.warning("Document storage unavailable during upload: %s", exc)
+        await session.rollback()
+        recovery = getattr(request.app.state, "dependency_recovery", None)
+        if recovery is not None:
+            recovery.request_recovery("Object storage", failed=True)
+        raise HTTPException(status_code=503, detail="文档存储暂时不可用，请稍后重试。") from exc
 
     if doc is None:
         raise HTTPException(

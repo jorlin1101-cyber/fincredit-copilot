@@ -10,6 +10,8 @@ import json
 import logging
 import re
 import uuid
+from collections.abc import Callable
+from typing import Any
 
 import jwt as pyjwt
 from db.enums import UserRole
@@ -140,6 +142,7 @@ async def run_agent_stream(
     messages_fallback: list | None,
     pii_mask: bool = False,
     system_context: str = "",
+    graph_provider: Callable[[], Any] | None = None,
 ) -> None:
     """Run the agent streaming loop over an accepted WebSocket.
 
@@ -341,6 +344,16 @@ async def run_agent_stream(
                 continue
 
             user_text = data["content"]
+
+            # An established underwriter connection must pick up tools loaded
+            # after it was opened. Keep the same conversation checkpointer.
+            if graph_provider is not None:
+                try:
+                    graph = graph_provider()
+                except Exception:
+                    logger.exception("Failed to refresh agent graph")
+                    await _send({"type": "error", "content": "智能助手暂时不可用，请稍后重试。"})
+                    continue
 
             # Record inbound message metric
             chat_messages_total.labels(persona=persona, direction="inbound").inc()
@@ -593,6 +606,12 @@ def create_authenticated_chat_router(
         # Build application context for authenticated agents
         system_context = await _build_application_context(user, app_id)
 
+        def refresh_underwriter_graph():
+            recovery = getattr(ws.app.state, "dependency_recovery", None)
+            if recovery is not None:
+                recovery.request_recovery("MCP")
+            return get_agent(agent_name, checkpointer=checkpointer)
+
         await run_agent_stream(
             ws,
             graph,
@@ -607,6 +626,7 @@ def create_authenticated_chat_router(
             messages_fallback=messages_fallback,
             pii_mask=getattr(user.data_scope, "pii_mask", False),
             system_context=system_context,
+            graph_provider=(refresh_underwriter_graph if agent_name == "underwriter-assistant" else None),
         )
 
     @router.get(
