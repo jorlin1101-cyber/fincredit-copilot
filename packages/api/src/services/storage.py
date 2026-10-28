@@ -209,3 +209,8 @@ def get_storage_service() -> StorageService:
         _signal_storage_failure(exc)
         raise exc
     return _service
+
+
+def is_storage_initialized() -> bool:
+    """Report only in-process initialization state, without contacting S3."""
+    return _service is not None
