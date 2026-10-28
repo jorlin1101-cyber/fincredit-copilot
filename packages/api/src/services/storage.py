@@ -1,5 +1,5 @@
 # This project was developed with assistance from AI tools.
-"""S3-compatible object storage service backed by MinIO.
+"""S3-compatible object storage for MinIO, AWS S3, or Cloudflare R2.
 
 Uses boto3 synchronous client run in a thread-pool executor for async
 compatibility. The module exposes a singleton initialised at app startup
@@ -13,6 +13,7 @@ import logging
 import os
 from collections.abc import Callable
 from functools import partial
+from typing import Literal
 
 import boto3
 from botocore.config import Config as BotoConfig
@@ -63,8 +64,14 @@ class StorageService:
         secret_key: str,
         bucket: str,
         region: str = "us-east-1",
+        *,
+        upload_checksum: Literal["sha256", "md5"] = "sha256",
+        auto_create_bucket: bool = True,
     ):
         self._bucket = bucket
+        if upload_checksum not in {"sha256", "md5"}:
+            raise ValueError("Unsupported upload checksum algorithm")
+        self._upload_checksum = upload_checksum
         self._client = boto3.client(
             "s3",
             endpoint_url=endpoint,
@@ -76,23 +83,26 @@ class StorageService:
                 connect_timeout=5,
                 read_timeout=10,
                 retries={"total_max_attempts": 2, "mode": "standard"},
+                # We supply an explicit integrity header below. Avoid the
+                # SDK's optional CRC/trailer encoding on S3-compatible hosts.
+                request_checksum_calculation="when_required",
                 s3={
                     "addressing_style": "path",
                     "use_accelerate_endpoint": False,
                 },
             ),
         )
-        self._ensure_bucket()
+        self._ensure_bucket(auto_create=auto_create_bucket)
 
-    def _ensure_bucket(self) -> None:
-        """Create the bucket if it doesn't already exist (dev convenience)."""
+    def _ensure_bucket(self, *, auto_create: bool = True) -> None:
+        """Check the bucket; optionally create it for local development."""
         try:
             self._client.head_bucket(Bucket=self._bucket)
         except ClientError as exc:
             # Only a missing bucket should trigger creation. In particular,
             # auth errors and gateway failures are not evidence it is absent.
             code = str(exc.response.get("Error", {}).get("Code", ""))
-            if code not in {"404", "NoSuchBucket", "NotFound"}:
+            if code not in {"404", "NoSuchBucket", "NotFound"} or not auto_create:
                 raise
             logger.info("Creating S3 bucket: %s", self._bucket)
             self._client.create_bucket(Bucket=self._bucket)
@@ -105,6 +115,16 @@ class StorageService:
     ) -> str:
         """Upload bytes to S3 and return the object key."""
         loop = asyncio.get_running_loop()
+        if self._upload_checksum == "md5":
+            # R2 explicitly supports Content-MD5 on PutObject. This is a
+            # transport integrity check, not a password or security hash.
+            checksum = {"ContentMD5": base64.b64encode(
+                hashlib.md5(file_data, usedforsecurity=False).digest()
+            ).decode("ascii")}
+        else:
+            checksum = {"ChecksumSHA256": base64.b64encode(
+                hashlib.sha256(file_data).digest()
+            ).decode("ascii")}
         try:
             await loop.run_in_executor(
                 None,
@@ -114,8 +134,7 @@ class StorageService:
                     Key=object_key,
                     Body=file_data,
                     ContentType=content_type,
-                    # Send the checksum in a header, avoiding proxy-incompatible trailers.
-                    ChecksumSHA256=base64.b64encode(hashlib.sha256(file_data).digest()).decode("ascii"),
+                    **checksum,
                 ),
             )
         except (BotoCoreError, ClientError) as exc:
@@ -178,6 +197,8 @@ def _create_storage_service(cfg: Settings) -> StorageService:
         secret_key=cfg.S3_SECRET_KEY,
         bucket=cfg.S3_BUCKET,
         region=cfg.S3_REGION,
+        upload_checksum=cfg.S3_UPLOAD_CHECKSUM,
+        auto_create_bucket=cfg.S3_AUTO_CREATE_BUCKET,
     )
 
 

@@ -45,21 +45,25 @@ services:
         fromDatabase:
           name: fincredit-demo-db-20261010
           property: connectionString
-      # Free web services accept public HTTPS traffic, not private inbound traffic.
+      # Cloudflare R2: pre-create a private Standard bucket before applying this config.
+      # Existing services require these sync:false values to be set separately in Render.
+      # Keep S3_HOSTPORT empty so it cannot override the R2 HTTPS endpoint.
       - key: S3_HOSTPORT
         value: ""
       - key: S3_ENDPOINT
-        value: https://fincredit-demo-storage.onrender.com
+        sync: false
       - key: S3_ACCESS_KEY
-        fromService:
-          type: web
-          name: fincredit-demo-storage
-          envVarKey: MINIO_ROOT_USER
+        sync: false
       - key: S3_SECRET_KEY
-        fromService:
-          type: web
-          name: fincredit-demo-storage
-          envVarKey: MINIO_ROOT_PASSWORD
+        sync: false
+      - key: S3_REGION
+        value: auto
+      - key: S3_BUCKET
+        value: fincredit-documents
+      - key: S3_UPLOAD_CHECKSUM
+        value: md5
+      - key: S3_AUTO_CREATE_BUCKET
+        value: "false"
       - key: MCP_HOSTPORT
         fromService:
           type: web
