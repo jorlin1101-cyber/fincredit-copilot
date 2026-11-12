@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     ALLOWED_HOSTS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 
     # -- Database --
+    AUTO_SEED_DEMO_DATA: bool = True
     DATABASE_URL: str = Field(
         default="postgresql+asyncpg://user:password@localhost:5433/mortgage-ai",
         description="Async SQLAlchemy connection string (asyncpg driver).",

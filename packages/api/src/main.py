@@ -120,7 +120,8 @@ async def lifespan(_app: FastAPI):
             exc,
         )
         mcp_unavailable = True
-    await _auto_seed()
+    if settings.AUTO_SEED_DEMO_DATA:
+        await _auto_seed()
 
     recovery = DependencyRecovery()
     # A timed-out worker thread cannot be stopped. Let each bounded boto
