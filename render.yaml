@@ -1,11 +1,3 @@
-databases:
-  - name: fincredit-demo-db-20261112
-    plan: free
-    region: singapore
-    databaseName: fincredit_demo_db_20261112
-    user: fincredit_demo_db_20261112_user
-    postgresMajorVersion: "18"
-
 services:
   - type: web
     name: fincredit-demo-storage
@@ -42,9 +34,7 @@ services:
     healthCheckPath: /health/
     envVars:
       - key: DATABASE_CONNECTION_STRING
-        fromDatabase:
-          name: fincredit-demo-db-20261112
-          property: connectionString
+        sync: false
       # Cloudflare R2: pre-create a private Standard bucket before applying this config.
       # Existing services require these sync:false values to be set separately in Render.
       # Keep S3_HOSTPORT empty so it cannot override the R2 HTTPS endpoint.

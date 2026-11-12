@@ -8,15 +8,25 @@ from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.engine import make_url
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from .config import db_settings
 
-engine = create_async_engine(db_settings.DATABASE_URL, echo=db_settings.SQL_ECHO)
+
+def _async_engine(connection_string: str) -> AsyncEngine:
+    url = make_url(connection_string)
+    if url.drivername == "postgresql":
+        # Preserve libpq TLS and channel-binding options from managed Postgres URLs.
+        url = url.set(drivername="postgresql+psycopg")
+    return create_async_engine(url, echo=db_settings.SQL_ECHO)
+
+
+engine = _async_engine(db_settings.DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
 
-compliance_engine = create_async_engine(db_settings.COMPLIANCE_DATABASE_URL, echo=db_settings.SQL_ECHO)
+compliance_engine = _async_engine(db_settings.COMPLIANCE_DATABASE_URL)
 ComplianceSessionLocal = sessionmaker(
     autocommit=False, autoflush=False, bind=compliance_engine, class_=AsyncSession,
 )
